@@ -43,8 +43,15 @@ import {
   Headphones,
   Bookmark,
   FileType,
-  Pdf,
-  Layers
+  Layers,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Image as ImageIcon,
+  Video as VideoIcon,
+  Music as MusicIcon,
+  FileText as FileTextIcon,
+  FileCode as FileCodeIcon
 } from "lucide-react";
 import { formatBytes, formatDate } from "@/lib/utils";
 
@@ -92,6 +99,8 @@ export default function FilesPage() {
   const [uploadQueue, setUploadQueue] = useState<UploadFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileItem } | null>(null);
@@ -362,7 +371,9 @@ export default function FilesPage() {
     );
     
     if (mimeType.includes("photoshop") || mimeType.includes("psd") || mimeType.includes("xd")) return (
-      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center shadow-lg` />
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center shadow-lg`}>
+        <FileType className={iconClass + " text-white"} />
+      </div>
     );
     
     if (mimeType.includes("figma")) return (
@@ -798,88 +809,310 @@ export default function FilesPage() {
 
       {/* Preview Modal */}
       {showPreview && selectedFile && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-800">
-              <div className="flex items-center gap-3">
-                {getFileIcon(selectedFile.mimeType)}
-                <div>
-                  <div className="font-medium">{selectedFile.name}</div>
-                  <div className="text-sm text-gray-400">{formatBytes(Number(selectedFile.fileSize))}</div>
+        <div 
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPreview(false);
+          }}
+        >
+          <div className="bg-gray-900 rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden shadow-2xl border border-gray-800">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900/80 backdrop-blur">
+              <div className="flex items-center gap-4 min-w-0 flex-1">
+                <div className="shrink-0">
+                  {getFileIcon(selectedFile.mimeType)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-lg truncate">{selectedFile.name}</div>
+                  <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
+                    <span>{formatBytes(Number(selectedFile.fileSize))}</span>
+                    {selectedFile.mimeType && (
+                      <span className="px-2 py-0.5 bg-gray-800 rounded text-xs">{selectedFile.mimeType}</span>
+                    )}
+                    <span>{new Date(selectedFile.createdAt).toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
                 </div>
               </div>
-              <button 
-                onClick={() => setShowPreview(false)}
-                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2 ml-4">
+                {/* Zoom controls for images */}
+                {selectedFile.mimeType?.startsWith("image/") && (
+                  <>
+                    <button 
+                      onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}
+                      className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                      title="Zoom out"
+                    >
+                      <ZoomOut className="w-5 h-5" />
+                    </button>
+                    <span className="text-sm text-gray-400 w-16 text-center">{Math.round(zoom * 100)}%</span>
+                    <button 
+                      onClick={() => setZoom((z) => Math.min(3, z + 0.25))}
+                      className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                      title="Zoom in"
+                    >
+                      <ZoomIn className="w-5 h-5" />
+                    </button>
+                    <button 
+                      onClick={() => setZoom(1)}
+                      className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-xs text-gray-400"
+                      title="Reset zoom"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+                {/* Video controls */}
+                {selectedFile.mimeType?.startsWith("video/") && (
+                  <button 
+                    onClick={() => setIsTheaterMode(!isTheaterMode)}
+                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                    title="Theater mode"
+                  >
+                    <Maximize2 className="w-5 h-5" />
+                  </button>
+                )}
+                <button 
+                  onClick={() => setShowPreview(false)}
+                  className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            <div className="p-4 max-h-[60vh] overflow-auto">
-              {selectedFile.mimeType?.startsWith("image/") ? (
+            
+            {/* Preview Content */}
+            <div className={`${isTheaterMode ? 'max-h-[80vh]' : 'max-h-[65vh]'} overflow-auto bg-gray-950/50 flex items-center justify-center`}>
+              {/* IMAGE PREVIEW */}
+              {selectedFile.mimeType?.startsWith("image/") && (
                 selectedFile.url ? (
-                  <div className="flex items-center justify-center bg-gray-800 rounded-xl p-8">
-                    <img src={selectedFile.url} alt={selectedFile.name} className="max-w-full max-h-[50vh] object-contain" />
+                  <div 
+                    className="relative cursor-zoom-in overflow-hidden"
+                    onClick={() => setZoom((z) => z === 1 ? 2 : z === 2 ? 1 : 1)}
+                    onDoubleClick={() => setZoom((z) => z === 1 ? 2 : 1)}
+                  >
+                    <img 
+                      src={selectedFile.url} 
+                      alt={selectedFile.name} 
+                      className="transition-transform duration-200"
+                      style={{ 
+                        maxWidth: `${zoom * 100}%`, 
+                        maxHeight: isTheaterMode ? '75vh' : '60vh',
+                        transform: `scale(${zoom})`,
+                        objectFit: 'contain'
+                      }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    {/* Zoom hint */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/60 rounded-full text-xs text-gray-300 opacity-0 hover:opacity-100 transition-opacity">
+                      Click to toggle zoom • Scroll to zoom
+                    </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center bg-gray-800 rounded-xl p-8">
-                    <span className="text-gray-500">Preview not available</span>
+                  <div className="flex items-center justify-center h-96">
+                    <div className="text-center">
+                      <ImageIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                      <span className="text-gray-500">Preview not available</span>
+                    </div>
                   </div>
                 )
-              ) : selectedFile.mimeType?.startsWith("video/") ? (
-                <div className="aspect-video bg-gray-800 rounded-xl flex items-center justify-center">
-                  {selectedFile.url ? (
-                    <video controls className="w-full h-full">
+              )}
+              
+              {/* VIDEO PREVIEW */}
+              {selectedFile.mimeType?.startsWith("video/") && (
+                selectedFile.url ? (
+                  <div className={`w-full ${isTheaterMode ? 'max-w-6xl' : 'max-w-4xl'} mx-auto`}>
+                    <video 
+                      key={selectedFile.id}
+                      controls 
+                      controlsList="nodownload"
+                      className="w-full aspect-video bg-black rounded-lg shadow-2xl"
+                      poster={selectedFile.thumbnailUrl || undefined}
+                    >
                       <source src={selectedFile.url} type={selectedFile.mimeType || "video/mp4"} />
+                      Your browser does not support the video tag.
                     </video>
-                  ) : (
-                    <span className="text-gray-500">Video player</span>
-                  )}
-                </div>
-              ) : selectedFile.mimeType?.startsWith("audio/") ? (
-                <div className="bg-gray-800 rounded-xl p-8">
-                  {selectedFile.url ? (
-                    <audio controls className="w-full">
-                      <source src={selectedFile.url} type={selectedFile.mimeType || "audio/mpeg"} />
-                    </audio>
-                  ) : (
-                    <span className="text-gray-500">Audio player</span>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <File className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                  <span className="text-gray-500">Preview not available</span>
+                    {/* Video info bar */}
+                    <div className="mt-3 flex items-center justify-center gap-6 text-sm text-gray-400">
+                      <span>🎬 Video</span>
+                      <span>⏱️ {selectedFile.mimeType}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-96">
+                    <div className="text-center">
+                      <VideoIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                      <span className="text-gray-500">Video not available</span>
+                    </div>
+                  </div>
+                )
+              )}
+              
+              {/* AUDIO PREVIEW */}
+              {selectedFile.mimeType?.startsWith("audio/") && (
+                selectedFile.url ? (
+                  <div className="w-full max-w-2xl mx-auto p-8">
+                    <div className="bg-gradient-to-br from-pink-900/30 to-purple-900/30 rounded-2xl p-8 border border-pink-500/20">
+                      <div className="flex items-center gap-6 mb-6">
+                        <div className="w-24 h-24 bg-gradient-to-br from-pink-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-xl">
+                          <Music className="w-12 h-12 text-white" />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-lg">{selectedFile.name}</div>
+                          <div className="text-gray-400 text-sm mt-1">Audio File</div>
+                          <div className="text-gray-500 text-xs mt-1">{selectedFile.mimeType}</div>
+                        </div>
+                      </div>
+                      <audio 
+                        controls 
+                        controlsList="nodownload"
+                        className="w-full h-12"
+                        style={{ filter: 'hue-rotate(20deg)' }}
+                      >
+                        <source src={selectedFile.url} type={selectedFile.mimeType || "audio/mpeg"} />
+                      </audio>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-96">
+                    <div className="text-center">
+                      <MusicIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                      <span className="text-gray-500">Audio not available</span>
+                    </div>
+                  </div>
+                )
+              )}
+              
+              {/* PDF PREVIEW */}
+              {selectedFile.mimeType?.includes("pdf") && (
+                selectedFile.url ? (
+                  <div className="w-full max-w-4xl mx-auto p-4">
+                    <iframe 
+                      src={selectedFile.url + '#toolbar=0'} 
+                      className="w-full h-[60vh] rounded-lg border border-gray-800 bg-white"
+                      title="PDF Preview"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-96">
+                    <div className="text-center">
+                      <FileTextIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                      <span className="text-gray-500">PDF not available</span>
+                    </div>
+                  </div>
+                )
+              )}
+              
+              {/* TEXT PREVIEW */}
+              {(selectedFile.mimeType?.includes("text/plain") || 
+                selectedFile.mimeType?.includes("json") || 
+                selectedFile.mimeType?.includes("javascript") ||
+                selectedFile.mimeType?.includes("typescript") ||
+                selectedFile.mimeType?.includes("html") ||
+                selectedFile.mimeType?.includes("css") ||
+                selectedFile.mimeType?.includes("xml") ||
+                selectedFile.mimeType?.includes("yaml") ||
+                selectedFile.mimeType?.includes("md")) && (
+                selectedFile.url ? (
+                  <div className="w-full max-w-4xl mx-auto p-4">
+                    <div className="bg-gray-900 rounded-lg border border-gray-800 overflow-hidden">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/50 border-b border-gray-800">
+                        <div className="flex gap-1.5">
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <span className="text-xs text-gray-400 ml-2">{selectedFile.name}</span>
+                      </div>
+                      <iframe 
+                        src={selectedFile.url} 
+                        className="w-full h-[55vh] bg-gray-950"
+                        title="Text Preview"
+                        sandbox=""
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-96">
+                    <div className="text-center">
+                      <FileCodeIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                      <span className="text-gray-500">File not available</span>
+                    </div>
+                  </div>
+                )
+              )}
+              
+              {/* UNSUPPORTED PREVIEW */}
+              {!selectedFile.mimeType?.startsWith("image/") && 
+               !selectedFile.mimeType?.startsWith("video/") && 
+               !selectedFile.mimeType?.startsWith("audio/") && 
+               !selectedFile.mimeType?.includes("pdf") &&
+               !selectedFile.mimeType?.includes("text") &&
+               !selectedFile.mimeType?.includes("json") &&
+               !selectedFile.mimeType?.includes("javascript") &&
+               !selectedFile.mimeType?.includes("html") &&
+               !selectedFile.mimeType?.includes("xml") &&
+               !selectedFile.mimeType?.includes("yaml") && (
+                <div className="flex items-center justify-center h-96">
+                  <div className="text-center">
+                    <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-gray-700 to-gray-800 rounded-3xl flex items-center justify-center">
+                      {getFileIcon(selectedFile.mimeType)}
+                    </div>
+                    <div className="text-xl font-medium mb-2">{selectedFile.name}</div>
+                    <div className="text-gray-500 mb-4">{selectedFile.mimeType || 'Unknown type'}</div>
+                    <div className="text-gray-600 text-sm">Preview not available for this file type</div>
+                    <div className="mt-6 flex items-center justify-center gap-4">
+                      <a
+                        href={selectedFile.url || '#'}
+                        download={selectedFile.name}
+                        className="px-6 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-medium transition-colors flex items-center gap-2"
+                        onClick={(e) => {
+                          if (!selectedFile.url) e.preventDefault();
+                        }}
+                      >
+                        <Download className="w-5 h-5" />
+                        Download to View
+                      </a>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
-            <div className="p-4 border-t border-gray-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => handleShare(selectedFile)}
-                  className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg"
-                >
-                  <Share2 className="w-4 h-4" />
-                </button>
-                {selectedFile.url && (
-                  <a
-                    href={selectedFile.url}
-                    download={selectedFile.name}
-                    className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg"
+            
+            {/* Footer Actions */}
+            <div className="p-4 border-t border-gray-800 bg-gray-900/80 backdrop-blur">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => handleShare(selectedFile)}
+                    className="px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl font-medium transition-colors flex items-center gap-2"
                   >
-                    <Download className="w-4 h-4" />
-                  </a>
-                )}
+                    <Share2 className="w-4 h-4" />
+                    Share
+                  </button>
+                  {selectedFile.url && (
+                    <a
+                      href={selectedFile.url}
+                      download={selectedFile.name}
+                      className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl font-medium transition-colors flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download
+                    </a>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    handleDelete(selectedFile.id);
+                    setShowPreview(false);
+                  }}
+                  className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl font-medium transition-colors flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  handleDelete(selectedFile.id);
-                  setShowPreview(false);
-                }}
-                className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
             </div>
           </div>
         </div>
