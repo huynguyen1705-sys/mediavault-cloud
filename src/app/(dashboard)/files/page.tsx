@@ -196,15 +196,17 @@ export default function FilesPage() {
         console.log("Step 1 success, uploadUrl:", uploadUrl.substring(0, 100) + "...");
 
         // Step 2: Upload directly to R2 using presigned URL
-        console.log("Step 2: Uploading to R2...");
+        console.log("Step 2: Uploading to R2...", { uploadUrl: uploadUrl.substring(0, 80) });
         const uploadRes = await fetch(uploadUrl, {
           method: "PUT",
           body: actualFile,
           headers: { "Content-Type": actualFile.type },
         });
 
+        console.log("Step 2 response:", uploadRes.status, uploadRes.statusText);
         if (!uploadRes.ok) {
-          console.error("Step 2 failed - R2 upload:", uploadRes.status, uploadRes.statusText);
+          const text = await uploadRes.text();
+          console.error("Step 2 failed - R2 upload:", uploadRes.status, uploadRes.statusText, text);
           throw new Error("Failed to upload to storage");
         }
         console.log("Step 2 success");
