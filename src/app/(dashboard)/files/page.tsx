@@ -109,6 +109,12 @@ export default function FilesPage() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileItem } | null>(null);
   const [trashMode, setTrashMode] = useState(false);
   const [trashFiles, setTrashFiles] = useState<any[]>([]);
+  const [showNewFolderModal, setShowNewFolderModal] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [folderContextMenu, setFolderContextMenu] = useState<{ x: number; y: number; folder: FolderItem } | null>(null);
+  const [renameFolderId, setRenameFolderId] = useState<string | null>(null);
+  const [renameFolderName, setRenameFolderName] = useState("");
 
   // Fetch files
   const fetchFiles = useCallback(async () => {
@@ -300,6 +306,64 @@ export default function FilesPage() {
       console.error("Empty trash error:", error);
     }
   };
+
+  // Create folder
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+    setCreatingFolder(true);
+    try {
+      const res = await fetch("/api/folders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newFolderName.trim(), parentId: currentFolderId }),
+      });
+      if (res.ok) {
+        setNewFolderName("");
+        setShowNewFolderModal(false);
+        fetchFiles();
+      }
+    } catch (error) {
+      console.error("Create folder error:", error);
+    } finally {
+      setCreatingFolder(false);
+    }
+  };
+
+  // Delete folder
+  const handleDeleteFolder = async (folderId: string) => {
+    if (!confirm("Delete this folder and all its contents?")) return;
+    try {
+      const res = await fetch(`/api/folders/${folderId}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchFiles();
+      }
+    } catch (error) {
+      console.error("Delete folder error:", error);
+    }
+    setFolderContextMenu(null);
+  };
+
+  // Rename folder
+  const handleRenameFolder = async (folderId: string) => {
+    if (!renameFolderName.trim()) return;
+    try {
+      const res = await fetch(`/api/folders/${folderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: renameFolderName.trim() }),
+      });
+      if (res.ok) {
+        setRenameFolderId(null);
+        setRenameFolderName("");
+        fetchFiles();
+      }
+    } catch (error) {
+      console.error("Rename folder error:", error);
+    }
+  };
+
+  // Delete folder API route - need to create it first
+  // For now, use inline delete via folders endpoint
 
   // Handle share
   const handleShare = async (file: FileItem) => {
@@ -522,13 +586,24 @@ export default function FilesPage() {
 
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
-            <button 
-              onClick={() => document.getElementById("file-input")?.click()}
-              className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <Upload className="w-4 h-4" />
-              Upload
-            </button>
+            {!trashMode && (
+              <>
+                <button 
+                  onClick={() => setShowNewFolderModal(true)}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                >
+                  <FolderPlus className="w-4 h-4" />
+                  New Folder
+                </button>
+                <button 
+                  onClick={() => document.getElementById("file-input")?.click()}
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload
+                </button>
+              </>
+            )}
             <input
               id="file-input"
               type="file"
@@ -691,14 +766,51 @@ export default function FilesPage() {
                 <h3 className="text-sm font-medium text-gray-400 mb-3">Folders</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {folders.map((folder) => (
-                    <button
+                    <div
                       key={folder.id}
+                      className="group relative p-4 bg-gray-900 border border-gray-800 rounded-xl hover:border-violet-500/50 transition-colors text-left cursor-pointer"
                       onClick={() => navigateToFolder(folder.id, folder.name)}
-                      className="p-4 bg-gray-900 border border-gray-800 rounded-xl hover:border-violet-500/50 transition-colors text-left group"
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setFolderContextMenu({ x: e.clientX, y: e.clientY, folder });
+                      }}
                     >
                       <Folder className="w-8 h-8 text-violet-400 mb-2" />
-                      <div className="font-medium text-sm truncate">{folder.name}</div>
-                    </button>
+                      <div className="font-medium text-sm truncate">
+                        {renameFolderId === folder.id ? (
+                          <input
+                            type="text"
+                            value={renameFolderName}
+                            onChange={(e) => setRenameFolderName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleRenameFolder(folder.id);
+                              if (e.key === "Escape") {
+                                setRenameFolderId(null);
+                                setRenameFolderName("");
+                              }
+                            }}
+                            onBlur={() => handleRenameFolder(folder.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full px-2 py-1 bg-gray-800 border border-violet-500 rounded text-sm"
+                            autoFocus
+                          />
+                        ) : (
+                          folder.name
+                        )}
+                      </div>
+                      {/* Hover Actions */}
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          className="p-1.5 bg-gray-800/90 rounded-lg hover:bg-gray-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFolderContextMenu({ x: e.clientX, y: e.clientY, folder });
+                          }}
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1388,6 +1500,108 @@ export default function FilesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* New Folder Modal */}
+      {showNewFolderModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-gray-900 rounded-2xl max-w-md w-full p-6 border border-gray-800">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold">Create New Folder</h3>
+              <button 
+                onClick={() => {
+                  setShowNewFolderModal(false);
+                  setNewFolderName("");
+                }}
+                className="p-2 hover:bg-gray-800 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mb-4">
+              <label className="text-sm text-gray-400 mb-2 block">Folder name</label>
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="Enter folder name..."
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-violet-500"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleCreateFolder();
+                  if (e.key === "Escape") {
+                    setShowNewFolderModal(false);
+                    setNewFolderName("");
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowNewFolderModal(false);
+                  setNewFolderName("");
+                }}
+                className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateFolder}
+                disabled={creatingFolder || !newFolderName.trim()}
+                className="flex-1 px-4 py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                {creatingFolder ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FolderPlus className="w-4 h-4" />
+                )}
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Folder Context Menu */}
+      {folderContextMenu && (
+        <>
+          <div 
+            className="fixed inset-0 z-40"
+            onClick={() => setFolderContextMenu(null)}
+          />
+          <div 
+            className="fixed z-50 bg-gray-900 border border-gray-800 rounded-xl shadow-xl py-2 min-w-[180px]"
+            style={{ left: folderContextMenu.x, top: folderContextMenu.y }}
+          >
+            <button
+              onClick={() => {
+                setRenameFolderId(folderContextMenu.folder.id);
+                setRenameFolderName(folderContextMenu.folder.name);
+                setFolderContextMenu(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+            >
+              <FileText className="w-4 h-4" /> Rename
+            </button>
+            <button
+              onClick={() => {
+                navigateToFolder(folderContextMenu.folder.id, folderContextMenu.folder.name);
+                setFolderContextMenu(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+            >
+              <Folder className="w-4 h-4" /> Open
+            </button>
+            <hr className="my-2 border-gray-800" />
+            <button
+              onClick={() => handleDeleteFolder(folderContextMenu.folder.id)}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3 text-red-400"
+            >
+              <Trash2 className="w-4 h-4" /> Delete
+            </button>
+          </div>
+        </>
       )}
 
       {/* Share Modal */}
