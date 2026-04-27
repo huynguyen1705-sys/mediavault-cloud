@@ -969,15 +969,7 @@ export default function FilesPage() {
                 <h3 className="text-sm font-medium text-gray-400 mb-3">Folders</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {folders.map((folder) => (
-                    <div
-                      key={folder.id}
-                      className="group relative p-4 bg-gray-900 border border-gray-800 rounded-xl hover:border-violet-500/50 transition-colors text-left cursor-pointer"
-                      onClick={() => navigateToFolder(folder.id, folder.name)}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        setFolderContextMenu({ x: e.clientX, y: e.clientY, folder });
-                      }}
-                    >
+                    <div key={folder.id} className="group relative p-4 bg-gray-900 border border-gray-800 rounded-xl hover:border-violet-500/50 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer" onClick={() => { navigateToFolder(folder.id, folder.name); }} onContextMenu={(e) => { e.preventDefault(); setFolderContextMenu({ x: e.clientX, y: e.clientY, folder }); }}>
                       <Folder className="w-8 h-8 text-violet-400 mb-2" />
                       <div className="font-medium text-sm truncate">
                         {renameFolderId === folder.id ? (
