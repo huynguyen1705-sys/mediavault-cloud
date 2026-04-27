@@ -4,9 +4,11 @@ const nextConfig: NextConfig = {
   // Increase body size limit for large file uploads (video/audio)
   experimental: {
     serverActions: {
-      bodySizeLimit: '500mb', // Allow large video/audio files
+      bodySizeLimit: '500mb',
     },
   },
+  // Separate limit for client-side uploads via middleware (fetch API)
+  middlewareClientMaxBodySize: '500mb',
   // Use images domains for R2
   images: {
     remotePatterns: [
