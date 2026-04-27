@@ -127,8 +127,6 @@ export default function FilesPage() {
   const [downloadingZip, setDownloadingZip] = useState(false);
   const [showAddToFolderModal, setShowAddToFolder] = useState(false);
   const [movingFiles, setMovingFiles] = useState(false);
-  const [shakingFolderId, setShakingFolderId] = useState<string | null>(null);
-  const [shakingModalFolderId, setShakingModalFolderId] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [folderFileCounts, setFolderFileCounts] = useState<Record<string, number>>({});
@@ -540,12 +538,6 @@ export default function FilesPage() {
       const results = await Promise.all(updatePromises);
       const allSuccess = results.every(r => r.ok);
       
-      // Add shake effect before moving
-      if (targetFolderId) {
-        setShakingModalFolderId(targetFolderId);
-        setTimeout(() => setShakingModalFolderId(null), 300);
-      }
-      
       // Small delay for visual feedback then move
       await new Promise(resolve => setTimeout(resolve, 150));
       
@@ -570,11 +562,6 @@ export default function FilesPage() {
 
   // Navigate to folder
   const navigateToFolder = (folderId: string | null, folderName: string) => {
-    // Add shake effect
-    if (folderId !== null) {
-      setShakingFolderId(folderId);
-      setTimeout(() => setShakingFolderId(null), 300);
-    }
     if (folderId === null) {
       setBreadcrumbs([{ id: null, name: "My Files" }]);
     } else {
@@ -1005,7 +992,7 @@ export default function FilesPage() {
                 <h3 className="text-sm font-medium text-gray-400 mb-3">Folders</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {folders.map((folder) => (
-                    <div key={folder.id} className={`group relative p-4 bg-gray-900 border border-gray-800 rounded-xl hover:border-violet-500/50 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer ${shakingFolderId === folder.id ? 'animate-bounce' : ''}`} onClick={() => { navigateToFolder(folder.id, folder.name); }} onContextMenu={(e) => { e.preventDefault(); setFolderContextMenu({ x: e.clientX, y: e.clientY, folder }); }}>
+                    <div key={folder.id} className={`group relative p-4 bg-gray-900 border border-gray-800 rounded-xl hover:border-violet-500/50 hover:scale-105 active:scale-95 active:text-gray-400 transition-all duration-200 cursor-pointer `} onClick={() => { navigateToFolder(folder.id, folder.name); }} onContextMenu={(e) => { e.preventDefault(); setFolderContextMenu({ x: e.clientX, y: e.clientY, folder }); }}>
                       <div className="relative">
                         <Folder className="w-8 h-8 text-violet-400" />
                         {folderFileCounts[folder.id] > 0 && (
@@ -1994,7 +1981,7 @@ export default function FilesPage() {
                 <button
                   key={folder.id}
                   onClick={() => handleAddToFolder(folder.id)}
-                  className={`w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-xl flex items-center gap-3 text-left transition-all ${shakingModalFolderId === folder.id ? 'animate-bounce border-2 border-emerald-400' : ''}`}
+                  className={`w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-xl flex items-center gap-3 text-left transition-all `}
                 >
                   <Folder className="w-5 h-5 text-violet-400" />
                   <span className="text-sm">{folder.name}</span>
