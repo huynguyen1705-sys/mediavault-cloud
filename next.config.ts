@@ -7,8 +7,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '500mb',
     },
   },
-  // Separate limit for client-side uploads via middleware (fetch API)
-  middlewareClientMaxBodySize: '500mb',
   // Use images domains for R2
   images: {
     remotePatterns: [
