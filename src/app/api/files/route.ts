@@ -72,9 +72,9 @@ export async function GET(request: NextRequest) {
           mimeType: file.mimeType,
           fileSize: file.fileSize.toString(),
           thumbnailUrl: file.thumbnailPath 
-            ? getPublicUrl(file.thumbnailPath) 
+            ? await getPresignedUrl(file.thumbnailPath) 
             : file.mimeType?.startsWith("image/") && file.storagePath 
-              ? getPublicUrl(file.storagePath) 
+              ? await getPresignedUrl(file.storagePath) 
               : file.thumbnailStatus === "pending" || file.thumbnailStatus === "processing"
                 ? "processing"
                 : null,
