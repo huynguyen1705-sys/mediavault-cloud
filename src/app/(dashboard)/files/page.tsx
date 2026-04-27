@@ -188,12 +188,15 @@ export default function FilesPage() {
 
         if (!urlRes.ok) {
           const err = await urlRes.json();
+          console.error("Step 1 failed - get upload URL:", err);
           throw new Error(err.error || "Failed to get upload URL");
         }
 
         const { uploadUrl, fileKey } = await urlRes.json();
+        console.log("Step 1 success, uploadUrl:", uploadUrl.substring(0, 100) + "...");
 
         // Step 2: Upload directly to R2 using presigned URL
+        console.log("Step 2: Uploading to R2...");
         const uploadRes = await fetch(uploadUrl, {
           method: "PUT",
           body: actualFile,
@@ -201,10 +204,13 @@ export default function FilesPage() {
         });
 
         if (!uploadRes.ok) {
+          console.error("Step 2 failed - R2 upload:", uploadRes.status, uploadRes.statusText);
           throw new Error("Failed to upload to storage");
         }
+        console.log("Step 2 success");
 
         // Step 3: Confirm upload in database
+        console.log("Step 3: Confirming upload...");
         const confirmRes = await fetch("/api/upload/confirm", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -219,8 +225,10 @@ export default function FilesPage() {
 
         if (!confirmRes.ok) {
           const err = await confirmRes.json();
+          console.error("Step 3 failed - confirm:", err);
           throw new Error(err.error || "Failed to confirm upload");
         }
+        console.log("Step 3 success");
 
         // Mark as completed
         setUploadQueue((prev) =>
