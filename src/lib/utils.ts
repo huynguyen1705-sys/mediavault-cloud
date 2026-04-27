@@ -1,0 +1,42 @@
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export function formatBytes(bytes: number, decimals = 2) {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+}
+
+export function formatDate(date: Date | string) {
+  return new Date(date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+export function getFileTypeIcon(mimeType: string) {
+  if (mimeType.startsWith("image/")) return "Image";
+  if (mimeType.startsWith("video/")) return "Video";
+  if (mimeType.startsWith("audio/")) return "Music";
+  return "File";
+}
+
+export function isImage(mimeType: string) {
+  return mimeType.startsWith("image/");
+}
+
+export function isVideo(mimeType: string) {
+  return mimeType.startsWith("video/");
+}
+
+export function isAudio(mimeType: string) {
+  return mimeType.startsWith("audio/");
+}

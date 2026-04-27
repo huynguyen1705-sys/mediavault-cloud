@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Plan {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String   @unique @db.VarChar(50)
+  displayName       String   @map("display_name") @db.VarChar(100)
+  description       String?  @db.Text
+  priceMonthly      Decimal  @map("price_monthly") @db.Decimal(10, 2)
+  storageGb         Int      @map("storage_gb")
+  maxFileSizeMb     Int      @map("max_file_size_mb")
+  bandwidthGb       Int      @map("bandwidth_gb")
+  fileRetentionDays Int      @map("file_retention_days")
+  allowDownload     Boolean  @map("allow_download") @default(true)
+  allowShare        Boolean  @map("allow_share") @default(true)
+  allowEmbed        Boolean  @map("allow_embed") @default(false)
+  isActive          Boolean  @map("is_active") @default(true)
+  createdAt         DateTime @map("created_at") @default(now())
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  users User[]
+
+  @@map("plans")
+}
+
+model User {
+  id                String   @id @default(uuid()) @db.Uuid
+  clerkUserId       String   @unique @map("clerk_user_id") @db.VarChar(255)
+  email             String?  @db.VarChar(255)
+  displayName       String?  @map("display_name") @db.VarChar(255)
+  avatarUrl         String?  @map("avatar_url") @db.Text
+  planId            String   @map("plan_id") @db.Uuid
+  storageUsedBytes  BigInt   @map("storage_used_bytes") @default(0)
+  bandwidthUsedBytes BigInt  @map("bandwidth_used_bytes") @default(0)
+  filesCount        Int      @map("files_count") @default(0)
+  isSuspended       Boolean  @map("is_suspended") @default(false)
+  isAdmin           Boolean  @map("is_admin") @default(false)
+  createdAt         DateTime @map("created_at") @default(now())
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  plan      Plan      @relation(fields: [planId], references: [id])
+  folders    Folder[]
+  files      File[]
+  shares     Share[]
+  embedDomains EmbedDomain[]
+  downloads  Download[]
+  uploads    Upload[]
+  bandwidthLogs BandwidthLog[]
+  auditLogs  AuditLog[]
+
+  @@map("users_profile")
+}
+
+model Folder {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  parentId  String?  @map("parent_id") @db.Uuid
+  name      String   @db.VarChar(255)
+  path      String?  @db.Text
+  createdAt DateTime @map("created_at") @default(now())
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent    Folder?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Folder[] @relation("ParentChild")
+  files     File[]
+  shares    Share[]
+
+  @@map("folders")
+}
+
+model File {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  folderId      String?  @map("folder_id") @db.Uuid
+  name          String   @db.VarChar(255)
+  originalName  String?  @map("original_name") @db.VarChar(255)
+  mimeType      String?  @map("mime_type") @db.VarChar(100)
+  fileSize      BigInt   @map("file_size") @default(0)
+  storagePath   String?  @map("storage_path") @db.Text
+  thumbnailPath String?  @map("thumbnail_path") @db.Text
+  metadata      Json?
+  isPublic      Boolean  @map("is_public") @default(false)
+  downloadEnabled Boolean @map("download_enabled") @default(true)
+  expiresAt     DateTime? @map("expires_at")
+  createdAt     DateTime @map("created_at") @default(now())
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder    Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  shares    Share[]
+  downloads Download[]
+
+  @@map("files")
+}
+
+model Share {
+  id             String    @id @default(uuid()) @db.Uuid
+  fileId         String?   @map("file_id") @db.Uuid
+  folderId       String?   @map("folder_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  shareToken     String    @unique @map("share_token") @db.VarChar(255)
+  passwordHash   String?   @map("password_hash") @db.VarChar(255)
+  allowDownload  Boolean   @map("allow_download") @default(true)
+  expiresAt      DateTime? @map("expires_at")
+  viewsCount     Int       @map("views_count") @default(0)
+  createdAt      DateTime  @map("created_at") @default(now())
+
+  file   File?   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  folder Folder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("shares")
+}
+
+model EmbedDomain {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  domain    String   @db.VarChar(255)
+  isActive  Boolean  @map("is_active") @default(true)
+  createdAt DateTime @map("created_at") @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("embed_domains")
+}
+
+model Download {
+  id              String   @id @default(uuid()) @db.Uuid
+  fileId          String   @map("file_id") @db.Uuid
+  userId          String?  @map("user_id") @db.Uuid
+  ipAddress       String?  @map("ip_address") @db.VarChar(45)
+  userAgent       String?  @map("user_agent") @db.Text
+  bytesDownloaded BigInt   @map("bytes_downloaded") @default(0)
+  createdAt       DateTime @map("created_at") @default(now())
+
+  file File? @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("downloads")
+}
+
+model Upload {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  fileName     String?  @map("file_name") @db.VarChar(255)
+  fileSize     BigInt?  @map("file_size")
+  status       String   @default("pending") @db.VarChar(50)
+  errorMessage String?  @map("error_message") @db.Text
+  createdAt    DateTime @map("created_at") @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("uploads")
+}
+
+model BandwidthLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  bytesUsed BigInt   @map("bytes_used")
+  logType   String   @map("log_type") @default("download") @db.VarChar(20)
+  createdAt DateTime @map("created_at") @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("bandwidth_logs")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String?  @map("user_id") @db.Uuid
+  action       String   @db.VarChar(100)
+  resourceType String?  @map("resource_type") @db.VarChar(50)
+  resourceId   String?  @map("resource_id") @db.Uuid
+  details      Json?
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  createdAt    DateTime @map("created_at") @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
