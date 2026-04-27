@@ -181,34 +181,45 @@ export default function FilesPage() {
       );
 
       try {
-        const formData = new FormData();
-        formData.append("file", actualFile);
-        if (currentFolderId) {
-          formData.append("folderId", currentFolderId);
+        // Step 1: Get presigned URL for direct R2 upload
+        const urlRes = await fetch(
+          `/api/upload-url?fileName=${encodeURIComponent(actualFile.name)}&contentType=${encodeURIComponent(actualFile.type)}&fileSize=${actualFile.size}${currentFolderId ? `&folderId=${currentFolderId}` : ''}`
+        );
+
+        if (!urlRes.ok) {
+          const err = await urlRes.json();
+          throw new Error(err.error || "Failed to get upload URL");
         }
 
-        // Simulate progress (since fetch doesn't support upload progress natively)
-        const progressInterval = setInterval(() => {
-          setUploadQueue((prev) =>
-            prev.map((f) => {
-              if (f.id === uploadFile.id && f.status === "uploading" && f.progress < 90) {
-                return { ...f, progress: f.progress + Math.random() * 15 };
-              }
-              return f;
-            })
-          );
-        }, 300);
+        const { uploadUrl, fileKey } = await urlRes.json();
 
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
+        // Step 2: Upload directly to R2 using presigned URL
+        const uploadRes = await fetch(uploadUrl, {
+          method: "PUT",
+          body: actualFile,
+          headers: { "Content-Type": actualFile.type },
         });
 
-        clearInterval(progressInterval);
+        if (!uploadRes.ok) {
+          throw new Error("Failed to upload to storage");
+        }
 
-        if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.error || "Upload failed");
+        // Step 3: Confirm upload in database
+        const confirmRes = await fetch("/api/upload/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileKey,
+            fileName: actualFile.name,
+            mimeType: actualFile.type,
+            fileSize: actualFile.size,
+            folderId: currentFolderId,
+          }),
+        });
+
+        if (!confirmRes.ok) {
+          const err = await confirmRes.json();
+          throw new Error(err.error || "Failed to confirm upload");
         }
 
         // Mark as completed

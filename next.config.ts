@@ -7,8 +7,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '500mb',
     },
   },
-  // @ts-ignore - middlewareClientMaxBodySize exists in Next.js 16 but not in types yet
-  middlewareClientMaxBodySize: '500mb',
   // Use images domains for R2
   images: {
     remotePatterns: [
