@@ -9,8 +9,13 @@ const isProtectedRoute = createRouteMatcher([
 
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
-    // Await auth() before calling protect()
-    await auth.protect();
+    // Manually redirect to our login page instead of Clerk's default /sign-in
+    const { userId } = await auth();
+    if (!userId) {
+      const signInUrl = new URL("/login", req.url);
+      signInUrl.searchParams.set("redirect_url", req.url);
+      return NextResponse.redirect(signInUrl);
+    }
   }
 });
 
