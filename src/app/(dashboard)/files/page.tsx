@@ -3,7 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import { 
-  FolderPlus, 
+  FolderPlus,
+  FolderInput, 
   Upload, 
   Grid, 
   List, 
@@ -124,6 +125,8 @@ export default function FilesPage() {
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [selectMode, setSelectMode] = useState(false);
   const [downloadingZip, setDownloadingZip] = useState(false);
+  const [showAddToFolderModal, setShowAddToFolder] = useState(false);
+  const [movingFiles, setMovingFiles] = useState(false);
 
   // Fetch files
   const fetchFiles = useCallback(async () => {
@@ -479,6 +482,39 @@ export default function FilesPage() {
     }
   };
 
+  // Add selected files to folder
+  const handleAddToFolder = async (targetFolderId: string | null) => {
+    if (selectedFiles.size === 0) return;
+    setMovingFiles(true);
+    try {
+      // Update each file's folderId
+      const updatePromises = Array.from(selectedFiles).map(fileId => 
+        fetch(`/api/files/${fileId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ folderId: targetFolderId }),
+        })
+      );
+      
+      const results = await Promise.all(updatePromises);
+      const allSuccess = results.every(r => r.ok);
+      
+      if (allSuccess) {
+        setSelectMode(false);
+        setSelectedFiles(new Set());
+        setShowAddToFolder(false);
+        fetchFiles(); // Refresh file list
+      } else {
+        alert("Some files failed to move. Please try again.");
+      }
+    } catch (error) {
+      console.error("Move files error:", error);
+      alert("Failed to move files. Please try again.");
+    } finally {
+      setMovingFiles(false);
+    }
+  };
+
   // Navigate to folder
   const navigateToFolder = (folderId: string | null, folderName: string) => {
     if (folderId === null) {
@@ -696,6 +732,18 @@ export default function FilesPage() {
                         <Download className="w-4 h-4" />
                       )}
                       {selectedFiles.size > 0 ? `Download ZIP (${selectedFiles.size})` : "Select files"}
+                    </button>
+                    <button 
+                      onClick={() => setShowAddToFolder(true)}
+                      disabled={selectedFiles.size === 0}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                      {movingFiles ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <FolderInput className="w-4 h-4" />
+                      )}
+                      Add to Folder
                     </button>
                     <button 
                       onClick={toggleSelectMode}
@@ -1841,6 +1889,66 @@ export default function FilesPage() {
             >
               <Share2 className="w-4 h-4" />
               Create Share Link
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Add to Folder Modal */}
+      {showAddToFolderModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-gray-900 rounded-2xl max-w-md w-full p-6 border border-gray-800 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                  <FolderInput className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Add to Folder</h3>
+                  <p className="text-xs text-gray-400">{selectedFiles.size} files selected</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowAddToFolder(false)}
+                className="p-2 hover:bg-gray-800 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Folder List */}
+            <div className="mb-4 max-h-64 overflow-y-auto space-y-2">
+              {/* Root option */}
+              <button
+                onClick={() => handleAddToFolder(null)}
+                className="w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-xl flex items-center gap-3 text-left transition-colors"
+              >
+                <Folder className="w-5 h-5 text-violet-400" />
+                <span className="text-sm">Root (My Files)</span>
+              </button>
+              
+              {/* Existing folders */}
+              {folders.map((folder) => (
+                <button
+                  key={folder.id}
+                  onClick={() => handleAddToFolder(folder.id)}
+                  className="w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-xl flex items-center gap-3 text-left transition-colors"
+                >
+                  <Folder className="w-5 h-5 text-violet-400" />
+                  <span className="text-sm">{folder.name}</span>
+                </button>
+              ))}
+              
+              {folders.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-4">No folders yet. Create one first!</p>
+              )}
+            </div>
+            
+            <button
+              onClick={() => setShowAddToFolder(false)}
+              className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl font-medium"
+            >
+              Cancel
             </button>
           </div>
         </div>
