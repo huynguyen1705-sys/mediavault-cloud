@@ -2,18 +2,29 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, Head
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
 
-// R2 Client
-const r2 = new S3Client({
-  region: "auto",
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-});
+// Helper to get R2 client
+function getR2Client() {
+  return new S3Client({
+    region: "auto",
+    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+    },
+  });
+}
 
-const BUCKET = process.env.R2_BUCKET_NAME!;
-const PUBLIC_URL = process.env.R2_PUBLIC_URL || `https://${process.env.R2_ACCOUNT_ID}.r2.dev`;
+// Get bucket name
+function getBucket() {
+  const bucket = process.env.R2_BUCKET_NAME;
+  if (!bucket) throw new Error("R2_BUCKET_NAME is not defined");
+  return bucket;
+}
+
+// Get public URL base
+function getPublicUrlBase() {
+  return process.env.R2_PUBLIC_URL || `https://${process.env.R2_ACCOUNT_ID}.r2.dev`;
+}
 
 // Generate unique file key
 export function generateFileKey(userId: string, fileName: string): string {
@@ -28,9 +39,13 @@ export async function uploadToR2(
   key: string,
   contentType: string
 ): Promise<{ key: string; url: string }> {
-  await r2.send(
+  const client = getR2Client();
+  const bucket = getBucket();
+  const publicUrl = getPublicUrlBase();
+
+  await client.send(
     new PutObjectCommand({
-      Bucket: BUCKET,
+      Bucket: bucket,
       Key: key,
       Body: file,
       ContentType: contentType,
@@ -39,36 +54,45 @@ export async function uploadToR2(
 
   return {
     key,
-    url: `${PUBLIC_URL}/${key}`,
+    url: `${publicUrl}/${key}`,
   };
 }
 
 // Generate presigned URL for download (expires in seconds)
 export async function getPresignedUrl(key: string, expiresIn = 3600): Promise<string> {
+  const client = getR2Client();
+  const bucket = getBucket();
+
   const command = new GetObjectCommand({
-    Bucket: BUCKET,
+    Bucket: bucket,
     Key: key,
   });
 
-  return getSignedUrl(r2, command, { expiresIn });
+  return getSignedUrl(client, command, { expiresIn });
 }
 
 // Generate presigned URL for upload
 export async function getUploadPresignedUrl(key: string, contentType: string, expiresIn = 3600): Promise<string> {
+  const client = getR2Client();
+  const bucket = getBucket();
+
   const command = new PutObjectCommand({
-    Bucket: BUCKET,
+    Bucket: bucket,
     Key: key,
     ContentType: contentType,
   });
 
-  return getSignedUrl(r2, command, { expiresIn });
+  return getSignedUrl(client, command, { expiresIn });
 }
 
 // Delete file from R2
 export async function deleteFromR2(key: string): Promise<void> {
-  await r2.send(
+  const client = getR2Client();
+  const bucket = getBucket();
+
+  await client.send(
     new DeleteObjectCommand({
-      Bucket: BUCKET,
+      Bucket: bucket,
       Key: key,
     })
   );
@@ -76,10 +100,13 @@ export async function deleteFromR2(key: string): Promise<void> {
 
 // Get file metadata
 export async function getFileMetadata(key: string): Promise<{ size: number; contentType: string } | null> {
+  const client = getR2Client();
+  const bucket = getBucket();
+
   try {
-    const response = await r2.send(
+    const response = await client.send(
       new HeadObjectCommand({
-        Bucket: BUCKET,
+        Bucket: bucket,
         Key: key,
       })
     );
@@ -95,7 +122,5 @@ export async function getFileMetadata(key: string): Promise<{ size: number; cont
 
 // Get public URL for a file
 export function getPublicUrl(key: string): string {
-  return `${PUBLIC_URL}/${key}`;
+  return `${getPublicUrlBase()}/${key}`;
 }
-
-export { r2, BUCKET, PUBLIC_URL };
