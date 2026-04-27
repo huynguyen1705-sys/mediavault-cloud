@@ -3,10 +3,10 @@
 
 const { PrismaClient } = require("@prisma/client");
 const fs = require("fs");
-const path = require("path");
+const { join } = require("path");
 const { spawn } = require("child_process");
 const https = require("https");
-const http = require("http");
+const crypto = require("crypto");
 
 // Config
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || "";
@@ -17,73 +17,111 @@ const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || "https://pub-2971f994a6ac2fda
 
 const prisma = new PrismaClient();
 
-// Generate R2 presigned URL using Signature Version 4
-function generatePresignedUrl(method, host, path, expires = 3600) {
-  const date = new Date();
-  const dateStamp = date.toISOString().replace(/[:-]|\.\d{3}/g, '');
-  const amzDate = dateStamp.slice(0, 8);
+// AWS Signature Version 4
+function hmac(key, data) {
+  return crypto.createHmac('sha256', key).update(data).digest();
+}
+
+function getSigningKey(secret, dateStamp, region, service) {
+  const kDate = hmac('AWS4' + secret, dateStamp);
+  const kRegion = hmac(kDate, region);
+  const kService = hmac(kRegion, service);
+  const kSigning = hmac(kService, 'aws4_request');
+  return kSigning;
+}
+
+function createPresignedUrl(method, host, path, accessKey, secretKey, expires = 3600) {
+  const region = 'auto';
+  const service = 's3';
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 8);
+  const dateStamp = amzDate.slice(0, 8);
   
-  const credentialScope = `${amzDate}/auto/r2/s3/aws4_request`;
-  const policy = {
-    Version: '2012-10-17',
-    Statement: [{
-      Effect: 'Allow',
-      Action: ['s3:GetObject', 's3:PutObject'],
-      Resource: `arn:aws:s3:::${R2_BUCKET}/${path}*`
-    }]
-  };
+  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
   
-  const policyBase64 = Buffer.from(JSON.stringify(policy)).toString('base64');
+  // Query parameters
+  const algorithm = 'AWS4-HMAC-SHA256';
+  const params = [
+    ['X-Amz-Algorithm', algorithm],
+    ['X-Amz-Credential', `${accessKey}/${credentialScope}`],
+    ['X-Amz-Date', amzDate],
+    ['X-Amz-Expires', String(expires)],
+    ['X-Amz-SignedHeaders', 'host']
+  ];
   
-  // Use access key directly for now (simple approach)
-  const signature = Buffer.from(`${R2_ACCESS_KEY}:${R2_SECRET_KEY}`).toString('base64');
+  // Create canonical request
+  const canonicalUri = '/' + path;
+  const canonicalQuerystring = params.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
   
-  return `https://${host}/${path}?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=${encodeURIComponent(R2_ACCESS_KEY + '/' + credentialScope)}&X-Amz-Date=${amzDate}&X-Amz-Expires=${expires}&X-Amz-SignedHeaders=host`;
+  const canonicalHeaders = `host:${host}\n`;
+  const signedHeaders = 'host';
+  
+  const payloadHash = 'UNSIGNED-PAYLOAD';
+  
+  const canonicalRequest = [
+    method,
+    canonicalUri,
+    canonicalQuerystring,
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash
+  ].join('\n');
+  
+  const stringToSign = [
+    algorithm,
+    amzDate,
+    credentialScope,
+    crypto.createHash('sha256').update(canonicalRequest).digest('hex')
+  ].join('\n');
+  
+  // Calculate signature
+  const signingKey = getSigningKey(secretKey, dateStamp, region, service);
+  const signature = hmac(signingKey, stringToSign).toString('hex');
+  
+  // Build final URL
+  const signedParams = [...params, ['X-Amz-Signature', signature]];
+  const signedQs = signedParams.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  
+  return `https://${host}${canonicalUri}?${signedQs}`;
 }
 
 function getPublicUrl(r2Key) {
   return `${R2_PUBLIC_URL}/${r2Key}`;
 }
 
-// Simple presigned URL for public-read objects
-function getPresignedUrlForDownload(key) {
-  const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
-  const date = new Date();
-  const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 8);
-  const credentialScope = `${amzDate}/auto/r2/s3/aws4_request`;
-  
-  return `https://${host}/${key}?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=${encodeURIComponent(R2_ACCESS_KEY + '/' + credentialScope)}&X-Amz-Date=${amzDate}&X-Amz-Expires=3600&X-Amz-SignedHeaders=host`;
-}
-
-function getPresignedUrlForUpload(key) {
-  return getPresignedUrlForDownload(key);
-}
-
 async function downloadFile(r2Key, destPath) {
-  const url = getPresignedUrlForDownload(r2Key);
+  const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+  const url = createPresignedUrl('GET', host, r2Key, R2_ACCESS_KEY, R2_SECRET_KEY, 3600);
   
   return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(destPath);
-    
     https.get(url, (response) => {
-      if (response.statusCode === 403) {
-        // Try public URL instead
+      if (response.statusCode !== 200) {
+        console.log(`[Worker] Download failed with status: ${response.statusCode}`);
+        // Try public URL as fallback
         const publicUrl = getPublicUrl(r2Key);
+        console.log(`[Worker] Trying public URL: ${publicUrl.substring(0, 80)}...`);
         https.get(publicUrl, (pubResponse) => {
-          pubResponse.pipe(fs.createWriteStream(destPath));
-          pubResponse.on('end', resolve);
-          pubResponse.on('error', reject);
+          if (pubResponse.statusCode !== 200) {
+            reject(new Error(`Failed to download: ${pubResponse.statusCode}`));
+            return;
+          }
+          const file = fs.createWriteStream(destPath);
+          pubResponse.pipe(file);
+          file.on('finish', () => resolve());
         }).on('error', reject);
         return;
       }
       
+      const file = fs.createWriteStream(destPath);
       response.pipe(file);
       file.on('finish', () => {
         file.close();
         resolve();
       });
     }).on('error', (err) => {
-      fs.unlink(destPath, () => {});
+      if (fs.existsSync(destPath)) {
+        fs.unlinkSync(destPath);
+      }
       reject(err);
     });
   });
@@ -91,7 +129,7 @@ async function downloadFile(r2Key, destPath) {
 
 async function uploadThumbnail(sourcePath, destR2Key) {
   const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
-  const url = `https://${host}/${destR2Key}`;
+  const url = createPresignedUrl('PUT', host, destR2Key, R2_ACCESS_KEY, R2_SECRET_KEY, 3600);
   
   const fileBuffer = fs.readFileSync(sourcePath);
   
@@ -101,11 +139,11 @@ async function uploadThumbnail(sourcePath, destR2Key) {
       headers: {
         'Content-Type': 'image/jpeg',
         'Content-Length': fileBuffer.length,
-        'x-amz-acl': 'public-read',
-        'x-amz-date': new Date().toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 8)
+        'x-amz-acl': 'public-read'
       }
     }, (res) => {
       if (res.statusCode >= 200 && res.statusCode < 300) {
+        console.log(`[Worker] Thumbnail uploaded: ${res.statusCode}`);
         resolve(getPublicUrl(destR2Key));
       } else {
         reject(new Error(`Upload failed: ${res.statusCode}`));
@@ -140,7 +178,7 @@ async function generateThumbnail(inputPath, outputPath) {
       if (code === 0) {
         resolve();
       } else {
-        reject(new Error(`FFmpeg exited with code ${code}: ${stderr}`));
+        reject(new Error(`FFmpeg exited with code ${code}: ${stderr.slice(-500)}`));
       }
     });
 
@@ -186,15 +224,21 @@ async function processThumbnail(fileId) {
     fs.mkdirSync(tmpDir, { recursive: true });
   }
 
-  const inputPath = join(tmpDir, `${fileId}_input`);
+  const inputPath = join(tmpDir, `${fileId}_input.mp4`);
   const outputPath = join(tmpDir, `${fileId}_thumb.jpg`);
 
   try {
     console.log(`[Worker] Downloading ${file.storagePath}...`);
     await downloadFile(file.storagePath, inputPath);
+    
+    const inputStats = fs.statSync(inputPath);
+    console.log(`[Worker] Downloaded ${inputStats.size} bytes`);
 
     console.log(`[Worker] Generating thumbnail...`);
     await generateThumbnail(inputPath, outputPath);
+    
+    const outputStats = fs.statSync(outputPath);
+    console.log(`[Worker] Thumbnail generated, size: ${outputStats.size}`);
 
     const thumbnailR2Key = `thumbnails/${fileId}.jpg`;
     console.log(`[Worker] Uploading thumbnail...`);
@@ -217,7 +261,7 @@ async function processThumbnail(fileId) {
       // Ignore cleanup errors
     }
   } catch (error) {
-    console.error(`[Worker] ❌ Error processing ${fileId}:`, error.message);
+    console.error(`[Worker] ❌ Error processing ${fileId}: ${error.message}`);
     await prisma.file.update({
       where: { id: fileId },
       data: { thumbnailStatus: "failed" },
@@ -249,6 +293,7 @@ async function runWorker() {
       if (file) {
         await processThumbnail(file.id);
       } else {
+        console.log("[Worker] No pending jobs, waiting...");
         await new Promise((resolve) => setTimeout(resolve, 5000));
       }
     } catch (error) {

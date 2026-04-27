@@ -49,6 +49,7 @@ export async function uploadToR2(
       Key: key,
       Body: file,
       ContentType: contentType,
+      ACL: "public-read",
     })
   );
 

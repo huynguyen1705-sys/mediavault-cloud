@@ -5,7 +5,6 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:worker": "tsc worker/thumbnail-worker.ts --outDir worker --esModuleInterop && node worker/process-types.js",
     "start": "next start",
     "lint": "eslint"
   },
