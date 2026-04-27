@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
-import { getPresignedUrl, deleteFromR2 } from "@/lib/r2";
+import { getPresignedUrl, getPublicUrl, deleteFromR2 } from "@/lib/r2";
 
 // GET - List files for user
 export async function GET(request: NextRequest) {
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
           name: file.name,
           mimeType: file.mimeType,
           fileSize: file.fileSize.toString(),
-          thumbnailUrl: file.thumbnailPath ? await getPresignedUrl(file.thumbnailPath) : null,
+          thumbnailUrl: file.thumbnailPath ? getPublicUrl(file.thumbnailPath) : null,
           url: presignedUrl,
           folderId: file.folderId,
           folder: file.folder,

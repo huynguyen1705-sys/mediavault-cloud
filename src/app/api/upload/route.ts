@@ -3,6 +3,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { uploadToR2, generateFileKey, getPresignedUrl } from "@/lib/r2";
 import prisma from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
+import { supportsThumbnail, generateThumbnail } from "@/lib/thumbnail";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
@@ -72,6 +73,15 @@ export async function POST(request: NextRequest) {
     // Upload to R2
     const { key, url } = await uploadToR2(buffer, fileKey, file.type);
 
+    // Generate thumbnail for video/audio files
+    let thumbnailPath: string | null = null;
+    if (supportsThumbnail(file.type)) {
+      const thumbResult = await generateThumbnail(buffer, file.type);
+      if (thumbResult.success && thumbResult.thumbnailKey) {
+        thumbnailPath = thumbResult.thumbnailKey;
+      }
+    }
+
     // Calculate expiration for free users
     const expiresAt = userProfile.plan.fileRetentionDays > 0
       ? new Date(Date.now() + userProfile.plan.fileRetentionDays * 24 * 60 * 60 * 1000)
@@ -87,6 +97,7 @@ export async function POST(request: NextRequest) {
         mimeType: file.type,
         fileSize: fileSizeBytes,
         storagePath: key,
+        thumbnailPath,
         isPublic: false,
         downloadEnabled: true,
         expiresAt,
