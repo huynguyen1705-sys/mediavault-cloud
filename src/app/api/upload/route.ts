@@ -124,18 +124,15 @@ export async function POST(request: NextRequest) {
     // Generate presigned URL for download
     const presignedUrl = await getPresignedUrl(key);
 
-    return NextResponse.json({
-      success: true,
-      file: {
+    return NextResponse.json({ success: true, file: {
         id: newFile.id,
         name: newFile.name,
         mimeType: newFile.mimeType,
-        fileSize: newFile.fileSize.toString(),
+        fileSize: String(newFile.fileSize),
         url: presignedUrl,
-        thumbnailStatus, // Tell frontend if thumbnail is pending
+        thumbnailStatus,
         expiresAt: expiresAt?.toISOString() || null,
-      },
-    });
+      } });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json(
