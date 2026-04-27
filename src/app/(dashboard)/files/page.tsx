@@ -128,6 +128,7 @@ export default function FilesPage() {
   const [showAddToFolderModal, setShowAddToFolder] = useState(false);
   const [movingFiles, setMovingFiles] = useState(false);
   const [shakingFolderId, setShakingFolderId] = useState<string | null>(null);
+  const [shakingModalFolderId, setShakingModalFolderId] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [folderFileCounts, setFolderFileCounts] = useState<Record<string, number>>({});
@@ -538,6 +539,15 @@ export default function FilesPage() {
       
       const results = await Promise.all(updatePromises);
       const allSuccess = results.every(r => r.ok);
+      
+      // Add shake effect before moving
+      if (targetFolderId) {
+        setShakingModalFolderId(targetFolderId);
+        setTimeout(() => setShakingModalFolderId(null), 500);
+      }
+      
+      // Small delay for visual feedback then move
+      await new Promise(resolve => setTimeout(resolve, 150));
       
       if (allSuccess) {
         setSelectMode(false);
@@ -1984,7 +1994,7 @@ export default function FilesPage() {
                 <button
                   key={folder.id}
                   onClick={() => handleAddToFolder(folder.id)}
-                  className="w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-xl flex items-center gap-3 text-left transition-colors"
+                  className={`w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-xl flex items-center gap-3 text-left transition-all ${shakingModalFolderId === folder.id ? 'animate-shake border-2 border-emerald-400' : ''}`}
                 >
                   <Folder className="w-5 h-5 text-violet-400" />
                   <span className="text-sm">{folder.name}</span>
