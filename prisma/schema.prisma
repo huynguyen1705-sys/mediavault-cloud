@@ -85,6 +85,7 @@ model File {
   fileSize      BigInt   @map("file_size") @default(0)
   storagePath   String?  @map("storage_path") @db.Text
   thumbnailPath String?  @map("thumbnail_path") @db.Text
+  thumbnailStatus String?  @default("pending") @map("thumbnail_status") @db.VarChar(20)  // pending | processing | ready | failed | not_applicable
   metadata      Json?
   isPublic      Boolean  @map("is_public") @default(false)
   downloadEnabled Boolean @map("download_enabled") @default(true)

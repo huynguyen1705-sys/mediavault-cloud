@@ -75,7 +75,10 @@ export async function GET(request: NextRequest) {
             ? getPublicUrl(file.thumbnailPath) 
             : file.mimeType?.startsWith("image/") && file.storagePath 
               ? getPublicUrl(file.storagePath) 
-              : null,
+              : file.thumbnailStatus === "pending" || file.thumbnailStatus === "processing"
+                ? "processing"
+                : null,
+          thumbnailStatus: file.thumbnailStatus,
           url: presignedUrl,
           folderId: file.folderId,
           folder: file.folder,

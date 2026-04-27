@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { uploadToR2, generateFileKey, getPresignedUrl } from "@/lib/r2";
 import prisma from "@/lib/db";
-import { v4 as uuidv4 } from "uuid";
-import { supportsThumbnail, generateThumbnail } from "@/lib/thumbnail";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
@@ -73,13 +71,12 @@ export async function POST(request: NextRequest) {
     // Upload to R2
     const { key, url } = await uploadToR2(buffer, fileKey, file.type);
 
-    // Generate thumbnail for video/audio files
-    let thumbnailPath: string | null = null;
-    if (supportsThumbnail(file.type)) {
-      const thumbResult = await generateThumbnail(buffer, file.type);
-      if (thumbResult.success && thumbResult.thumbnailKey) {
-        thumbnailPath = thumbResult.thumbnailKey;
-      }
+    // Determine thumbnail status based on mime type
+    // Videos get "pending" → worker will process
+    // Non-videos get "not_applicable" immediately
+    let thumbnailStatus = "not_applicable";
+    if (file.type.startsWith("video/")) {
+      thumbnailStatus = "pending";
     }
 
     // Calculate expiration for free users
@@ -97,7 +94,8 @@ export async function POST(request: NextRequest) {
         mimeType: file.type,
         fileSize: fileSizeBytes,
         storagePath: key,
-        thumbnailPath,
+        thumbnailPath: null,
+        thumbnailStatus,
         isPublic: false,
         downloadEnabled: true,
         expiresAt,
@@ -134,6 +132,7 @@ export async function POST(request: NextRequest) {
         mimeType: newFile.mimeType,
         fileSize: newFile.fileSize.toString(),
         url: presignedUrl,
+        thumbnailStatus, // Tell frontend if thumbnail is pending
         expiresAt: expiresAt?.toISOString() || null,
       },
     });
