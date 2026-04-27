@@ -9,6 +9,7 @@ import {
   List, 
   Search, 
   MoreVertical,
+  CheckSquare,
   Image,
   Video,
   Music,
@@ -120,6 +121,9 @@ export default function FilesPage() {
   const [shareExpireHours, setShareExpireHours] = useState<number>(0);
   const [shareAllowDownload, setShareAllowDownload] = useState(true);
   const [shareOptions, setShareOptions] = useState<{passwordProtected: boolean; expiresAt: string | null; allowDownload: boolean} | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
+  const [downloadingZip, setDownloadingZip] = useState(false);
 
   // Fetch files
   const fetchFiles = useCallback(async () => {
@@ -411,6 +415,70 @@ export default function FilesPage() {
     }
   };
 
+  // Toggle select mode
+  const toggleSelectMode = () => {
+    setSelectMode(!selectMode);
+    if (selectMode) {
+      setSelectedFiles(new Set());
+    }
+  };
+
+  // Toggle file selection
+  const toggleFileSelection = (fileId: string) => {
+    const newSelected = new Set(selectedFiles);
+    if (newSelected.has(fileId)) {
+      newSelected.delete(fileId);
+    } else {
+      newSelected.add(fileId);
+    }
+    setSelectedFiles(newSelected);
+  };
+
+  // Download selected files as ZIP
+  const handleDownloadZip = async () => {
+    if (selectedFiles.size === 0) return;
+    setDownloadingZip(true);
+    try {
+      const response = await fetch("/api/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileIds: Array.from(selectedFiles) }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Download failed");
+      }
+      
+      // Get filename from content-disposition
+      const contentDisposition = response.headers.get("Content-Disposition");
+      let filename = "download.zip";
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+)"/);
+        if (match) filename = match[1];
+      }
+      
+      // Download the file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      // Exit select mode
+      setSelectMode(false);
+      setSelectedFiles(new Set());
+    } catch (error) {
+      console.error("Download ZIP error:", error);
+      alert("Failed to download files. Please try again.");
+    } finally {
+      setDownloadingZip(false);
+    }
+  };
+
   // Navigate to folder
   const navigateToFolder = (folderId: string | null, folderName: string) => {
     if (folderId === null) {
@@ -615,20 +683,53 @@ export default function FilesPage() {
           <div className="flex items-center gap-2 shrink-0">
             {!trashMode && (
               <>
-                <button 
-                  onClick={() => setShowNewFolderModal(true)}
-                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
-                >
-                  <FolderPlus className="w-4 h-4" />
-                  New Folder
-                </button>
-                <button 
-                  onClick={() => document.getElementById("file-input")?.click()}
-                  className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
-                >
-                  <Upload className="w-4 h-4" />
-                  Upload
-                </button>
+                {selectMode ? (
+                  <>
+                    <button 
+                      onClick={handleDownloadZip}
+                      disabled={selectedFiles.size === 0 || downloadingZip}
+                      className="px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                      {downloadingZip ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
+                      {selectedFiles.size > 0 ? `Download ZIP (${selectedFiles.size})` : "Select files"}
+                    </button>
+                    <button 
+                      onClick={toggleSelectMode}
+                      className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      onClick={toggleSelectMode}
+                      className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                      <CheckSquare className="w-4 h-4" />
+                      Select
+                    </button>
+                    <button 
+                      onClick={() => setShowNewFolderModal(true)}
+                      className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                      <FolderPlus className="w-4 h-4" />
+                      New Folder
+                    </button>
+                    <button 
+                      onClick={() => document.getElementById("file-input")?.click()}
+                      className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Upload
+                    </button>
+                  </>
+                )}
               </>
             )}
             <input
@@ -996,16 +1097,38 @@ export default function FilesPage() {
                   {files.map((file) => (
                     <div
                       key={file.id}
-                      className="group relative p-3 bg-gray-900 border border-gray-800 rounded-xl hover:border-violet-500/50 transition-colors cursor-pointer"
-                      onClick={() => {
-                        setSelectedFile(file);
-                        setShowPreview(true);
+                      className={`group relative p-3 bg-gray-900 border rounded-xl transition-colors cursor-pointer ${
+                        selectedFiles.has(file.id) 
+                          ? "border-violet-500 bg-violet-500/10" 
+                          : "border-gray-800 hover:border-violet-500/50"
+                      }`}
+                      onClick={(e) => {
+                        if (selectMode) {
+                          e.stopPropagation();
+                          toggleFileSelection(file.id);
+                        } else {
+                          setSelectedFile(file);
+                          setShowPreview(true);
+                        }
                       }}
                       onContextMenu={(e) => {
                         e.preventDefault();
                         setContextMenu({ x: e.clientX, y: e.clientY, file });
                       }}
                     >
+                      {/* Selection Checkbox */}
+                      {selectMode && (
+                        <div className={`absolute top-2 left-2 z-10 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
+                          selectedFiles.has(file.id)
+                            ? "bg-violet-500 border-violet-500"
+                            : "border-gray-600 bg-gray-800"
+                        }`}>
+                          {selectedFiles.has(file.id) && (
+                            <Check className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                      )}
+                      
                       {/* Thumbnail */}
                       <div className="aspect-square bg-gray-800 rounded-lg mb-3 overflow-hidden">
                         {file.thumbnailUrl ? (
