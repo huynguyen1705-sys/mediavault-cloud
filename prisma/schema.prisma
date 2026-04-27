@@ -90,6 +90,7 @@ model File {
   isPublic      Boolean  @map("is_public") @default(false)
   downloadEnabled Boolean @map("download_enabled") @default(true)
   expiresAt     DateTime? @map("expires_at")
+  deletedAt     DateTime? @map("deleted_at")  // Soft delete for trash bin
   createdAt     DateTime @map("created_at") @default(now())
   updatedAt     DateTime @updatedAt @map("updated_at")
 

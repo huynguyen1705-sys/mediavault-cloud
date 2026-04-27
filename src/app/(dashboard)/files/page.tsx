@@ -47,6 +47,9 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  RotateCcw,
+  AlertTriangle,
+  Trash,
   Image as ImageIcon,
   Video as VideoIcon,
   Music as MusicIcon,
@@ -104,6 +107,8 @@ export default function FilesPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileItem } | null>(null);
+  const [trashMode, setTrashMode] = useState(false);
+  const [trashFiles, setTrashFiles] = useState<any[]>([]);
 
   // Fetch files
   const fetchFiles = useCallback(async () => {
@@ -221,18 +226,79 @@ export default function FilesPage() {
     handleUpload(e.dataTransfer.files);
   }, [handleUpload]);
 
-  // Handle delete
+  // Handle delete (soft delete to trash)
   const handleDelete = async (fileId: string) => {
-    if (!confirm("Delete this file?")) return;
     try {
       const res = await fetch(`/api/files/${fileId}`, { method: "DELETE" });
       if (res.ok) {
         fetchFiles();
+        if (trashMode) fetchTrashFiles();
       }
     } catch (error) {
       console.error("Delete error:", error);
     }
     setContextMenu(null);
+  };
+
+  // Handle permanent delete
+  const handlePermanentDelete = async (fileId: string) => {
+    if (!confirm("Permanently delete this file? This cannot be undone!")) return;
+    try {
+      const res = await fetch(`/api/files/${fileId}?permanent=true`, { method: "DELETE" });
+      if (res.ok) {
+        fetchTrashFiles();
+      }
+    } catch (error) {
+      console.error("Permanent delete error:", error);
+    }
+    setContextMenu(null);
+  };
+
+  // Handle restore from trash
+  const handleRestore = async (fileId: string) => {
+    try {
+      const res = await fetch(`/api/files/${fileId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ restore: true }),
+      });
+      if (res.ok) {
+        fetchTrashFiles();
+      }
+    } catch (error) {
+      console.error("Restore error:", error);
+    }
+    setContextMenu(null);
+  };
+
+  // Fetch trash files
+  const fetchTrashFiles = useCallback(async () => {
+    if (!isLoaded) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/trash");
+      if (res.ok) {
+        const data = await res.json();
+        setTrashFiles(data.files || []);
+      }
+    } catch (error) {
+      console.error("Fetch trash error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [isLoaded]);
+
+  // Empty trash
+  const handleEmptyTrash = async () => {
+    if (!confirm("Permanently delete ALL files in trash? This cannot be undone!")) return;
+    try {
+      const res = await fetch("/api/trash", { method: "DELETE" });
+      if (res.ok) {
+        fetchTrashFiles();
+      }
+    } catch (error) {
+      console.error("Empty trash error:", error);
+    }
   };
 
   // Handle share
@@ -510,12 +576,50 @@ export default function FilesPage() {
             </button>
           </div>
           <button
+            onClick={() => {
+              setTrashMode(!trashMode);
+              if (!trashMode) fetchTrashFiles();
+              else fetchFiles();
+            }}
+            className={`p-2 rounded-lg transition-colors ${
+              trashMode 
+                ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30" 
+                : "hover:bg-gray-800 text-gray-400"
+            }`}
+            title={trashMode ? "Back to Files" : "Trash Bin"}
+          >
+            {trashMode ? <Home className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+          </button>
+          <button
             onClick={() => fetchFiles()}
             className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
+
+        {/* Trash Info Banner */}
+        {trashMode && (
+          <div className="mt-4 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-400" />
+              <div>
+                <span className="text-sm font-medium text-amber-400">Trash Bin</span>
+                <span className="text-sm text-gray-400 ml-2">
+                  {trashFiles.length} file{trashFiles.length !== 1 ? "s" : ""} • Auto-delete after 30 days
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleEmptyTrash}
+              disabled={trashFiles.length === 0}
+              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Trash className="w-4 h-4" />
+              Empty Trash
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Upload Queue Panel */}
@@ -582,7 +686,7 @@ export default function FilesPage() {
         ) : (
           <>
             {/* Folders */}
-            {folders.length > 0 && (
+            {folders.length > 0 && !trashMode && (
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-gray-400 mb-3">Folders</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -597,6 +701,151 @@ export default function FilesPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Trash Files Grid View */}
+            {trashMode && trashFiles.length > 0 && viewMode === "grid" && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-400 mb-3">Trash ({trashFiles.length})</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {trashFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="group relative p-3 bg-gray-900/50 border border-gray-800 rounded-xl opacity-75 hover:opacity-100 transition-opacity cursor-pointer"
+                      onClick={() => {
+                        setSelectedFile(file);
+                        setShowPreview(true);
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setContextMenu({ x: e.clientX, y: e.clientY, file });
+                      }}
+                    >
+                      {/* Thumbnail (dimmed) */}
+                      <div className="aspect-square bg-gray-800/50 rounded-lg mb-3 overflow-hidden">
+                        {file.thumbnailUrl ? (
+                          <img 
+                            src={file.thumbnailUrl} 
+                            alt={file.name} 
+                            className="w-full h-full object-cover object-center opacity-50" 
+                          />
+                        ) : null}
+                        <div className={`w-full h-full flex items-center justify-center ${file.thumbnailUrl ? 'hidden' : ''}`}>
+                          {getFileIcon(file.mimeType)}
+                        </div>
+                        {/* Trash overlay */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                          <Trash2 className="w-8 h-8 text-amber-400" />
+                        </div>
+                      </div>
+                      {/* Info */}
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm truncate text-gray-400">{file.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {formatBytes(Number(file.fileSize))} • {file.daysRemaining} days left
+                        </div>
+                      </div>
+                      {/* Hover Actions */}
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <button 
+                          className="p-1.5 bg-emerald-500/90 rounded-lg hover:bg-emerald-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRestore(file.id);
+                          }}
+                          title="Restore"
+                        >
+                          <RotateCcw className="w-4 h-4 text-white" />
+                        </button>
+                        <button 
+                          className="p-1.5 bg-red-500/90 rounded-lg hover:bg-red-500"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePermanentDelete(file.id);
+                          }}
+                          title="Delete permanently"
+                        >
+                          <XCircle className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Trash Files List View */}
+            {trashMode && trashFiles.length > 0 && viewMode === "list" && (
+              <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-800/50">
+                    <tr className="text-left text-sm text-gray-400">
+                      <th className="px-4 py-3 font-medium">Name</th>
+                      <th className="px-4 py-3 font-medium">Size</th>
+                      <th className="px-4 py-3 font-medium">Deleted</th>
+                      <th className="px-4 py-3 font-medium">Expires</th>
+                      <th className="px-4 py-3 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {trashFiles.map((file) => (
+                      <tr 
+                        key={file.id} 
+                        className="hover:bg-gray-800/50 cursor-pointer"
+                        onClick={() => {
+                          setSelectedFile(file);
+                          setShowPreview(true);
+                        }}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="opacity-50">
+                              {getFileIcon(file.mimeType, "sm")}
+                            </div>
+                            <span className="font-medium text-gray-400 truncate max-w-xs">{file.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">{formatBytes(Number(file.fileSize))}</td>
+                        <td className="px-4 py-3 text-gray-500 text-sm">{new Date(file.deletedAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-3">
+                          <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs rounded-lg">
+                            {file.daysRemaining} days
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <button 
+                              onClick={() => handleRestore(file.id)}
+                              className="p-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 rounded-lg"
+                              title="Restore"
+                            >
+                              <RotateCcw className="w-4 h-4 text-emerald-400" />
+                            </button>
+                            <button 
+                              onClick={() => handlePermanentDelete(file.id)}
+                              className="p-1.5 bg-red-500/20 hover:bg-red-500/30 rounded-lg"
+                              title="Delete permanently"
+                            >
+                              <XCircle className="w-4 h-4 text-red-400" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Empty Trash State */}
+            {trashMode && trashFiles.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="w-24 h-24 bg-gray-800/50 rounded-full flex items-center justify-center mb-6">
+                  <Trash2 className="w-12 h-12 text-gray-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-400 mb-2">Trash is empty</h3>
+                <p className="text-gray-500">Deleted files will appear here for 30 days</p>
               </div>
             )}
 
@@ -730,7 +979,7 @@ export default function FilesPage() {
             )}
 
             {/* Empty State */}
-            {files.length === 0 && folders.length === 0 && (
+            {!trashMode && files.length === 0 && folders.length === 0 && (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
                   <div className="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -797,12 +1046,35 @@ export default function FilesPage() {
               </a>
             )}
             <hr className="my-2 border-gray-800" />
-            <button
-              onClick={() => handleDelete(contextMenu.file.id)}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3 text-red-400"
-            >
-              <Trash2 className="w-4 h-4" /> Delete
-            </button>
+            {trashMode ? (
+              <>
+                <button
+                  onClick={() => {
+                    handleRestore(contextMenu.file.id);
+                    setContextMenu(null);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3 text-emerald-400"
+                >
+                  <RotateCcw className="w-4 h-4" /> Restore
+                </button>
+                <button
+                  onClick={() => {
+                    handlePermanentDelete(contextMenu.file.id);
+                    setContextMenu(null);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3 text-red-400"
+                >
+                  <XCircle className="w-4 h-4" /> Delete Permanently
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => handleDelete(contextMenu.file.id)}
+                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3 text-red-400"
+              >
+                <Trash2 className="w-4 h-4" /> Move to Trash
+              </button>
+            )}
           </div>
         </>
       )}

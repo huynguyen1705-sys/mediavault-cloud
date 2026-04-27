@@ -26,9 +26,10 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 
-    // Build where clause
+    // Build where clause (exclude trashed files by default)
     const where: any = {
       userId: userProfile.id,
+      deletedAt: null, // Only show non-deleted files
     };
 
     if (folderId === "root" || folderId === null) {
