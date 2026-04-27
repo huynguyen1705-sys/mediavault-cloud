@@ -32,7 +32,18 @@ export async function GET(
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ file });
+    return NextResponse.json({ 
+      file: {
+        id: file.id,
+        name: file.name,
+        mimeType: file.mimeType,
+        fileSize: String(file.fileSize),
+        folderId: file.folderId,
+        thumbnailStatus: file.thumbnailStatus,
+        createdAt: file.createdAt.toISOString(),
+        updatedAt: file.updatedAt.toISOString(),
+      }
+    });
   } catch (error) {
     console.error("Get file error:", error);
     return NextResponse.json({ error: "Failed to get file" }, { status: 500 });
@@ -112,7 +123,15 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json({ success: true, file: updatedFile });
+    return NextResponse.json({ 
+      success: true, 
+      file: {
+        id: updatedFile.id,
+        name: updatedFile.name,
+        folderId: updatedFile.folderId,
+        updatedAt: updatedFile.updatedAt.toISOString(),
+      }
+    });
   } catch (error) {
     console.error("Update file error:", error);
     return NextResponse.json({ error: "Failed to update file" }, { status: 500 });
