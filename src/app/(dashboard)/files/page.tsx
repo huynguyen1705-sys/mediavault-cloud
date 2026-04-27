@@ -182,9 +182,15 @@ export default function FilesPage() {
 
       try {
         // Step 1: Get presigned URL for direct R2 upload
-        const urlRes = await fetch(
-          `/api/upload-url?fileName=${encodeURIComponent(actualFile.name)}&contentType=${encodeURIComponent(actualFile.type)}&fileSize=${actualFile.size}${currentFolderId ? `&folderId=${currentFolderId}` : ''}`
-        );
+        const params = new URLSearchParams({
+          fileName: actualFile.name,
+          contentType: actualFile.type,
+          fileSize: String(actualFile.size),
+        });
+        if (currentFolderId) {
+          params.set("folderId", currentFolderId);
+        }
+        const urlRes = await fetch(`/api/upload-url?${params.toString()}`);
 
         if (!urlRes.ok) {
           const err = await urlRes.json();
