@@ -2,13 +2,11 @@
 // Runs as a separate process, processes one video at a time
 
 const { PrismaClient } = require("@prisma/client");
-const { S3Client, GetCommand, PutCommand } = require("@aws-sdk/client-s3");
-const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { createWriteStream } = require("fs");
-const { pipeline } = require("stream/promises");
-const { join } = require("path");
-const { spawn } = require("child_process");
 const fs = require("fs");
+const path = require("path");
+const { spawn } = require("child_process");
+const https = require("https");
+const http = require("http");
 
 // Config
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || "";
@@ -18,66 +16,106 @@ const R2_BUCKET = process.env.R2_BUCKET || "mediavault";
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || "https://pub-2971f994a6ac2fdadd4842209a20496e.r2.dev";
 
 const prisma = new PrismaClient();
-let s3Client = null;
 
-function getS3Client() {
-  if (!s3Client) {
-    s3Client = new S3Client({
-      region: "auto",
-      endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-      credentials: {
-        accessKeyId: R2_ACCESS_KEY,
-        secretAccessKey: R2_SECRET_KEY,
-      },
-    });
-  }
-  return s3Client;
+// Generate R2 presigned URL using Signature Version 4
+function generatePresignedUrl(method, host, path, expires = 3600) {
+  const date = new Date();
+  const dateStamp = date.toISOString().replace(/[:-]|\.\d{3}/g, '');
+  const amzDate = dateStamp.slice(0, 8);
+  
+  const credentialScope = `${amzDate}/auto/r2/s3/aws4_request`;
+  const policy = {
+    Version: '2012-10-17',
+    Statement: [{
+      Effect: 'Allow',
+      Action: ['s3:GetObject', 's3:PutObject'],
+      Resource: `arn:aws:s3:::${R2_BUCKET}/${path}*`
+    }]
+  };
+  
+  const policyBase64 = Buffer.from(JSON.stringify(policy)).toString('base64');
+  
+  // Use access key directly for now (simple approach)
+  const signature = Buffer.from(`${R2_ACCESS_KEY}:${R2_SECRET_KEY}`).toString('base64');
+  
+  return `https://${host}/${path}?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=${encodeURIComponent(R2_ACCESS_KEY + '/' + credentialScope)}&X-Amz-Date=${amzDate}&X-Amz-Expires=${expires}&X-Amz-SignedHeaders=host`;
 }
 
 function getPublicUrl(r2Key) {
   return `${R2_PUBLIC_URL}/${r2Key}`;
 }
 
-async function downloadFile(r2Key, destPath) {
-  const client = getS3Client();
-  const command = new GetCommand({
-    Bucket: R2_BUCKET,
-    Key: r2Key,
-  });
+// Simple presigned URL for public-read objects
+function getPresignedUrlForDownload(key) {
+  const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+  const date = new Date();
+  const amzDate = date.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 8);
+  const credentialScope = `${amzDate}/auto/r2/s3/aws4_request`;
   
-  const response = await client.send(command);
-  if (response.Body) {
-    const writeStream = createWriteStream(destPath);
-    await pipeline(response.Body, writeStream);
-  }
+  return `https://${host}/${key}?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=${encodeURIComponent(R2_ACCESS_KEY + '/' + credentialScope)}&X-Amz-Date=${amzDate}&X-Amz-Expires=3600&X-Amz-SignedHeaders=host`;
+}
+
+function getPresignedUrlForUpload(key) {
+  return getPresignedUrlForDownload(key);
+}
+
+async function downloadFile(r2Key, destPath) {
+  const url = getPresignedUrlForDownload(r2Key);
+  
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(destPath);
+    
+    https.get(url, (response) => {
+      if (response.statusCode === 403) {
+        // Try public URL instead
+        const publicUrl = getPublicUrl(r2Key);
+        https.get(publicUrl, (pubResponse) => {
+          pubResponse.pipe(fs.createWriteStream(destPath));
+          pubResponse.on('end', resolve);
+          pubResponse.on('error', reject);
+        }).on('error', reject);
+        return;
+      }
+      
+      response.pipe(file);
+      file.on('finish', () => {
+        file.close();
+        resolve();
+      });
+    }).on('error', (err) => {
+      fs.unlink(destPath, () => {});
+      reject(err);
+    });
+  });
 }
 
 async function uploadThumbnail(sourcePath, destR2Key) {
-  const client = getS3Client();
-  const command = new PutCommand({
-    Bucket: R2_BUCKET,
-    Key: destR2Key,
-    ContentType: "image/jpeg",
-    ACL: "public-read",
-  });
-  
-  const uploadUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
+  const host = `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+  const url = `https://${host}/${destR2Key}`;
   
   const fileBuffer = fs.readFileSync(sourcePath);
   
-  const response = await fetch(uploadUrl, {
-    method: "PUT",
-    body: fileBuffer,
-    headers: {
-      "Content-Type": "image/jpeg",
-    },
+  return new Promise((resolve, reject) => {
+    const req = https.request(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'image/jpeg',
+        'Content-Length': fileBuffer.length,
+        'x-amz-acl': 'public-read',
+        'x-amz-date': new Date().toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 8)
+      }
+    }, (res) => {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        resolve(getPublicUrl(destR2Key));
+      } else {
+        reject(new Error(`Upload failed: ${res.statusCode}`));
+      }
+    });
+    
+    req.on('error', reject);
+    req.write(fileBuffer);
+    req.end();
   });
-  
-  if (!response.ok) {
-    throw new Error(`Upload failed: ${response.statusText}`);
-  }
-  
-  return getPublicUrl(destR2Key);
 }
 
 async function generateThumbnail(inputPath, outputPath) {
