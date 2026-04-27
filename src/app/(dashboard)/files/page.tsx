@@ -505,12 +505,12 @@ export default function FilesPage() {
                       }}
                     >
                       {/* Thumbnail */}
-                      <div className="aspect-square bg-gray-800 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
+                      <div className="aspect-square bg-gray-800 rounded-lg mb-3 overflow-hidden">
                         {file.thumbnailUrl ? (
                           <img 
                             src={file.thumbnailUrl} 
                             alt={file.name} 
-                            className="w-full h-full object-cover" 
+                            className="w-full h-full object-cover object-center" 
                             onError={(e) => {
                               // Fallback to icon if thumbnail fails to load
                               (e.target as HTMLImageElement).style.display = 'none';
@@ -518,7 +518,7 @@ export default function FilesPage() {
                             }}
                           />
                         ) : null}
-                        <div className={`p-3 bg-gray-700/50 rounded-full ${file.thumbnailUrl ? 'hidden' : ''}`}>
+                        <div className={`w-full h-full flex items-center justify-center bg-gray-700/50 ${file.thumbnailUrl ? 'hidden' : ''}`}>
                           {getFileIcon(file.mimeType)}
                         </div>
                       </div>

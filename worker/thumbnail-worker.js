@@ -99,7 +99,7 @@ async function generateThumbnail(inputPath, outputPath) {
     const ffmpeg = spawn("ffmpeg", [
       "-y", "-ss", "00:00:01", "-i", inputPath,
       "-vframes", "1",
-      "-vf", "scale=320:320:force_original_aspect_ratio=decrease,pad=320:320:(ow-iw)/2:(oh-ih)/2",
+      "-vf", "scale=800:800:force_original_aspect_ratio=decrease,pad=800:800:(ow-iw)/2:(oh-ih)/2",
       "-q:v", "3", "-threads", "1",
       outputPath,
     ]);
