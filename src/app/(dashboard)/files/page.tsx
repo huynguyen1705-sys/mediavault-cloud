@@ -50,6 +50,7 @@ import {
   RotateCcw,
   AlertTriangle,
   Trash,
+  Lock,
   Image as ImageIcon,
   Video as VideoIcon,
   Music as MusicIcon,
@@ -115,6 +116,10 @@ export default function FilesPage() {
   const [folderContextMenu, setFolderContextMenu] = useState<{ x: number; y: number; folder: FolderItem } | null>(null);
   const [renameFolderId, setRenameFolderId] = useState<string | null>(null);
   const [renameFolderName, setRenameFolderName] = useState("");
+  const [sharePassword, setSharePassword] = useState("");
+  const [shareExpireHours, setShareExpireHours] = useState<number>(0);
+  const [shareAllowDownload, setShareAllowDownload] = useState(true);
+  const [shareOptions, setShareOptions] = useState<{passwordProtected: boolean; expiresAt: string | null; allowDownload: boolean} | null>(null);
 
   // Fetch files
   const fetchFiles = useCallback(async () => {
@@ -366,22 +371,44 @@ export default function FilesPage() {
   // For now, use inline delete via folders endpoint
 
   // Handle share
-  const handleShare = async (file: FileItem) => {
+  // Open share options modal (without creating share yet)
+  const openShareOptions = (file: FileItem) => {
+    setSelectedFile(file);
+    setSharePassword("");
+    setShareExpireHours(0);
+    setShareAllowDownload(true);
+    setShareToken(null);
+    setShareOptions(null);
+    setShowShareModal(true);
+    setContextMenu(null);
+  };
+
+  // Handle share with options
+  const handleShare = async () => {
+    if (!selectedFile) return;
     try {
       const res = await fetch("/api/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileId: file.id }),
+        body: JSON.stringify({ 
+          fileId: selectedFile.id,
+          password: sharePassword || undefined,
+          expiresIn: shareExpireHours > 0 ? shareExpireHours : undefined,
+          allowDownload: shareAllowDownload
+        }),
       });
       if (res.ok) {
         const data = await res.json();
         setShareToken(data.share.url);
-        setShowShareModal(true);
+        setShareOptions({
+          passwordProtected: !!sharePassword,
+          expiresAt: data.share.expiresAt,
+          allowDownload: shareAllowDownload
+        });
       }
     } catch (error) {
       console.error("Share error:", error);
     }
-    setContextMenu(null);
   };
 
   // Navigate to folder
@@ -1134,7 +1161,7 @@ export default function FilesPage() {
               <Eye className="w-4 h-4" /> View
             </button>
             <button
-              onClick={() => handleShare(contextMenu.file)}
+              onClick={() => openShareOptions(contextMenu.file)}
               className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
             >
               <Share2 className="w-4 h-4" /> Share
@@ -1469,7 +1496,7 @@ export default function FilesPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <button 
-                    onClick={() => handleShare(selectedFile)}
+                    onClick={() => openShareOptions(selectedFile)}
                     className="px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl font-medium transition-colors flex items-center gap-2"
                   >
                     <Share2 className="w-4 h-4" />
@@ -1604,22 +1631,132 @@ export default function FilesPage() {
         </>
       )}
 
-      {/* Share Modal */}
-      {showShareModal && shareToken && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 rounded-2xl max-w-md w-full p-6">
+      {/* Share Options Modal */}
+      {showShareModal && !shareToken && selectedFile && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-gray-900 rounded-2xl max-w-md w-full p-6 border border-gray-800 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold">Share Link Created!</h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-violet-500/20 rounded-xl flex items-center justify-center">
+                  <Share2 className="w-5 h-5 text-violet-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Share Settings</h3>
+                  <p className="text-xs text-gray-400">{selectedFile.name}</p>
+                </div>
+              </div>
               <button 
                 onClick={() => {
                   setShowShareModal(false);
-                  setShareToken(null);
+                  setSharePassword("");
+                  setShareExpireHours(0);
+                  setShareAllowDownload(true);
                 }}
                 className="p-2 hover:bg-gray-800 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
+            
+            {/* Password Protection */}
+            <div className="mb-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={sharePassword.length > 0}
+                  onChange={(e) => setSharePassword(e.target.checked ? "" : "")}
+                  className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-violet-500 focus:ring-violet-500"
+                />
+                <Lock className="w-4 h-4 text-gray-400" />
+                <span className="text-sm">Password protection</span>
+              </label>
+              {sharePassword !== undefined && (
+                <input
+                  type="password"
+                  value={sharePassword}
+                  onChange={(e) => setSharePassword(e.target.value)}
+                  placeholder="Enter password..."
+                  className="mt-2 w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-violet-500"
+                />
+              )}
+            </div>
+            
+            {/* Expiry */}
+            <div className="mb-4">
+              <label className="text-sm text-gray-400 mb-2 block">Link expires</label>
+              <select
+                value={shareExpireHours}
+                onChange={(e) => setShareExpireHours(Number(e.target.value))}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-violet-500"
+              >
+                <option value={0}>Never</option>
+                <option value={1}>1 hour</option>
+                <option value={24}>24 hours</option>
+                <option value={72}>3 days</option>
+                <option value={168}>7 days</option>
+                <option value={720}>30 days</option>
+              </select>
+            </div>
+            
+            {/* Allow Download */}
+            <div className="mb-6">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={shareAllowDownload}
+                  onChange={(e) => setShareAllowDownload(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-700 bg-gray-800 text-violet-500 focus:ring-violet-500"
+                />
+                <Download className="w-4 h-4 text-gray-400" />
+                <span className="text-sm">Allow downloads</span>
+              </label>
+            </div>
+            
+            <button
+              onClick={() => openShareOptions(selectedFile)}
+              className="w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-medium flex items-center justify-center gap-2"
+            >
+              <Share2 className="w-4 h-4" />
+              Create Share Link
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && shareToken && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-gray-900 rounded-2xl max-w-md w-full p-6 border border-gray-800 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-violet-500/20 rounded-xl flex items-center justify-center">
+                  <Share2 className="w-5 h-5 text-violet-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Share Link Created!</h3>
+                  {shareOptions?.passwordProtected && (
+                    <span className="text-xs text-amber-400 flex items-center gap-1 mt-0.5">
+                      <Lock className="w-3 h-3" /> Password protected
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowShareModal(false);
+                  setShareToken(null);
+                  setSharePassword("");
+                  setShareExpireHours(0);
+                  setShareAllowDownload(true);
+                  setShareOptions(null);
+                }}
+                className="p-2 hover:bg-gray-800 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* Share URL */}
             <div className="mb-4">
               <label className="text-sm text-gray-400 mb-2 block">Share URL</label>
               <div className="flex gap-2">
@@ -1627,22 +1764,74 @@ export default function FilesPage() {
                   type="text"
                   value={window.location.origin + shareToken}
                   readOnly
-                  className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm"
+                  className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-sm"
                 />
                 <button
                   onClick={() => copyToClipboard(window.location.origin + shareToken)}
-                  className="px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-lg"
+                  className="px-4 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl"
                 >
                   <Copy className="w-4 h-4" />
                 </button>
               </div>
             </div>
+            
+            {/* Share Options Info */}
+            <div className="mb-4 p-3 bg-gray-800/50 rounded-xl space-y-2">
+              {shareOptions?.passwordProtected ? (
+                <div className="flex items-center gap-2 text-sm text-amber-400">
+                  <Lock className="w-4 h-4" />
+                  <span>This link is password protected</span>
+                </div>
+              ) : null}
+              {shareOptions?.expiresAt ? (
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Clock className="w-4 h-4" />
+                  <span>Expires: {new Date(shareOptions.expiresAt).toLocaleString()}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-emerald-400">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Never expires</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                {shareOptions?.allowDownload ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                    <span>Downloads allowed</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4 text-red-400" />
+                    <span>Downloads disabled</span>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {/* Password Protected Info */}
+            {shareOptions?.passwordProtected && (
+              <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                <div className="flex items-center gap-2 text-amber-400 text-sm mb-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span className="font-medium">Password Required</span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  Recipients must enter the password to access this file. Make sure to share the password separately.
+                </p>
+              </div>
+            )}
+            
             <button
               onClick={() => {
                 setShowShareModal(false);
                 setShareToken(null);
+                setSharePassword("");
+                setShareExpireHours(0);
+                setShareAllowDownload(true);
+                setShareOptions(null);
               }}
-              className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg"
+              className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl font-medium"
             >
               Done
             </button>
