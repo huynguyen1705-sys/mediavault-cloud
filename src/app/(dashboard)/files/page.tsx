@@ -127,6 +127,10 @@ export default function FilesPage() {
   const [downloadingZip, setDownloadingZip] = useState(false);
   const [showAddToFolderModal, setShowAddToFolder] = useState(false);
   const [movingFiles, setMovingFiles] = useState(false);
+  const [shakingFolderId, setShakingFolderId] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [folderFileCounts, setFolderFileCounts] = useState<Record<string, number>>({});
 
   // Fetch files
   const fetchFiles = useCallback(async () => {
@@ -143,6 +147,15 @@ export default function FilesPage() {
         const data = await res.json();
         setFiles(data.files || []);
         setFolders(data.folders || []);
+        
+        // Calculate file counts for each folder (excluding current folder)
+        const counts: Record<string, number> = {};
+        data.files?.forEach((file: any) => {
+          if (file.folderId) {
+            counts[file.folderId] = (counts[file.folderId] || 0) + 1;
+          }
+        });
+        setFolderFileCounts(counts);
       }
     } catch (error) {
       console.error("Fetch files error:", error);
@@ -530,6 +543,9 @@ export default function FilesPage() {
         setSelectMode(false);
         setSelectedFiles(new Set());
         setShowAddToFolder(false);
+        setToastMessage(`Moved ${selectedFiles.size} file(s) successfully!`);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
         fetchFiles(); // Refresh file list
       } else {
         alert("Some files failed to move. Please try again.");
@@ -544,6 +560,11 @@ export default function FilesPage() {
 
   // Navigate to folder
   const navigateToFolder = (folderId: string | null, folderName: string) => {
+    // Add shake effect
+    if (folderId !== null) {
+      setShakingFolderId(folderId);
+      setTimeout(() => setShakingFolderId(null), 500);
+    }
     if (folderId === null) {
       setBreadcrumbs([{ id: null, name: "My Files" }]);
     } else {
@@ -720,6 +741,11 @@ export default function FilesPage() {
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
+      {showToast && (
+        <div className="toast-notification">
+          {toastMessage}
+        </div>
+      )}
       {/* Header */}
       <div className="p-4 border-b border-gray-800">
         <div className="flex items-center justify-between gap-4">
@@ -969,8 +995,15 @@ export default function FilesPage() {
                 <h3 className="text-sm font-medium text-gray-400 mb-3">Folders</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {folders.map((folder) => (
-                    <div key={folder.id} className="group relative p-4 bg-gray-900 border border-gray-800 rounded-xl hover:border-violet-500/50 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer" onClick={() => { navigateToFolder(folder.id, folder.name); }} onContextMenu={(e) => { e.preventDefault(); setFolderContextMenu({ x: e.clientX, y: e.clientY, folder }); }}>
-                      <Folder className="w-8 h-8 text-violet-400 mb-2" />
+                    <div key={folder.id} className={`group relative p-4 bg-gray-900 border border-gray-800 rounded-xl hover:border-violet-500/50 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer ${shakingFolderId === folder.id ? 'animate-shake' : ''}`} onClick={() => { navigateToFolder(folder.id, folder.name); }} onContextMenu={(e) => { e.preventDefault(); setFolderContextMenu({ x: e.clientX, y: e.clientY, folder }); }}>
+                      <div className="relative">
+                        <Folder className="w-8 h-8 text-violet-400" />
+                        {folderFileCounts[folder.id] > 0 && (
+                          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-violet-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md">
+                            {folderFileCounts[folder.id] > 99 ? '99+' : folderFileCounts[folder.id]}
+                          </span>
+                        )}
+                      </div>
                       <div className="font-medium text-sm truncate">
                         {renameFolderId === folder.id ? (
                           <input
