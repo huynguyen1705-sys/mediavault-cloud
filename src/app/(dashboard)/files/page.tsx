@@ -42,7 +42,9 @@ import {
   Film,
   Headphones,
   Bookmark,
-  FileType
+  FileType,
+  Pdf,
+  Layers
 } from "lucide-react";
 import { formatBytes, formatDate } from "@/lib/utils";
 
@@ -263,35 +265,136 @@ export default function FilesPage() {
     navigator.clipboard.writeText(text);
   };
 
-  const getFileIcon = (mimeType: string | null) => {
-    if (!mimeType) return <File className="w-5 h-5 text-gray-400" />;
-    if (mimeType.startsWith("image/")) return <Image className="w-5 h-5 text-emerald-400" />;
-    if (mimeType.startsWith("video/")) return <Video className="w-5 h-5 text-amber-400" />;
-    if (mimeType.startsWith("audio/")) return <Music className="w-5 h-5 text-sky-400" />;
-    if (mimeType.includes("pdf")) return <FileText className="w-5 h-5 text-red-400" />;
-    if (mimeType.includes("zip") || mimeType.includes("rar") || mimeType.includes("tar") || mimeType.includes("gz"))
-      return <Archive className="w-5 h-5 text-yellow-400" />;
-    if (mimeType.includes("wordprocessingml") || mimeType.includes("msword") || mimeType.includes("doc"))
-      return <FileText className="w-5 h-5 text-blue-400" />;
-    if (mimeType.includes("spreadsheetml") || mimeType.includes("excel") || mimeType.includes("xls"))
-      return <FileSpreadsheet className="w-5 h-5 text-emerald-400" />;
-    if (mimeType.includes("presentationml") || mimeType.includes("powerpoint") || mimeType.includes("ppt"))
-      return <Presentation className="w-5 h-5 text-orange-400" />;
-    if (mimeType.includes("json") || mimeType.includes("xml") || mimeType.includes("yaml") || mimeType.includes("yml"))
-      return <FileJson className="w-5 h-5 text-cyan-400" />;
-    if (mimeType.includes("html") || mimeType.includes("css") || mimeType.includes("javascript") || mimeType.includes("typescript"))
-      return <FileCode className="w-5 h-5 text-blue-400" />;
-    if (mimeType.includes("illustrator") || mimeType.includes(".ai"))
-      return <FileType className="w-5 h-5 text-purple-400" />;
-    if (mimeType.includes("photoshop") || mimeType.includes("psd"))
-      return <FileType className="w-5 h-5 text-blue-400" />;
-    if (mimeType.includes("svg"))
-      return <FileCode className="w-5 h-5 text-orange-400" />;
-    if (mimeType.includes("text/plain") || mimeType.includes("text/"))
-      return <FileText className="w-5 h-5 text-gray-400" />;
-    if (mimeType.includes("bookmark") || mimeType.includes("epub"))
-      return <Bookmark className="w-5 h-5 text-amber-400" />;
-    return <File className="w-5 h-5 text-gray-400" />;
+  // Apple-style file icon with gradient background
+  const getFileIcon = (mimeType: string | null, size: "sm" | "lg" = "lg") => {
+    const sm = size === "sm";
+    const baseClass = sm ? "w-7 h-7" : "w-10 h-10";
+    const iconClass = sm ? "w-4 h-4" : "w-6 h-6";
+    
+    if (!mimeType) return (
+      <div className={`${baseClass} rounded-xl bg-gray-600 flex items-center justify-center`}>
+        <File className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.startsWith("image/")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg`}>
+        <Image className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.startsWith("video/")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg`}>
+        <Video className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.startsWith("audio/")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shadow-lg`}>
+        <Music className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("pdf")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center shadow-lg`}>
+        <FileText className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("zip") || mimeType.includes("rar") || mimeType.includes("tar") || mimeType.includes("gz") || mimeType.includes("7z")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg`}>
+        <Archive className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("wordprocessingml") || mimeType.includes("msword") || mimeType.includes("doc") || mimeType.includes("docx")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg`}>
+        <FileText className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("spreadsheetml") || mimeType.includes("excel") || mimeType.includes("xls") || mimeType.includes("xlsx")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-lg`}>
+        <FileSpreadsheet className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("presentationml") || mimeType.includes("powerpoint") || mimeType.includes("ppt") || mimeType.includes("pptx")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center shadow-lg`}>
+        <Presentation className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("json") || mimeType.includes("yaml") || mimeType.includes("yml") || mimeType.includes("toml")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg`}>
+        <FileJson className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("xml")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-orange-400 to-yellow-500 flex items-center justify-center shadow-lg`}>
+        <Layers className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("html") || mimeType.includes("css") || mimeType.includes("scss") || mimeType.includes("sass")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg`}>
+        <FileCode className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("javascript") || mimeType.includes("typescript") || mimeType.includes("js") || mimeType.includes("ts")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg`}>
+        <FileCode className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("python") || mimeType.includes("py")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-blue-400 to-yellow-500 flex items-center justify-center shadow-lg`}>
+        <FileCode className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("illustrator") || mimeType.includes(".ai") || mimeType.includes("eps")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg`}>
+        <FileType className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("photoshop") || mimeType.includes("psd") || mimeType.includes("xd")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center shadow-lg` />
+    );
+    
+    if (mimeType.includes("figma")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg`}>
+        <FileType className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("svg")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-orange-400 to-yellow-400 flex items-center justify-center shadow-lg`}>
+        <FileCode className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("text/plain") || mimeType.includes("text/")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center shadow-lg`}>
+        <FileText className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    if (mimeType.includes("epub") || mimeType.includes("mobi") || mimeType.includes("azw")) return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg`}>
+        <Bookmark className={iconClass + " text-white"} />
+      </div>
+    );
+    
+    // Default file icon
+    return (
+      <div className={`${baseClass} rounded-xl bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center shadow-lg`}>
+        <File className={iconClass + " text-white"} />
+      </div>
+    );
   };
 
   // Get status icon
@@ -518,7 +621,7 @@ export default function FilesPage() {
                             }}
                           />
                         ) : null}
-                        <div className={`w-full h-full flex items-center justify-center bg-gray-700/50 ${file.thumbnailUrl ? 'hidden' : ''}`}>
+                        <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800 ${file.thumbnailUrl ? 'hidden' : ''}`}>
                           {getFileIcon(file.mimeType)}
                         </div>
                       </div>
@@ -588,7 +691,9 @@ export default function FilesPage() {
                                 }}
                               />
                             ) : (
-                              getFileIcon(file.mimeType)
+                              <div className="flex items-center gap-3">
+                                {getFileIcon(file.mimeType, "sm")}
+                              </div>
                             )}
                             <span className="font-medium truncate">{file.name}</span>
                           </div>
