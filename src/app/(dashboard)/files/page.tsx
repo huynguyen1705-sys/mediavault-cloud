@@ -34,7 +34,15 @@ import {
   CloudUpload,
   Check,
   XCircle,
-  Clock
+  Clock,
+  FileCode,
+  FileSpreadsheet,
+  FileJson,
+  Presentation,
+  Film,
+  Headphones,
+  Bookmark,
+  FileType
 } from "lucide-react";
 import { formatBytes, formatDate } from "@/lib/utils";
 
@@ -261,8 +269,28 @@ export default function FilesPage() {
     if (mimeType.startsWith("video/")) return <Video className="w-5 h-5 text-amber-400" />;
     if (mimeType.startsWith("audio/")) return <Music className="w-5 h-5 text-sky-400" />;
     if (mimeType.includes("pdf")) return <FileText className="w-5 h-5 text-red-400" />;
-    if (mimeType.includes("zip") || mimeType.includes("rar") || mimeType.includes("tar")) 
+    if (mimeType.includes("zip") || mimeType.includes("rar") || mimeType.includes("tar") || mimeType.includes("gz"))
       return <Archive className="w-5 h-5 text-yellow-400" />;
+    if (mimeType.includes("wordprocessingml") || mimeType.includes("msword") || mimeType.includes("doc"))
+      return <FileText className="w-5 h-5 text-blue-400" />;
+    if (mimeType.includes("spreadsheetml") || mimeType.includes("excel") || mimeType.includes("xls"))
+      return <FileSpreadsheet className="w-5 h-5 text-emerald-400" />;
+    if (mimeType.includes("presentationml") || mimeType.includes("powerpoint") || mimeType.includes("ppt"))
+      return <Presentation className="w-5 h-5 text-orange-400" />;
+    if (mimeType.includes("json") || mimeType.includes("xml") || mimeType.includes("yaml") || mimeType.includes("yml"))
+      return <FileJson className="w-5 h-5 text-cyan-400" />;
+    if (mimeType.includes("html") || mimeType.includes("css") || mimeType.includes("javascript") || mimeType.includes("typescript"))
+      return <FileCode className="w-5 h-5 text-blue-400" />;
+    if (mimeType.includes("illustrator") || mimeType.includes(".ai"))
+      return <FileType className="w-5 h-5 text-purple-400" />;
+    if (mimeType.includes("photoshop") || mimeType.includes("psd"))
+      return <FileType className="w-5 h-5 text-blue-400" />;
+    if (mimeType.includes("svg"))
+      return <FileCode className="w-5 h-5 text-orange-400" />;
+    if (mimeType.includes("text/plain") || mimeType.includes("text/"))
+      return <FileText className="w-5 h-5 text-gray-400" />;
+    if (mimeType.includes("bookmark") || mimeType.includes("epub"))
+      return <Bookmark className="w-5 h-5 text-amber-400" />;
     return <File className="w-5 h-5 text-gray-400" />;
   };
 
