@@ -71,7 +71,11 @@ export async function GET(request: NextRequest) {
           name: file.name,
           mimeType: file.mimeType,
           fileSize: file.fileSize.toString(),
-          thumbnailUrl: file.thumbnailPath ? getPublicUrl(file.thumbnailPath) : null,
+          thumbnailUrl: file.thumbnailPath 
+            ? getPublicUrl(file.thumbnailPath) 
+            : file.mimeType?.startsWith("image/") && file.storagePath 
+              ? getPublicUrl(file.storagePath) 
+              : null,
           url: presignedUrl,
           folderId: file.folderId,
           folder: file.folder,
