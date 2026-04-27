@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import { 
   FolderPlus, 
@@ -27,7 +27,14 @@ import {
   AlertCircle,
   RefreshCw,
   Plus,
-  FolderOpen
+  FolderOpen,
+  FileText,
+  Archive,
+  Cloud,
+  CloudUpload,
+  Check,
+  XCircle,
+  Clock
 } from "lucide-react";
 import { formatBytes, formatDate } from "@/lib/utils";
 
@@ -53,6 +60,15 @@ interface FolderItem {
   parentId: string | null;
 }
 
+interface UploadFile {
+  id: string;
+  name: string;
+  size: number;
+  status: "pending" | "uploading" | "completed" | "error";
+  progress: number;
+  error?: string;
+}
+
 export default function FilesPage() {
   const { user, isLoaded } = useUser();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -63,9 +79,7 @@ export default function FilesPage() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<{ id: string | null; name: string }[]>([{ id: null, name: "My Files" }]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle");
+  const [uploadQueue, setUploadQueue] = useState<UploadFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -99,52 +113,87 @@ export default function FilesPage() {
     fetchFiles();
   }, [fetchFiles]);
 
-  // Handle file upload
+  // Handle file upload with progress tracking
   const handleUpload = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
-    setUploading(true);
-    setUploadStatus("idle");
-    setUploadProgress(0);
 
-    const totalFiles = fileList.length;
-    let completedFiles = 0;
+    const newFiles: UploadFile[] = Array.from(fileList).map((file) => ({
+      id: Math.random().toString(36).substring(7),
+      name: file.name,
+      size: file.size,
+      status: "pending" as const,
+      progress: 0,
+    }));
 
-    for (const file of Array.from(fileList)) {
+    setUploadQueue((prev) => [...prev, ...newFiles]);
+
+    // Process files one by one
+    for (let i = 0; i < newFiles.length; i++) {
+      const uploadFile = newFiles[i];
+      const actualFile = Array.from(fileList).find((f) => f.name === uploadFile.name);
+      if (!actualFile) continue;
+
+      // Update status to uploading
+      setUploadQueue((prev) =>
+        prev.map((f) => (f.id === uploadFile.id ? { ...f, status: "uploading" } : f))
+      );
+
       try {
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", actualFile);
         if (currentFolderId) {
           formData.append("folderId", currentFolderId);
         }
+
+        // Simulate progress (since fetch doesn't support upload progress natively)
+        const progressInterval = setInterval(() => {
+          setUploadQueue((prev) =>
+            prev.map((f) => {
+              if (f.id === uploadFile.id && f.status === "uploading" && f.progress < 90) {
+                return { ...f, progress: f.progress + Math.random() * 15 };
+              }
+              return f;
+            })
+          );
+        }, 300);
 
         const res = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         });
 
+        clearInterval(progressInterval);
+
         if (!res.ok) {
           const error = await res.json();
           throw new Error(error.error || "Upload failed");
         }
 
-        completedFiles++;
-        setUploadProgress(Math.round((completedFiles / totalFiles) * 100));
-      } catch (error) {
+        // Mark as completed
+        setUploadQueue((prev) =>
+          prev.map((f) => (f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f))
+        );
+      } catch (error: any) {
         console.error("Upload error:", error);
-        setUploadStatus("error");
-        setUploading(false);
-        return;
+        setUploadQueue((prev) =>
+          prev.map((f) =>
+            f.id === uploadFile.id ? { ...f, status: "error", error: error.message } : f
+          )
+        );
       }
     }
 
-    setUploadStatus("success");
-    setUploading(false);
+    // Clear completed uploads after delay
     setTimeout(() => {
-      setUploadStatus("idle");
-      setUploadProgress(0);
-    }, 2000);
+      setUploadQueue((prev) => prev.filter((f) => f.status !== "completed"));
+    }, 3000);
 
     fetchFiles();
+  };
+
+  // Clear all uploads
+  const clearUploads = () => {
+    setUploadQueue([]);
   };
 
   // Handle drag and drop
@@ -211,7 +260,24 @@ export default function FilesPage() {
     if (mimeType.startsWith("image/")) return <Image className="w-5 h-5 text-emerald-400" />;
     if (mimeType.startsWith("video/")) return <Video className="w-5 h-5 text-amber-400" />;
     if (mimeType.startsWith("audio/")) return <Music className="w-5 h-5 text-sky-400" />;
+    if (mimeType.includes("pdf")) return <FileText className="w-5 h-5 text-red-400" />;
+    if (mimeType.includes("zip") || mimeType.includes("rar") || mimeType.includes("tar")) 
+      return <Archive className="w-5 h-5 text-yellow-400" />;
     return <File className="w-5 h-5 text-gray-400" />;
+  };
+
+  // Get status icon
+  const getStatusIcon = (status: UploadFile["status"]) => {
+    switch (status) {
+      case "pending":
+        return <Clock className="w-4 h-4 text-gray-400" />;
+      case "uploading":
+        return <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />;
+      case "completed":
+        return <CheckCircle className="w-4 h-4 text-emerald-400" />;
+      case "error":
+        return <XCircle className="w-4 h-4 text-red-400" />;
+    }
   };
 
   if (!isLoaded) {
@@ -310,38 +376,54 @@ export default function FilesPage() {
         </div>
       </div>
 
-      {/* Upload Status */}
-      {uploading && (
-        <div className="px-4 py-3 bg-violet-500/10 border-b border-violet-500/20">
-          <div className="flex items-center gap-3">
-            <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
-            <div className="flex-1">
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-gray-300">Uploading...</span>
-                <span className="text-violet-400">{uploadProgress}%</span>
-              </div>
-              <div className="w-full bg-gray-800 rounded-full h-2">
-                <div 
-                  className="bg-violet-500 h-2 rounded-full transition-all"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
+      {/* Upload Queue Panel */}
+      {uploadQueue.length > 0 && (
+        <div className="border-b border-gray-800 bg-gray-900/50">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CloudUpload className="w-4 h-4 text-violet-400" />
+              <span className="text-sm font-medium">Upload Queue</span>
+              <span className="text-xs text-gray-500">({uploadQueue.length} files)</span>
             </div>
+            <button
+              onClick={clearUploads}
+              className="text-xs text-gray-500 hover:text-white transition-colors"
+            >
+              Clear
+            </button>
           </div>
-        </div>
-      )}
-
-      {uploadStatus === "success" && (
-        <div className="px-4 py-3 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center gap-2 text-emerald-400">
-          <CheckCircle className="w-4 h-4" />
-          Files uploaded successfully!
-        </div>
-      )}
-
-      {uploadStatus === "error" && (
-        <div className="px-4 py-3 bg-red-500/10 border-b border-red-500/20 flex items-center gap-2 text-red-400">
-          <AlertCircle className="w-4 h-4" />
-          Upload failed. Please try again.
+          <div className="max-h-60 overflow-y-auto">
+            {uploadQueue.map((file) => (
+              <div key={file.id} className="px-4 py-2 border-t border-gray-800/50">
+                <div className="flex items-center gap-3">
+                  {getStatusIcon(file.status)}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm truncate">{file.name}</span>
+                      <span className="text-xs text-gray-500">{formatBytes(file.size)}</span>
+                    </div>
+                    {file.status === "uploading" && (
+                      <div className="w-full bg-gray-800 rounded-full h-1.5">
+                        <div 
+                          className="bg-violet-500 h-1.5 rounded-full transition-all duration-300"
+                          style={{ width: `${Math.min(file.progress, 100)}%` }}
+                        />
+                      </div>
+                    )}
+                    {file.status === "error" && (
+                      <div className="text-xs text-red-400">{file.error || "Upload failed"}</div>
+                    )}
+                    {file.status === "completed" && (
+                      <div className="text-xs text-emerald-400">Completed</div>
+                    )}
+                    {file.status === "pending" && (
+                      <div className="text-xs text-gray-500">Waiting...</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -379,7 +461,7 @@ export default function FilesPage() {
             {/* Files Grid View */}
             {files.length > 0 && viewMode === "grid" && (
               <div>
-                <h3 className="text-sm font-medium text-gray-400 mb-3">Files</h3>
+                <h3 className="text-sm font-medium text-gray-400 mb-3">Files ({files.length})</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {files.map((file) => (
                     <div
@@ -397,12 +479,20 @@ export default function FilesPage() {
                       {/* Thumbnail */}
                       <div className="aspect-square bg-gray-800 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
                         {file.thumbnailUrl ? (
-                          <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="p-3 bg-gray-700/50 rounded-full">
-                            {getFileIcon(file.mimeType)}
-                          </div>
-                        )}
+                          <img 
+                            src={file.thumbnailUrl} 
+                            alt={file.name} 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => {
+                              // Fallback to icon if thumbnail fails to load
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <div className={`p-3 bg-gray-700/50 rounded-full ${file.thumbnailUrl ? 'hidden' : ''}`}>
+                          {getFileIcon(file.mimeType)}
+                        </div>
                       </div>
                       {/* Info */}
                       <div className="min-w-0">
@@ -460,7 +550,18 @@ export default function FilesPage() {
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            {getFileIcon(file.mimeType)}
+                            {file.thumbnailUrl ? (
+                              <img 
+                                src={file.thumbnailUrl} 
+                                alt={file.name} 
+                                className="w-8 h-8 rounded object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              getFileIcon(file.mimeType)
+                            )}
                             <span className="font-medium truncate">{file.name}</span>
                           </div>
                         </td>
