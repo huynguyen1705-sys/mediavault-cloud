@@ -123,7 +123,7 @@ export default function FilesPage() {
   const [zoom, setZoom] = useState(1);
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
   const imageRef = useRef<HTMLImageElement>(null);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -1272,12 +1272,15 @@ export default function FilesPage() {
               onMouseDown={(e) => {
                 if (zoom > 1) {
                   setIsDragging(true);
-                  setDragStart({ x: e.clientX - dragPos.x, y: e.clientY - dragPos.y });
+                  setLastMousePos({ x: e.clientX, y: e.clientY });
                 }
               }}
               onMouseMove={(e) => {
                 if (isDragging) {
-                  setDragPos({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+                  const dx = e.clientX - lastMousePos.x;
+                  const dy = e.clientY - lastMousePos.y;
+                  setDragPos(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+                  setLastMousePos({ x: e.clientX, y: e.clientY });
                 }
               }}
               onMouseUp={() => setIsDragging(false)}
