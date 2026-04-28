@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useUser } from "@clerk/nextjs";
 import { 
   FolderPlus,
@@ -55,6 +55,9 @@ import {
   Trash,
   Lock,
   Edit,
+  ArrowUpDown,
+  ArrowDown,
+  ArrowUp,
 } from "lucide-react";
 import { formatBytes, formatDate } from "@/lib/utils";
 
@@ -99,6 +102,8 @@ interface UploadFile {
 export default function FilesPage() {
   const { user, isLoaded } = useUser();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [sortBy, setSortBy] = useState<"name" | "date" | "size" | "type">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -137,6 +142,29 @@ export default function FilesPage() {
   const [newFolderParentId, setNewFolderParentId] = useState<string | null>(null);
 
   // Build tree from flat list
+
+  // Sort files
+  const sortedFiles = useMemo(() => {
+    return [...files].sort((a, b) => {
+      let cmp = 0;
+      switch (sortBy) {
+        case "name":
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case "date":
+          cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case "size":
+          cmp = Number(a.fileSize) - Number(b.fileSize);
+          break;
+        case "type":
+          cmp = (a.mimeType || "").localeCompare(b.mimeType || "");
+          break;
+      }
+      return sortOrder === "asc" ? cmp : -cmp;
+    });
+  }, [files, sortBy, sortOrder]);
+
   const buildTree = useCallback((folders: FolderItem[]): FolderTreeNode[] => {
     const map = new Map<string, FolderTreeNode>();
     const roots: FolderTreeNode[] = [];
@@ -822,7 +850,26 @@ export default function FilesPage() {
                 <List className="w-4 h-4" />
               </button>
             </div>
-          </div>
+            </div>
+
+            {/* Sort Controls */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
+            >
+              <option value="date">Date</option>
+              <option value="name">Name</option>
+              <option value="size">Size</option>
+              <option value="type">Type</option>
+            </select>
+            <button
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              className="p-2 bg-gray-900 border border-gray-800 rounded-lg hover:bg-gray-800 transition-colors"
+              title={sortOrder === "asc" ? "Ascending" : "Descending"}
+            >
+              {sortOrder === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+            </button>
 
           {/* Trash Banner */}
           {trashMode && trashFiles.length > 0 && (
@@ -931,7 +978,7 @@ export default function FilesPage() {
           {/* Files Grid */}
           {!loading && files.length > 0 && viewMode === "grid" && (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {files.map((file) => (
+              {sortedFiles.map((file) => (
                 <div
                   key={file.id}
                   className={`group bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer ${draggingFileId === file.id ? "opacity-50" : ""}`}
@@ -988,7 +1035,7 @@ export default function FilesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {files.map((file) => (
+                  {sortedFiles.map((file) => (
                     <tr 
                       key={file.id}
                       className={`hover:bg-gray-800/50 cursor-pointer ${draggingFileId === file.id ? "opacity-50" : ""}`}
