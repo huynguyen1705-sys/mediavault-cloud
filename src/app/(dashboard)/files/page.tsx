@@ -120,11 +120,13 @@ export default function FilesPage() {
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [folderContextMenu, setFolderContextMenu] = useState<{ x: number; y: number; folder: FolderTreeNode } | null>(null);
 
   // NEW: Folder tree state
   const [allFolders, setAllFolders] = useState<FolderTreeNode[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [newFolderParentId, setNewFolderParentId] = useState<string | null>(null);
 
   // Build tree from flat list
   const buildTree = useCallback((folders: FolderItem[]): FolderTreeNode[] => {
@@ -393,7 +395,10 @@ export default function FilesPage() {
       const res = await fetch("/api/folders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newFolderName.trim(), parentId: currentFolderId }),
+        body: JSON.stringify({ 
+          name: newFolderName.trim(), 
+          parentId: newFolderParentId || currentFolderId 
+        }),
       });
       if (res.ok) {
         setNewFolderName("");
@@ -441,10 +446,9 @@ export default function FilesPage() {
     const hasChildren = folder.children.length > 0;
     const isExpanded = expandedFolders.has(folder.id);
     const isActive = currentFolderId === folder.id;
-    const isEmpty = folders.length === 0 && currentFolderId !== folder.id;
 
     return (
-      <div>
+      <div className="group">
         <div
           className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-all duration-150 ${
             isActive 
@@ -452,31 +456,26 @@ export default function FilesPage() {
               : "text-gray-300 hover:bg-gray-800/50"
           }`}
           style={{ paddingLeft: `${12 + level * 16}px` }}
+          onClick={() => navigateToFolder(folder.id, folder.name)}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setFolderContextMenu({ x: e.clientX, y: e.clientY, folder });
+          }}
         >
           {hasChildren ? (
             <button
               onClick={(e) => { e.stopPropagation(); toggleExpand(folder.id); }}
-              className="p-0.5 hover:bg-gray-700 rounded"
+              className="p-0.5 hover:bg-gray-700 rounded shrink-0"
             >
               <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`} />
             </button>
           ) : (
-            <span className="w-4" />
+            <span className="w-4 shrink-0" />
           )}
           <Folder className="w-4 h-4 shrink-0 text-amber-400" />
-          <span 
-            className="truncate text-sm flex-1"
-            onClick={() => navigateToFolder(folder.id, folder.name)}
-          >
+          <span className="truncate text-sm flex-1">
             {folder.name}
           </span>
-          <button
-            onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id); }}
-            className="p-1 hover:bg-red-500/20 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-            title="Delete folder"
-          >
-            <XCircle className="w-3.5 h-3.5 text-red-400" />
-          </button>
         </div>
         {hasChildren && isExpanded && (
           <div className="overflow-hidden transition-all duration-200">
@@ -929,6 +928,55 @@ export default function FilesPage() {
         </>
       )}
 
+      {/* Folder Context Menu */}
+      {folderContextMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setFolderContextMenu(null)} />
+          <div 
+            className="fixed z-50 bg-gray-900 border border-gray-800 rounded-xl shadow-xl py-2 min-w-[180px]"
+            style={{ left: folderContextMenu.x, top: folderContextMenu.y }}
+          >
+            <button
+              onClick={() => {
+                setNewFolderParentId(folderContextMenu.folder.id);
+                setNewFolderName("");
+                setShowNewFolderModal(true);
+                setFolderContextMenu(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+            >
+              <FolderPlus className="w-4 h-4" /> New Subfolder
+            </button>
+            <button
+              onClick={() => {
+                navigateToFolder(folderContextMenu.folder.id, folderContextMenu.folder.name);
+                setFolderContextMenu(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+            >
+              <FolderOpen className="w-4 h-4" /> Open
+            </button>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(folderContextMenu.folder.id);
+                showToastMessage("Folder ID copied!");
+                setFolderContextMenu(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+            >
+              <Copy className="w-4 h-4" /> Copy ID
+            </button>
+            <hr className="my-2 border-gray-800" />
+            <button
+              onClick={() => { handleDeleteFolder(folderContextMenu.folder.id); setFolderContextMenu(null); }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3 text-red-400"
+            >
+              <Trash2 className="w-4 h-4" /> Delete
+            </button>
+          </div>
+        </>
+      )}
+
       {/* Preview Modal */}
       {showPreview && selectedFile && (
         <div 
@@ -988,9 +1036,20 @@ export default function FilesPage() {
 
       {/* New Folder Modal */}
       {showNewFolderModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowNewFolderModal(false)}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setShowNewFolderModal(false); setNewFolderParentId(null); }}>
           <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-4">Create New Folder</h2>
+            <h2 className="text-lg font-semibold mb-2">Create New Folder</h2>
+            {newFolderParentId ? (
+              <p className="text-sm text-gray-400 mb-4">
+                Inside: <span className="text-violet-400">{allFolders.find(f => f.id === newFolderParentId)?.name || "Subfolder"}</span>
+              </p>
+            ) : currentFolderId ? (
+              <p className="text-sm text-gray-400 mb-4">
+                Inside: <span className="text-violet-400">{breadcrumbs.find(b => b.id === currentFolderId)?.name || "Folder"}</span>
+              </p>
+            ) : (
+              <p className="text-sm text-gray-500 mb-4">Root level</p>
+            )}
             <input
               type="text"
               placeholder="Folder name"
@@ -1002,7 +1061,7 @@ export default function FilesPage() {
             />
             <div className="flex gap-3">
               <button
-                onClick={() => setShowNewFolderModal(false)}
+                onClick={() => { setShowNewFolderModal(false); setNewFolderParentId(null); }}
                 className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors"
               >
                 Cancel
