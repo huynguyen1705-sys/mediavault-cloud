@@ -397,7 +397,7 @@ export default function FilesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           name: newFolderName.trim(), 
-          parentId: newFolderParentId || currentFolderId 
+          parentId: newFolderParentId || null 
         }),
       });
       if (res.ok) {
@@ -1038,18 +1038,9 @@ export default function FilesPage() {
       {showNewFolderModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setShowNewFolderModal(false); setNewFolderParentId(null); }}>
           <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-2">Create New Folder</h2>
-            {newFolderParentId ? (
-              <p className="text-sm text-gray-400 mb-4">
-                Inside: <span className="text-violet-400">{allFolders.find(f => f.id === newFolderParentId)?.name || "Subfolder"}</span>
-              </p>
-            ) : currentFolderId ? (
-              <p className="text-sm text-gray-400 mb-4">
-                Inside: <span className="text-violet-400">{breadcrumbs.find(b => b.id === currentFolderId)?.name || "Folder"}</span>
-              </p>
-            ) : (
-              <p className="text-sm text-gray-500 mb-4">Root level</p>
-            )}
+            <h2 className="text-lg font-semibold mb-4">Create New Folder</h2>
+            
+            {/* Folder name input */}
             <input
               type="text"
               placeholder="Folder name"
@@ -1059,6 +1050,24 @@ export default function FilesPage() {
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl mb-4 focus:outline-none focus:border-violet-500"
               autoFocus
             />
+            
+            {/* Parent folder selector */}
+            <div className="mb-4">
+              <label className="text-sm text-gray-400 mb-2 block">Create in</label>
+              <select
+                value={newFolderParentId ?? (currentFolderId || "")}
+                onChange={(e) => setNewFolderParentId(e.target.value || null)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-violet-500"
+              >
+                <option value="">Root (My Files)</option>
+                {allFolders.map(folder => (
+                  <option key={folder.id} value={folder.id}>
+                    {folder.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
             <div className="flex gap-3">
               <button
                 onClick={() => { setShowNewFolderModal(false); setNewFolderParentId(null); }}
