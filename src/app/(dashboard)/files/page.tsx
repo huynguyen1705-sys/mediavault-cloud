@@ -54,6 +54,7 @@ import {
   AlertTriangle,
   Trash,
   Lock,
+  Edit,
 } from "lucide-react";
 import { formatBytes, formatDate } from "@/lib/utils";
 
@@ -123,6 +124,9 @@ export default function FilesPage() {
   const [folderContextMenu, setFolderContextMenu] = useState<{ x: number; y: number; folder: FolderTreeNode } | null>(null);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [movingFile, setMovingFile] = useState<FileItem | null>(null);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renamingItem, setRenamingItem] = useState<{ type: "file" | "folder"; item: any } | null>(null);
+  const [newName, setNewName] = useState("");
 
   // NEW: Folder tree state
   const [allFolders, setAllFolders] = useState<FolderTreeNode[]>([]);
@@ -458,6 +462,43 @@ export default function FilesPage() {
       }
     } catch (error) {
       console.error("Delete folder error:", error);
+    }
+  };
+
+  // Handle rename
+  const handleRename = async () => {
+    if (!renamingItem || !newName.trim()) return;
+    try {
+      if (renamingItem.type === "file") {
+        const res = await fetch(`/api/files/${renamingItem.item.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newName.trim() }),
+        });
+        if (res.ok) {
+          setShowRenameModal(false);
+          setRenamingItem(null);
+          setNewName("");
+          fetchFiles();
+          showToastMessage("File renamed");
+        }
+      } else {
+        const res = await fetch(`/api/folders/${renamingItem.item.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newName.trim() }),
+        });
+        if (res.ok) {
+          setShowRenameModal(false);
+          setRenamingItem(null);
+          setNewName("");
+          fetchAllFolders();
+          showToastMessage("Folder renamed");
+        }
+      }
+    } catch (error) {
+      console.error("Rename error:", error);
+      showToastMessage("Error: Failed to rename");
     }
   };
 
@@ -946,6 +987,12 @@ export default function FilesPage() {
               <FolderInput className="w-4 h-4" /> Move to...
             </button>
             <button
+              onClick={() => { setRenamingItem({ type: "file", item: contextMenu.file }); setNewName(contextMenu.file.name); setShowRenameModal(true); setContextMenu(null); }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+            >
+              <Edit className="w-4 h-4" /> Rename
+            </button>
+            <button
               onClick={() => {
                 navigator.clipboard.writeText(window.location.origin + "/api/files/" + contextMenu.file.id);
                 showToastMessage("Link copied!");
@@ -1019,6 +1066,14 @@ export default function FilesPage() {
               className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
             >
               <FolderOpen className="w-4 h-4" /> Open
+            </button>
+            <button
+              onClick={() => {
+                setRenamingItem({ type: "folder", item: folderContextMenu.folder }); setNewName(folderContextMenu.folder.name); setShowRenameModal(true); setFolderContextMenu(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+            >
+              <Edit className="w-4 h-4" /> Rename
             </button>
             <button
               onClick={() => {
@@ -1193,6 +1248,39 @@ export default function FilesPage() {
       )}
     </div>
   );
+
+
+      {/* Rename Modal */}
+      {showRenameModal && renamingItem && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setShowRenameModal(false); setRenamingItem(null); setNewName(""); }}>
+          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold mb-4">Rename {renamingItem?.type === "file" ? "File" : "Folder"}</h2>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleRename()}
+              className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl mb-4 focus:outline-none focus:border-violet-500"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowRenameModal(false); setRenamingItem(null); setNewName(""); }}
+                className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRename}
+                disabled={!newName.trim() || newName === renamingItem?.item?.name}
+                className="flex-1 px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-xl transition-colors"
+              >
+                Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
   // Share Modal Component
   function ShareModal() {
