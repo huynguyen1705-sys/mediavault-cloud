@@ -935,7 +935,7 @@ export default function FilesPage() {
                 <div
                   key={file.id}
                   className={`group bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer ${draggingFileId === file.id ? "opacity-50" : ""}`}
-                  draggable
+                  draggable={true}
                   onDragStart={(e) => handleDragStart(e, file)}
                   onDragEnd={handleDragEnd}
                   onClick={() => { setSelectedFile(file); setShowPreview(true); }}
@@ -991,7 +991,10 @@ export default function FilesPage() {
                   {files.map((file) => (
                     <tr 
                       key={file.id}
-                      className="hover:bg-gray-800/50 cursor-pointer"
+                      className={`hover:bg-gray-800/50 cursor-pointer ${draggingFileId === file.id ? "opacity-50" : ""}`}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, file)}
+                      onDragEnd={handleDragEnd}
                       onClick={() => { setSelectedFile(file); setShowPreview(true); }}
                       onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, file }); }}
                     >
