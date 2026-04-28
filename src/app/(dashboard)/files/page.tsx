@@ -122,9 +122,10 @@ export default function FilesPage() {
   const [showDetails, setShowDetails] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
+  const lastMouseRef = useRef({ x: 0, y: 0 });
   const imageRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
@@ -1264,29 +1265,31 @@ export default function FilesPage() {
           <div 
             className="flex-1 flex items-center justify-center p-8 overflow-auto"
             style={{ 
-              cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
+              cursor: zoom > 1 ? (isDraggingRef.current ? 'grabbing' : 'grab') : 'default'
             }}
           >
             <div 
+              ref={containerRef}
               className="relative max-w-full max-h-full"
               onMouseDown={(e) => {
-                if (zoom > 1) {
-                  setIsDragging(true);
-                  setLastMousePos({ x: e.clientX, y: e.clientY });
+                if (zoom > 1 && e.button === 0) {
+                  isDraggingRef.current = true;
+                  lastMouseRef.current = { x: e.clientX, y: e.clientY };
+                  e.preventDefault();
                 }
               }}
               onMouseMove={(e) => {
-                if (isDragging) {
-                  const dx = e.clientX - lastMousePos.x;
-                  const dy = e.clientY - lastMousePos.y;
+                if (isDraggingRef.current) {
+                  const dx = e.clientX - lastMouseRef.current.x;
+                  const dy = e.clientY - lastMouseRef.current.y;
                   setDragPos(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-                  setLastMousePos({ x: e.clientX, y: e.clientY });
+                  lastMouseRef.current = { x: e.clientX, y: e.clientY };
                 }
               }}
-              onMouseUp={() => setIsDragging(false)}
-              onMouseLeave={() => setIsDragging(false)}
+              onMouseUp={() => { isDraggingRef.current = false; }}
+              onMouseLeave={() => { isDraggingRef.current = false; }}
+              style={{ cursor: zoom > 1 ? 'grab' : 'default', userSelect: 'none' }}
             >
-            <div className="relative max-w-full max-h-full">
               {/* Close button top-left */}
               <button 
                 onClick={() => setShowPreview(false)} 
@@ -1318,8 +1321,6 @@ export default function FilesPage() {
                   <p className="text-gray-400">Preview not available</p>
                 </div>
               )}
-            </div>
-            
             </div>
             
             {/* Zoom controls - OUTSIDE the image container */}
