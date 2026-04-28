@@ -730,6 +730,38 @@ export default function FilesPage() {
                 Clear
               </button>
             </div>
+            <div className="max-h-48 overflow-y-auto">
+              {uploadQueue.map((file) => (
+                <div key={file.id} className="px-4 py-2 border-t border-gray-800/50">
+                  <div className="flex items-center gap-3">
+                    {getStatusIcon(file.status)}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm truncate">{file.name}</span>
+                        <span className="text-xs text-gray-500">{formatBytes(file.size)}</span>
+                      </div>
+                      {file.status === "uploading" && (
+                        <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                          <div 
+                            className="bg-gradient-to-r from-violet-500 to-purple-500 h-1.5 rounded-full animate-pulse"
+                            style={{ width: `${file.progress || 50}%` }}
+                          />
+                        </div>
+                      )}
+                      {file.status === "error" && (
+                        <p className="text-xs text-red-400">{file.error || "Upload failed"}</p>
+                      )}
+                      {file.status === "completed" && (
+                        <p className="text-xs text-emerald-400">Done</p>
+                      )}
+                      {file.status === "pending" && (
+                        <p className="text-xs text-gray-500">Waiting...</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
