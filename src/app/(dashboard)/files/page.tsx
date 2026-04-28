@@ -1246,8 +1246,6 @@ export default function FilesPage() {
           </div>
         </div>
       )}
-    </div>
-  );
 
 
       {/* Rename Modal */}
@@ -1281,6 +1279,9 @@ export default function FilesPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+
 
   // Share Modal Component
   function ShareModal() {
