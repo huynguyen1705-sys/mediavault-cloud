@@ -1252,50 +1252,149 @@ export default function FilesPage() {
       {/* Preview Modal */}
       {showPreview && selectedFile && (
         <div 
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex"
+          style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowPreview(false); }}
         >
-          <div className="bg-gray-900 rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden shadow-2xl border border-gray-800">
-            <div className="flex items-center justify-between p-4 border-b border-gray-800">
-              <div className="flex items-center gap-4 min-w-0 flex-1">
-                {getFileIcon(selectedFile.mimeType, "md")}
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-lg truncate">{selectedFile.name}</div>
-                  <div className="flex items-center gap-4 text-sm text-gray-400">
-                    <span>{formatBytes(Number(selectedFile.fileSize))}</span>
-                    <span>{new Date(selectedFile.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {selectedFile.mimeType?.startsWith("image/") && (
-                  <>
-                    <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} className="p-2 hover:bg-gray-800 rounded-lg"><ZoomOut className="w-5 h-5" /></button>
-                    <span className="text-sm text-gray-400 w-16 text-center">{Math.round(zoom * 100)}%</span>
-                    <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="p-2 hover:bg-gray-800 rounded-lg"><ZoomIn className="w-5 h-5" /></button>
-                    <button onClick={() => setZoom(1)} className="p-2 hover:bg-gray-800 rounded-lg"><Maximize2 className="w-5 h-5" /></button>
-                  </>
-                )}
-                <button onClick={() => setShowPreview(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X className="w-5 h-5" /></button>
-              </div>
-            </div>
-            
-            <div className="max-h-[70vh] overflow-auto bg-gray-950/50 flex items-center justify-center p-4">
+          {/* Main Content - Image Preview */}
+          <div className="flex-1 flex items-center justify-center p-8 overflow-auto">
+            <div className="relative max-w-full max-h-full">
+              {/* Close button top-left */}
+              <button 
+                onClick={() => setShowPreview(false)} 
+                className="absolute -top-12 left-0 p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+              
+              {/* Image */}
               {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
-                <img src={selectedFile.url} alt={selectedFile.name} style={{ transform: `scale(${zoom})` }} className="max-w-full transition-transform" />
+                <img 
+                  src={selectedFile.url} 
+                  alt={selectedFile.name} 
+                  style={{ transform: `scale(${zoom})` }} 
+                  className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl transition-transform" 
+                />
               )}
               {selectedFile.mimeType?.startsWith("video/") && selectedFile.url && (
-                <video src={selectedFile.url} controls className="max-w-full" />
+                <video src={selectedFile.url} controls className="max-w-full max-h-[80vh] rounded-2xl shadow-2xl" />
               )}
               {selectedFile.mimeType?.startsWith("audio/") && selectedFile.url && (
-                <audio src={selectedFile.url} controls className="w-full" />
-              )}
-              {!selectedFile.url && (
-                <div className="text-center py-12 text-gray-500">
-                  <File className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Preview not available</p>
+                <div className="bg-gray-900 rounded-2xl p-8 shadow-2xl">
+                  <audio src={selectedFile.url} controls className="w-96" />
                 </div>
               )}
+              {!selectedFile.url && (
+                <div className="bg-gray-900 rounded-2xl p-16 shadow-2xl text-center">
+                  <File className="w-24 h-24 mx-auto mb-4 text-gray-600" />
+                  <p className="text-gray-400">Preview not available</p>
+                </div>
+              )}
+              
+              {/* Zoom controls for images */}
+              {selectedFile.mimeType?.startsWith("image/") && (
+                <div className="flex items-center justify-center gap-2 mt-4">
+                  <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+                    <ZoomOut className="w-5 h-5" />
+                  </button>
+                  <span className="text-sm text-gray-400 w-16 text-center">{Math.round(zoom * 100)}%</span>
+                  <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+                    <ZoomIn className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => setZoom(1)} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+                    <Maximize2 className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Right Sidebar - Details */}
+          <div className="w-80 bg-gray-900 border-l border-gray-800 flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+              <h3 className="font-semibold">File Details</h3>
+              <button onClick={() => setShowPreview(false)} className="p-1 hover:bg-gray-800 rounded-lg">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {/* Thumbnail */}
+              <div className="mb-6">
+                <div className="aspect-square rounded-xl bg-gray-800 flex items-center justify-center mb-4 overflow-hidden">
+                  {selectedFile.thumbnailUrl ? (
+                    <img src={selectedFile.thumbnailUrl} alt={selectedFile.name} className="w-full h-full object-cover" />
+                  ) : (
+                    getFileIcon(selectedFile.mimeType, "lg")
+                  )}
+                </div>
+                <div className="text-center font-medium truncate">{selectedFile.name}</div>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <FileText className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-xs text-gray-400">Type</div>
+                    <div className="text-sm truncate">{selectedFile.mimeType || "Unknown"}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Download className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-xs text-gray-400">Size</div>
+                    <div className="text-sm">{formatBytes(Number(selectedFile.fileSize))}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Calendar className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-xs text-gray-400">Created</div>
+                    <div className="text-sm">{new Date(selectedFile.createdAt).toLocaleDateString()}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <RefreshCw className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-xs text-gray-400">Modified</div>
+                    <div className="text-sm">{new Date(selectedFile.updatedAt).toLocaleDateString()}</div>
+                  </div>
+                </div>
+
+                {selectedFile.url && (
+                  <div className="flex items-start gap-3">
+                    <ExternalLink className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs text-gray-400">URL</div>
+                      <a href={selectedFile.url} target="_blank" rel="noopener noreferrer" className="text-sm text-violet-400 hover:text-violet-300 truncate block">
+                        Open
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="mt-6 pt-4 border-t border-gray-800 space-y-2">
+                <button
+                  onClick={() => { setShowPreview(false); setShowShareModal(true); }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-lg text-sm transition-colors"
+                >
+                  <Share2 className="w-4 h-4" /> Share
+                </button>
+                {selectedFile.url && (
+                  <a
+                    href={selectedFile.url}
+                    download={selectedFile.name}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
+                  >
+                    <Download className="w-4 h-4" /> Download
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </div>
