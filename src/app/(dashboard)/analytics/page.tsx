@@ -152,7 +152,7 @@ export default function AnalyticsPage() {
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    fetch(`/api/analytics?range=${range}&userId=${user.id}`)
+    fetch(`/api/analytics?range=${range}`)
       .then((r) => r.json())
       .then(setData)
       .finally(() => setLoading(false));

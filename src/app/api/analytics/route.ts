@@ -1,25 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
-// GET /api/analytics?range=7|30|90&userId=xxx
+// GET /api/analytics?range=7|30|90
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const range = parseInt(searchParams.get("range") || "30");
-    const userId = searchParams.get("userId");
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - range);
-
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
-    }
 
     // Storage usage over time (from files aggregate)
     const filesOverTime = await prisma.file.groupBy({
       by: ["createdAt"],
       where: {
-        userId,
         createdAt: { gte: startDate },
         deletedAt: null,
       },
@@ -32,7 +26,6 @@ export async function GET(request: NextRequest) {
     const bandwidthOverTime = await prisma.bandwidthLog.groupBy({
       by: ["createdAt"],
       where: {
-        userId,
         createdAt: { gte: startDate },
       },
       _sum: { bytesUsed: true },
@@ -41,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     // File type breakdown
     const allFiles = await prisma.file.findMany({
-      where: { userId, deletedAt: null },
+      where: { deletedAt: null },
       select: { mimeType: true },
     });
 
@@ -61,17 +54,6 @@ export async function GET(request: NextRequest) {
         mimeCounts["other"] = (mimeCounts["other"] || 0) + 1;
       }
     }
-
-    // Summary stats
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        storageUsedBytes: true,
-        bandwidthUsedBytes: true,
-        filesCount: true,
-        plan: { select: { storageGb: true, bandwidthGb: true } },
-      },
-    });
 
     // Aggregate daily for charts
     const dailyFiles: Record<string, { count: number; size: number }> = {};
@@ -102,6 +84,20 @@ export async function GET(request: NextRequest) {
       return result;
     };
 
+    // Summary stats
+    const totalStorage = await prisma.file.aggregate({
+      where: { deletedAt: null },
+      _sum: { fileSize: true },
+    });
+
+    const totalBandwidth = await prisma.bandwidthLog.aggregate({
+      _sum: { bytesUsed: true },
+    });
+
+    const totalFiles = await prisma.file.count({
+      where: { deletedAt: null },
+    });
+
     return NextResponse.json({
       storageUsage: fillMissingDays(
         Object.fromEntries(
@@ -116,11 +112,11 @@ export async function GET(request: NextRequest) {
       bandwidthUsage: fillMissingDays(dailyBandwidth),
       fileTypeBreakdown: Object.entries(mimeCounts).map(([type, count]) => ({ type, count })),
       summary: {
-        totalStorage: Number(user?.storageUsedBytes || 0),
-        totalBandwidth: Number(user?.bandwidthUsedBytes || 0),
-        totalFiles: user?.filesCount || 0,
-        storageLimit: (user?.plan?.storageGb || 0) * 1024 * 1024 * 1024,
-        bandwidthLimit: (user?.plan?.bandwidthGb || 0) * 1024 * 1024 * 1024,
+        totalStorage: Number(totalStorage._sum.fileSize || 0),
+        totalBandwidth: Number(totalBandwidth._sum.bytesUsed || 0),
+        totalFiles,
+        storageLimit: 0,
+        bandwidthLimit: 0,
       },
     });
   } catch (error) {
