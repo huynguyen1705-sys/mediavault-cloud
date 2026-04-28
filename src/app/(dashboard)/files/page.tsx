@@ -274,8 +274,6 @@ export default function FilesPage() {
     if (!container || !image) return;
 
     let isDragging = false;
-    let startX = 0;
-    let startY = 0;
     let currentX = dragPos.x;
     let currentY = dragPos.y;
     let lastX = 0;
@@ -284,13 +282,12 @@ export default function FilesPage() {
     const onMouseDown = (e: MouseEvent) => {
       if (zoom <= 1) return;
       isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
       lastX = e.clientX;
       lastY = e.clientY;
       currentX = dragPos.x;
       currentY = dragPos.y;
       e.preventDefault();
+      e.stopPropagation();
     };
 
     const onMouseMove = (e: MouseEvent) => {
@@ -311,97 +308,18 @@ export default function FilesPage() {
       }
     };
 
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.25 : 0.25;
-      const newZoom = Math.max(0.5, Math.min(3, zoom + delta));
-      setZoom(newZoom);
-      if (newZoom === 1) {
-        setDragPos({ x: 0, y: 0 });
-        currentX = 0;
-        currentY = 0;
-      }
-    };
-
-    // Touch support
-    let lastTouchDist = 0;
-    let lastTouchX = 0;
-    let lastTouchY = 0;
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1 && zoom > 1) {
-        isDragging = true;
-        lastX = e.touches[0].clientX;
-        lastY = e.touches[0].clientY;
-        currentX = dragPos.x;
-        currentY = dragPos.y;
-      } else if (e.touches.length === 2) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        lastTouchDist = Math.sqrt(dx * dx + dy * dy);
-        lastTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        lastTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-      }
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 1 && isDragging) {
-        const dx = e.touches[0].clientX - lastX;
-        const dy = e.touches[0].clientY - lastY;
-        currentX += dx;
-        currentY += dy;
-        lastX = e.touches[0].clientX;
-        lastY = e.touches[0].clientY;
-        image.style.transform = `scale(${zoom}) translate(${currentX}px, ${currentY}px)`;
-      } else if (e.touches.length === 2) {
-        const dx = e.touches[0].clientX - e.touches[1].clientX;
-        const dy = e.touches[0].clientY - e.touches[1].clientY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const newZoom = Math.max(0.5, Math.min(3, zoom * (dist / lastTouchDist)));
-        setZoom(newZoom);
-        lastTouchDist = dist;
-        if (newZoom === 1) {
-          setDragPos({ x: 0, y: 0 });
-          currentX = 0;
-          currentY = 0;
-        }
-      }
-      e.preventDefault();
-    };
-
-    const onTouchEnd = () => {
-      if (isDragging) {
-        isDragging = false;
-        setDragPos({ x: currentX, y: currentY });
-      }
-    };
-
     container.addEventListener("mousedown", onMouseDown);
-    container.addEventListener("touchstart", onTouchStart, { passive: false });
     window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("touchmove", onTouchMove, { passive: false });
     window.addEventListener("mouseup", onMouseUp);
-    window.addEventListener("touchend", onTouchEnd);
-    container.addEventListener("wheel", onWheel, { passive: false });
 
     return () => {
       container.removeEventListener("mousedown", onMouseDown);
-      container.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("mouseup", onMouseUp);
-      window.removeEventListener("touchend", onTouchEnd);
-      container.removeEventListener("wheel", onWheel);
     };
-  }, [zoom, dragPos, setDragPos, setZoom]);
+  }, [zoom, dragPos, setDragPos]);
 
-  // Sync drag state to image transform
-  useEffect(() => {
-    const image = document.getElementById("pan-image");
-    if (image) {
-      image.style.transform = `scale(${zoom}) translate(${dragPos.x}px, ${dragPos.y}px)`;
-    }
-  }, [zoom, dragPos]);
+
 
   // Toggle folder expand
   const toggleExpand = useCallback((folderId: string) => {
@@ -1408,7 +1326,11 @@ export default function FilesPage() {
             <X className="w-6 h-6 text-white" />
           </button>
           <div className="flex-1 flex items-center justify-center p-8">
-            <div className="relative">
+            <div 
+              id="pan-container"
+              className="relative cursor-grab active:cursor-grabbing select-none"
+              style={{ touchAction: 'none' }}
+            >
               {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
                 <img 
                   id="pan-image"
@@ -1419,7 +1341,6 @@ export default function FilesPage() {
                   style={{
                     transform: `scale(${zoom}) translate(${dragPos.x}px, ${dragPos.y}px)`,
                     willChange: 'transform',
-                    transition: 'transform 0.1s ease-out',
                   }}
                 />
               )}
