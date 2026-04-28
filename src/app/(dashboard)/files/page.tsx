@@ -127,6 +127,8 @@ export default function FilesPage() {
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [renamingItem, setRenamingItem] = useState<{ type: "file" | "folder"; item: any } | null>(null);
   const [newName, setNewName] = useState("");
+  const [draggingFileId, setDraggingFileId] = useState<string | null>(null);
+  const [dropTargetFolderId, setDropTargetFolderId] = useState<string | null>(null);
 
   // NEW: Folder tree state
   const [allFolders, setAllFolders] = useState<FolderTreeNode[]>([]);
@@ -317,6 +319,55 @@ export default function FilesPage() {
   };
 
   // Handle drag and drop
+  const handleDragStart = (e: React.DragEvent, file: FileItem) => {
+    setDraggingFileId(file.id);
+    e.dataTransfer.setData("fileId", file.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragEnd = () => {
+    setDraggingFileId(null);
+    setDropTargetFolderId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, folderId: string | null) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDropTargetFolderId(folderId);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
+    e.preventDefault();
+    const fileId = e.dataTransfer.getData("fileId");
+    if (!fileId) return;
+
+    // Can't drop into the same folder
+    const file = files.find(f => f.id === fileId);
+    if (file && file.folderId === targetFolderId) {
+      setDraggingFileId(null);
+      setDropTargetFolderId(null);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/files/${fileId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folderId: targetFolderId }),
+      });
+      if (res.ok) {
+        fetchFiles();
+        if (targetFolderId) {
+          showToastMessage("File moved");
+        }
+      }
+    } catch (error) {
+      console.error("Drop error:", error);
+    }
+    setDraggingFileId(null);
+    setDropTargetFolderId(null);
+  };
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     handleUpload(e.dataTransfer.files);
@@ -520,10 +571,14 @@ export default function FilesPage() {
           className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-all duration-150 ${
             isActive 
               ? "bg-violet-500/20 text-violet-400" 
-              : "text-gray-300 hover:bg-gray-800/50"
+              : dropTargetFolderId === folder.id
+                ? "bg-violet-500/30 border-2 border-violet-500"
+                : "text-gray-300 hover:bg-gray-800/50"
           }`}
           style={{ paddingLeft: `${12 + level * 16}px` }}
           onClick={() => navigateToFolder(folder.id, folder.name)}
+          onDragOver={(e) => handleDragOver(e, folder.id)}
+          onDrop={(e) => handleDrop(e, folder.id)}
           onContextMenu={(e) => {
             e.preventDefault();
             setFolderContextMenu({ x: e.clientX, y: e.clientY, folder });
@@ -620,9 +675,13 @@ export default function FilesPage() {
           {/* My Files root */}
           <div
             className={`flex items-center gap-2 px-3 py-2 mx-2 rounded-lg cursor-pointer transition-all duration-150 ${
-              currentFolderId === null ? "bg-violet-500/20 text-violet-400" : "text-gray-300 hover:bg-gray-800/50"
+              currentFolderId === null ? "bg-violet-500/20 text-violet-400" : dropTargetFolderId === null
+                ? "bg-violet-500/30 border-2 border-violet-500"
+                : "text-gray-300 hover:bg-gray-800/50"
             }`}
             onClick={() => navigateToFolder(null, "My Files")}
+            onDragOver={(e) => handleDragOver(e, null)}
+            onDrop={(e) => handleDrop(e, null)}
           >
             <Home className="w-4 h-4 shrink-0" />
             <span className="text-sm font-medium truncate">My Files</span>
@@ -875,7 +934,10 @@ export default function FilesPage() {
               {files.map((file) => (
                 <div
                   key={file.id}
-                  className="group bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer"
+                  className={`group bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer ${draggingFileId === file.id ? "opacity-50" : ""}`}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, file)}
+                  onDragEnd={handleDragEnd}
                   onClick={() => { setSelectedFile(file); setShowPreview(true); }}
                   onContextMenu={(e) => {
                     e.preventDefault();
