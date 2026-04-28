@@ -71,9 +71,43 @@ export default function Navbar() {
               <>
                 <Link
                   href="/dashboard"
-                  className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                  className={`text-sm font-medium transition-colors ${
+                    pathname.startsWith("/dashboard") ? "text-violet-400" : "text-gray-400 hover:text-white"
+                  }`}
                 >
                   Dashboard
+                </Link>
+                <Link
+                  href="/files"
+                  className={`text-sm font-medium transition-colors ${
+                    pathname.startsWith("/files") ? "text-violet-400" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Files
+                </Link>
+                <Link
+                  href="/analytics"
+                  className={`text-sm font-medium transition-colors ${
+                    pathname.startsWith("/analytics") ? "text-violet-400" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Analytics
+                </Link>
+                <Link
+                  href="/logs"
+                  className={`text-sm font-medium transition-colors ${
+                    pathname.startsWith("/logs") ? "text-violet-400" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Logs
+                </Link>
+                <Link
+                  href="/settings"
+                  className={`text-sm font-medium transition-colors ${
+                    pathname.startsWith("/settings") ? "text-violet-400" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Settings
                 </Link>
                 <UserButton />
               </>

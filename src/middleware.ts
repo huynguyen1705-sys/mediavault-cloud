@@ -5,9 +5,25 @@ const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/files(.*)",
   "/settings(.*)",
+  "/analytics(.*)",
+  "/logs(.*)",
+]);
+
+const isPublicRoute = createRouteMatcher([
+  "/public(.*)",
+  "/login(.*)",
+  "/register(.*)",
+  "/api/share/[^/]+(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+  const { pathname } = req.nextUrl;
+
+  // Allow public routes
+  if (isPublicRoute(req)) {
+    return;
+  }
+
   if (isProtectedRoute(req)) {
     // Manually redirect to our login page instead of Clerk's default /sign-in
     const { userId } = await auth();
