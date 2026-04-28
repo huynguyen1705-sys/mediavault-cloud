@@ -850,7 +850,6 @@ export default function FilesPage() {
                 <List className="w-4 h-4" />
               </button>
             </div>
-            </div>
 
             {/* Sort Controls */}
             <select
@@ -870,7 +869,7 @@ export default function FilesPage() {
             >
               {sortOrder === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
             </button>
-
+          </div>
           {/* Trash Banner */}
           {trashMode && trashFiles.length > 0 && (
             <div className="mt-4 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-between">
