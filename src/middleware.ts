@@ -10,10 +10,9 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 const isPublicRoute = createRouteMatcher([
-  "/public(.*)",
-  "/login(.*)",
-  "/register(.*)",
-  "/api/share/[^/]+(.*)",
+  "/public/*",
+  "/login/*",
+  "/register/*",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
