@@ -1273,7 +1273,8 @@ export default function FilesPage() {
                   src={selectedFile.url} 
                   alt={selectedFile.name} 
                   style={{ transform: `scale(${zoom})` }} 
-                  className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl transition-transform" 
+                  className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl transition-transform cursor-pointer" 
+                  onClick={(e) => { e.stopPropagation(); setShowPreview(false); }}
                 />
               )}
               {selectedFile.mimeType?.startsWith("video/") && selectedFile.url && (
@@ -1292,16 +1293,16 @@ export default function FilesPage() {
               )}
               
               {/* Zoom controls for images */}
-              {selectedFile.mimeType?.startsWith("image/") && (
-                <div className="flex items-center justify-center gap-2 mt-4">
-                  <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+              {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
+                <div key="zoom-controls" className="flex items-center justify-center gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
+                  <button onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.max(0.5, z - 0.25)); }} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
                     <ZoomOut className="w-5 h-5" />
                   </button>
                   <span className="text-sm text-gray-400 w-16 text-center">{Math.round(zoom * 100)}%</span>
-                  <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+                  <button onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.min(3, z + 0.25)); }} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
                     <ZoomIn className="w-5 h-5" />
                   </button>
-                  <button onClick={() => setZoom(1)} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
+                  <button onClick={(e) => { e.stopPropagation(); setZoom(1); }} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
                     <Maximize2 className="w-5 h-5" />
                   </button>
                 </div>
