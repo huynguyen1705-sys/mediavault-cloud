@@ -111,6 +111,8 @@ export default function FilesPage() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<{ id: string | null; name: string }[]>([{ id: null, name: "My Files" }]);
   const [loading, setLoading] = useState(true);
+  const [storageUsed, setStorageUsed] = useState(0);
+  const [storageLimit, setStorageLimit] = useState(5 * 1024 * 1024 * 1024); // 5GB default
   const [uploadQueue, setUploadQueue] = useState<UploadFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -208,6 +210,21 @@ export default function FilesPage() {
     }
   }, [isLoaded, user, buildTree]);
 
+  // Fetch storage usage
+  const fetchStorage = useCallback(async () => {
+    if (!isLoaded || !user) return;
+    try {
+      const res = await fetch("/api/storage");
+      if (res.ok) {
+        const data = await res.json();
+        setStorageUsed(data.usedBytes || 0);
+        setStorageLimit(data.limitBytes || 5 * 1024 * 1024 * 1024);
+      }
+    } catch (error) {
+      console.error("Fetch storage error:", error);
+    }
+  }, [isLoaded, user]);
+
   // Fetch files
   const fetchFiles = useCallback(async () => {
     if (!isLoaded) return;
@@ -234,7 +251,8 @@ export default function FilesPage() {
   useEffect(() => {
     fetchFiles();
     fetchAllFolders();
-  }, [fetchFiles, fetchAllFolders]);
+    fetchStorage();
+  }, [fetchFiles, fetchAllFolders, fetchStorage]);
 
   // Toggle folder expand
   const toggleExpand = useCallback((folderId: string) => {
@@ -725,6 +743,20 @@ export default function FilesPage() {
               No folders yet
             </div>
           )}
+        </div>
+
+        {/* Storage Quota */}
+        <div className="px-3 py-2 border-t border-gray-800">
+          <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+            <span>Storage</span>
+            <span>{Math.round(storageUsed / 1024 / 1024)} MB / {Math.round(storageLimit / 1024 / 1024 / 1024)} GB</span>
+          </div>
+          <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+            <div 
+              className={`h-full rounded-full transition-all ${storageUsed / storageLimit > 0.9 ? "bg-red-500" : storageUsed / storageLimit > 0.7 ? "bg-amber-500" : "bg-violet-500"}`}
+              style={{ width: `${Math.min((storageUsed / storageLimit) * 100, 100)}%` }}
+            />
+          </div>
         </div>
 
         {/* New Folder Button */}
