@@ -4,20 +4,46 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { Cloud, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { user, isSignedIn } = useUser();
+  const { user, isSignedIn, isLoaded } = useUser();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const navLinks = [
+  useEffect(() => {
+    if (isSignedIn && user) {
+      // Check admin status
+      fetch("/api/admin/stats")
+        .then(r => {
+          if (r.ok) setIsAdmin(true);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [isSignedIn, user]);
+
+  const isActive = (path: string) => pathname === path;
+
+  // Guest links
+  const guestLinks = [
     { href: "/", label: "Home" },
     { href: "/features", label: "Features" },
     { href: "/pricing", label: "Pricing" },
   ];
 
-  const isActive = (path: string) => pathname === path;
+  // Logged in links (hide Home/Features/Pricing, show dashboard pages)
+  const dashboardLinks = [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/files", label: "Files" },
+    { href: "/analytics", label: "Analytics" },
+    { href: "/settings", label: "Settings" },
+    { href: "/logs", label: "Logs" },
+  ];
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/80 backdrop-blur-lg border-b border-gray-800">
@@ -35,19 +61,50 @@ export default function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
+            {!isSignedIn ? (
+              // Guest: show Home/Features/Pricing
+              guestLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm font-medium transition-colors ${
+                    isActive(link.href)
+                      ? "text-violet-400"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))
+            ) : (
+              // Logged in: show dashboard pages only
+              dashboardLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm font-medium transition-colors ${
+                    pathname.startsWith(link.href)
+                      ? "text-violet-400"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))
+            )}
+            {/* Admin link - only for admins */}
+            {isSignedIn && !loading && isAdmin && (
               <Link
-                key={link.href}
-                href={link.href}
+                href="/admin"
                 className={`text-sm font-medium transition-colors ${
-                  isActive(link.href)
+                  pathname.startsWith("/admin")
                     ? "text-violet-400"
                     : "text-gray-400 hover:text-white"
                 }`}
               >
-                {link.label}
+                Admin
               </Link>
-            ))}
+            )}
           </div>
 
           {/* Auth */}
@@ -68,57 +125,7 @@ export default function Navbar() {
                 </Link>
               </>
             ) : (
-              <>
-                <Link
-                  href="/dashboard"
-                  className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith("/dashboard") ? "text-violet-400" : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/files"
-                  className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith("/files") ? "text-violet-400" : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  Files
-                </Link>
-                <Link
-                  href="/analytics"
-                  className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith("/analytics") ? "text-violet-400" : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  Analytics
-                </Link>
-                <Link
-                  href="/admin"
-                  className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith("/admin") ? "text-violet-400" : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  Admin
-                </Link>
-                <Link
-                  href="/logs"
-                  className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith("/logs") ? "text-violet-400" : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  Logs
-                </Link>
-                <Link
-                  href="/settings"
-                  className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith("/settings") ? "text-violet-400" : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  Settings
-                </Link>
-                <UserButton />
-              </>
+              <UserButton />
             )}
           </div>
 
@@ -136,18 +143,46 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden bg-gray-900 border-b border-gray-800">
           <div className="px-4 py-4 space-y-3">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`block text-sm font-medium ${
-                  isActive(link.href) ? "text-violet-400" : "text-gray-400"
-                }`}
-                onClick={() => setMobileOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {!isSignedIn ? (
+              guestLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`block text-sm font-medium ${
+                    isActive(link.href) ? "text-violet-400" : "text-gray-400"
+                  }`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))
+            ) : (
+              <>
+                {dashboardLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`block text-sm font-medium ${
+                      pathname.startsWith(link.href) ? "text-violet-400" : "text-gray-400"
+                    }`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className={`block text-sm font-medium ${
+                      pathname.startsWith("/admin") ? "text-violet-400" : "text-gray-400"
+                    }`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}
