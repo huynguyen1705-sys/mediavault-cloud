@@ -84,15 +84,20 @@ export default function AdminPage() {
     if (isLoaded && user) {
       // Check admin + fetch data in parallel
       Promise.all([
-        fetch("/api/admin/stats").then(r => r.json()),
-        fetch("/api/admin/users").then(r => r.json()),
-        fetch("/api/admin/plans").then(r => r.json()),
-      ]).then(([statsData, usersData, plansData]) => {
-        // If not admin (401 or 403), redirect
-        if (statsData.error || usersData.error) {
+        fetch("/api/admin/stats"),
+        fetch("/api/admin/users"),
+        fetch("/api/admin/plans"),
+      ]).then(async (responses) => {
+        // Check if any returned error status (401/403)
+        const hasError = responses.some(r => !r.ok);
+        if (hasError) {
           window.location.href = "/dashboard";
           return;
         }
+        // Parse JSON for all
+        const [statsData, usersData, plansData] = await Promise.all(
+          responses.map(r => r.json())
+        );
         setStats(statsData.stats || null);
         setUsers(usersData.users || []);
         setPlans(plansData.plans || []);

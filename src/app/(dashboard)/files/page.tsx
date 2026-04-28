@@ -399,13 +399,18 @@ export default function FilesPage() {
         setNewFolderName("");
         setShowNewFolderModal(false);
         fetchAllFolders();
+        showToastMessage("Folder created successfully");
         if (currentFolderId) {
           const folder = allFolders.find(f => f.id === currentFolderId);
           if (folder) toggleExpand(currentFolderId);
         }
+      } else {
+        const err = await res.json();
+        showToastMessage("Error: " + (err.error || "Failed to create folder"));
       }
     } catch (error) {
       console.error("Create folder error:", error);
+      showToastMessage("Error: Something went wrong");
     } finally {
       setCreatingFolder(false);
     }
