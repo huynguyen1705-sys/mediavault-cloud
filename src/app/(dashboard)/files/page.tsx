@@ -58,6 +58,9 @@ import {
   ArrowUpDown,
   ArrowDown,
   ArrowUp,
+  Info,
+  Calendar,
+  ExternalLink,
 } from "lucide-react";
 import { formatBytes, formatDate } from "@/lib/utils";
 
@@ -116,6 +119,7 @@ export default function FilesPage() {
   const [uploadQueue, setUploadQueue] = useState<UploadFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -1118,6 +1122,12 @@ export default function FilesPage() {
               <Eye className="w-4 h-4" /> View
             </button>
             <button
+              onClick={() => { setSelectedFile(contextMenu.file); setShowDetails(true); setContextMenu(null); }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+            >
+              <Info className="w-4 h-4" /> Details
+            </button>
+            <button
               onClick={() => { setSelectedFile(contextMenu.file); setShowShareModal(true); setContextMenu(null); }}
               className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
             >
@@ -1286,6 +1296,103 @@ export default function FilesPage() {
                   <p>Preview not available</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Details Panel */}
+      {showDetails && selectedFile && (
+        <div className="w-80 bg-gray-900 border-l border-gray-800 flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+            <h3 className="font-semibold">File Details</h3>
+            <button onClick={() => setShowDetails(false)} className="p-1 hover:bg-gray-800 rounded-lg">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4">
+            {/* Preview */}
+            <div className="mb-6">
+              <div className="aspect-square rounded-xl bg-gray-800 flex items-center justify-center mb-4 overflow-hidden">
+                {selectedFile.thumbnailUrl ? (
+                  <img src={selectedFile.thumbnailUrl} alt={selectedFile.name} className="w-full h-full object-cover" />
+                ) : (
+                  getFileIcon(selectedFile.mimeType, "lg")
+                )}
+              </div>
+              <div className="text-center font-medium truncate">{selectedFile.name}</div>
+            </div>
+
+            {/* Details */}
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <FileText className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-xs text-gray-400">Type</div>
+                  <div className="text-sm truncate">{selectedFile.mimeType || "Unknown"}</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Download className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <div className="text-xs text-gray-400">Size</div>
+                  <div className="text-sm">{formatBytes(Number(selectedFile.fileSize))}</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Calendar className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <div className="text-xs text-gray-400">Created</div>
+                  <div className="text-sm">{new Date(selectedFile.createdAt).toLocaleDateString()}</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <RefreshCw className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <div>
+                  <div className="text-xs text-gray-400">Modified</div>
+                  <div className="text-sm">{new Date(selectedFile.updatedAt).toLocaleDateString()}</div>
+                </div>
+              </div>
+
+              {selectedFile.url && (
+                <div className="flex items-start gap-3">
+                  <ExternalLink className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs text-gray-400">URL</div>
+                    <a href={selectedFile.url} target="_blank" rel="noopener noreferrer" className="text-sm text-violet-400 hover:text-violet-300 truncate block">
+                      Open
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="mt-6 pt-4 border-t border-gray-800 space-y-2">
+              <button
+                onClick={() => { setShowDetails(false); setShowShareModal(true); }}
+                className="w-full flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
+              >
+                <Share2 className="w-4 h-4" /> Share
+              </button>
+              {selectedFile.url && (
+                <a
+                  href={selectedFile.url}
+                  download={selectedFile.name}
+                  className="w-full flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
+                >
+                  <Download className="w-4 h-4" /> Download
+                </a>
+              )}
+              <button
+                onClick={() => { setShowDetails(false); setSelectedFile(selectedFile); setShowPreview(true); }}
+                className="w-full flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
+              >
+                <Eye className="w-4 h-4" /> Preview
+              </button>
             </div>
           </div>
         </div>
