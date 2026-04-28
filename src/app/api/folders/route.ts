@@ -2,6 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
 
+// GET - List all folders
+export async function GET(request: NextRequest) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userProfile = await prisma.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    if (!userProfile) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const folders = await prisma.folder.findMany({
+      where: { userId: userProfile.id },
+      orderBy: { name: "asc" },
+    });
+
+    return NextResponse.json({ folders });
+  } catch (error) {
+    console.error("List folders error:", error);
+    return NextResponse.json({ error: "Failed to list folders" }, { status: 500 });
+  }
+}
+
 // POST - Create folder
 export async function POST(request: NextRequest) {
   try {
