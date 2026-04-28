@@ -121,6 +121,8 @@ export default function FilesPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [folderContextMenu, setFolderContextMenu] = useState<{ x: number; y: number; folder: FolderTreeNode } | null>(null);
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [movingFile, setMovingFile] = useState<FileItem | null>(null);
 
   // NEW: Folder tree state
   const [allFolders, setAllFolders] = useState<FolderTreeNode[]>([]);
@@ -418,6 +420,30 @@ export default function FilesPage() {
       showToastMessage("Error: Something went wrong");
     } finally {
       setCreatingFolder(false);
+    }
+  };
+
+  // Move file to folder
+  const handleMoveFile = async (targetFolderId: string | null) => {
+    if (!movingFile) return;
+    try {
+      const res = await fetch(`/api/files/${movingFile.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folderId: targetFolderId }),
+      });
+      if (res.ok) {
+        setShowMoveModal(false);
+        setMovingFile(null);
+        fetchFiles();
+        showToastMessage("File moved successfully");
+      } else {
+        const err = await res.json();
+        showToastMessage("Error: " + (err.error || "Failed to move"));
+      }
+    } catch (error) {
+      console.error("Move file error:", error);
+      showToastMessage("Error: Failed to move file");
     }
   };
 
@@ -914,6 +940,12 @@ export default function FilesPage() {
               <Share2 className="w-4 h-4" /> Share
             </button>
             <button
+              onClick={() => { setMovingFile(contextMenu.file); setShowMoveModal(true); setContextMenu(null); }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+            >
+              <FolderInput className="w-4 h-4" /> Move to...
+            </button>
+            <button
               onClick={() => {
                 navigator.clipboard.writeText(window.location.origin + "/api/files/" + contextMenu.file.id);
                 showToastMessage("Link copied!");
@@ -1113,6 +1145,47 @@ export default function FilesPage() {
                 className="flex-1 px-4 py-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-xl transition-colors"
               >
                 {creatingFolder ? "Creating..." : "Create"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Move File Modal */}
+      {showMoveModal && movingFile && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setShowMoveModal(false); setMovingFile(null); }}>
+          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold mb-4">Move File</h2>
+            <p className="text-sm text-gray-400 mb-4">Moving: <span className="text-white">{movingFile.name}</span></p>
+            <div className="mb-4">
+              <label className="text-sm text-gray-400 mb-2 block">Destination folder</label>
+              <select
+                id="move-folder-select"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-violet-500"
+              >
+                <option value="">Root (My Files)</option>
+                {allFolders.map(folder => (
+                  <option key={folder.id} value={folder.id}>
+                    {folder.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowMoveModal(false); setMovingFile(null); }}
+                className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const select = document.getElementById("move-folder-select") as HTMLSelectElement;
+                  handleMoveFile(select.value || null);
+                }}
+                className="flex-1 px-4 py-2 bg-violet-600 hover:bg-violet-500 rounded-xl transition-colors"
+              >
+                Move
               </button>
             </div>
           </div>
