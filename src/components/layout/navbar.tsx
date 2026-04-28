@@ -13,8 +13,8 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/pricing", label: "Pricing" },
     { href: "/features", label: "Features" },
+    { href: "/pricing", label: "Pricing" },
   ];
 
   const isActive = (path: string) => pathname === path;
@@ -92,6 +92,14 @@ export default function Navbar() {
                   }`}
                 >
                   Analytics
+                </Link>
+                <Link
+                  href="/admin"
+                  className={`text-sm font-medium transition-colors ${
+                    pathname.startsWith("/admin") ? "text-violet-400" : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Admin
                 </Link>
                 <Link
                   href="/logs"
