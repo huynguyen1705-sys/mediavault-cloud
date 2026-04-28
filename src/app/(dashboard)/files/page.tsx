@@ -1273,8 +1273,7 @@ export default function FilesPage() {
                   src={selectedFile.url} 
                   alt={selectedFile.name} 
                   style={{ transform: `scale(${zoom})` }} 
-                  className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl transition-transform cursor-pointer" 
-                  onClick={(e) => { e.stopPropagation(); setShowPreview(false); }}
+                  className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl transition-transform" 
                 />
               )}
               {selectedFile.mimeType?.startsWith("video/") && selectedFile.url && (
@@ -1291,23 +1290,23 @@ export default function FilesPage() {
                   <p className="text-gray-400">Preview not available</p>
                 </div>
               )}
-              
-              {/* Zoom controls for images */}
-              {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
-                <div key="zoom-controls" className="flex items-center justify-center gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
-                  <button onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.max(0.5, z - 0.25)); }} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
-                    <ZoomOut className="w-5 h-5" />
-                  </button>
-                  <span className="text-sm text-gray-400 w-16 text-center">{Math.round(zoom * 100)}%</span>
-                  <button onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.min(3, z + 0.25)); }} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
-                    <ZoomIn className="w-5 h-5" />
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); setZoom(1); }} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
-                    <Maximize2 className="w-5 h-5" />
-                  </button>
-                </div>
-              )}
             </div>
+            
+            {/* Zoom controls - OUTSIDE the image container */}
+            {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
+              <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-900/90 backdrop-blur px-4 py-2 rounded-full shadow-xl border border-gray-700">
+                <button onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                  <ZoomOut className="w-5 h-5" />
+                </button>
+                <span className="text-sm text-gray-300 w-16 text-center font-mono">{Math.round(zoom * 100)}%</span>
+                <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                  <ZoomIn className="w-5 h-5" />
+                </button>
+                <button onClick={() => setZoom(1)} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                  <Maximize2 className="w-5 h-5" />
+                </button>
+              </div>
+            )}
           </div>
           
           {/* Right Sidebar - Details */}
