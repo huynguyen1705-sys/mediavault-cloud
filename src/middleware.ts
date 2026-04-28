@@ -1,29 +1,20 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+
+const isProtectedRoute = createRouteMatcher([
+  "/dashboard/:path*",
+  "/files/:path*",
+  "/settings/:path*",
+  "/analytics/:path*",
+  "/logs/:path*",
+  "/admin/:path*",
+]);
 
 export default clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
 
-  // Public routes - no auth required
-  if (pathname.startsWith("/login") || pathname.startsWith("/register") || pathname.startsWith("/public/")) {
-    return;
-  }
-
-  // Protected routes - require auth
-  if (
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/files") ||
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/settings") ||
-    pathname.startsWith("/analytics") ||
-    pathname.startsWith("/logs")
-  ) {
-    const { userId } = await auth();
-    if (!userId) {
-      const signInUrl = new URL("/login", req.url);
-      signInUrl.searchParams.set("redirect_url", req.url);
-      return NextResponse.redirect(signInUrl);
-    }
+  if (isProtectedRoute(req)) {
+    await auth.protect();
   }
 });
 

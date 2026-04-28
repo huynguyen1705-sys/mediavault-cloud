@@ -82,9 +82,24 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (isLoaded && user) {
-      fetchStats();
-      fetchUsers();
-      fetchPlans();
+      // Check admin + fetch data in parallel
+      Promise.all([
+        fetch("/api/admin/stats").then(r => r.json()),
+        fetch("/api/admin/users").then(r => r.json()),
+        fetch("/api/admin/plans").then(r => r.json()),
+      ]).then(([statsData, usersData, plansData]) => {
+        // If not admin (401 or 403), redirect
+        if (statsData.error || usersData.error) {
+          window.location.href = "/dashboard";
+          return;
+        }
+        setStats(statsData.stats || null);
+        setUsers(usersData.users || []);
+        setPlans(plansData.plans || []);
+        setLoading(false);
+      }).catch(() => {
+        window.location.href = "/dashboard";
+      });
     }
   }, [isLoaded, user]);
 
