@@ -717,47 +717,47 @@ export default function FilesPage() {
 
         {/* Upload Queue */}
         {uploadQueue.length > 0 && (
-          <div className="border-b border-gray-800 bg-gray-900/50">
-            <div className="px-4 py-2 flex items-center justify-between">
+          <div className="border-b border-gray-800 bg-gray-900">
+            <div className="px-4 py-3 flex items-center justify-between bg-gray-900/80">
               <div className="flex items-center gap-2">
-                <CloudUpload className="w-4 h-4 text-violet-400" />
+                <CloudUpload className="w-4 h-4 text-violet-400 animate-bounce" />
                 <span className="text-sm font-medium">Uploading {uploadQueue.length} files</span>
               </div>
               <button
                 onClick={() => setUploadQueue([])}
-                className="text-xs text-gray-500 hover:text-white"
+                className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800"
               >
-                Clear
+                Clear All
               </button>
             </div>
-            <div className="max-h-48 overflow-y-auto">
-              {uploadQueue.map((file) => (
-                <div key={file.id} className="px-4 py-2 border-t border-gray-800/50">
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(file.status)}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm truncate">{file.name}</span>
-                        <span className="text-xs text-gray-500">{formatBytes(file.size)}</span>
-                      </div>
-                      {file.status === "uploading" && (
-                        <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-                          <div 
-                            className="bg-gradient-to-r from-violet-500 to-purple-500 h-1.5 rounded-full animate-pulse"
-                            style={{ width: `${file.progress || 50}%` }}
-                          />
-                        </div>
-                      )}
-                      {file.status === "error" && (
-                        <p className="text-xs text-red-400">{file.error || "Upload failed"}</p>
-                      )}
-                      {file.status === "completed" && (
-                        <p className="text-xs text-emerald-400">Done</p>
-                      )}
-                      {file.status === "pending" && (
-                        <p className="text-xs text-gray-500">Waiting...</p>
-                      )}
+            <div className="px-4 pb-3 space-y-2">
+              {uploadQueue.map((file, index) => (
+                <div key={file.id} className="flex items-center gap-3 bg-gray-800/50 rounded-lg px-3 py-2">
+                  {getStatusIcon(file.status)}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm truncate">{file.name}</span>
+                      <span className="text-xs text-gray-500 ml-2 shrink-0">{formatBytes(file.size)}</span>
                     </div>
+                    {file.status === "uploading" && (
+                      <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-violet-500 to-purple-500 h-2 rounded-full animate-pulse"
+                          style={{ width: `${file.progress || 50}%` }}
+                        />
+                      </div>
+                    )}
+                    {file.status === "error" && (
+                      <p className="text-xs text-red-400">{file.error || "Upload failed"}</p>
+                    )}
+                    {file.status === "completed" && (
+                      <p className="text-xs text-emerald-400 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> Done
+                      </p>
+                    )}
+                    {file.status === "pending" && (
+                      <p className="text-xs text-gray-500">Waiting...</p>
+                    )}
                   </div>
                 </div>
               ))}
