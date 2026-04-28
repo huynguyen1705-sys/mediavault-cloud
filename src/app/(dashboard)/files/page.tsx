@@ -122,10 +122,14 @@ export default function FilesPage() {
   const [showDetails, setShowDetails] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
-  const isDraggingRef = useRef(false);
-  const lastMouseRef = useRef({ x: 0, y: 0 });
-  const imageRef = useRef<HTMLImageElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({
+    active: false,
+    startX: 0,
+    startY: 0,
+    startDragX: 0,
+    startDragY: 0,
+  });
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
@@ -262,6 +266,142 @@ export default function FilesPage() {
     fetchAllFolders();
     fetchStorage();
   }, [fetchFiles, fetchAllFolders, fetchStorage]);
+
+  // Professional Pan & Zoom Handler
+  useEffect(() => {
+    const container = document.getElementById("pan-container");
+    const image = document.getElementById("pan-image");
+    if (!container || !image) return;
+
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let currentX = dragPos.x;
+    let currentY = dragPos.y;
+    let lastX = 0;
+    let lastY = 0;
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (zoom <= 1) return;
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      currentX = dragPos.x;
+      currentY = dragPos.y;
+      e.preventDefault();
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      currentX += dx;
+      currentY += dy;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      image.style.transform = `scale(${zoom}) translate(${currentX}px, ${currentY}px)`;
+    };
+
+    const onMouseUp = () => {
+      if (isDragging) {
+        isDragging = false;
+        setDragPos({ x: currentX, y: currentY });
+      }
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.25 : 0.25;
+      const newZoom = Math.max(0.5, Math.min(3, zoom + delta));
+      setZoom(newZoom);
+      if (newZoom === 1) {
+        setDragPos({ x: 0, y: 0 });
+        currentX = 0;
+        currentY = 0;
+      }
+    };
+
+    // Touch support
+    let lastTouchDist = 0;
+    let lastTouchX = 0;
+    let lastTouchY = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1 && zoom > 1) {
+        isDragging = true;
+        lastX = e.touches[0].clientX;
+        lastY = e.touches[0].clientY;
+        currentX = dragPos.x;
+        currentY = dragPos.y;
+      } else if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        lastTouchDist = Math.sqrt(dx * dx + dy * dy);
+        lastTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        lastTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1 && isDragging) {
+        const dx = e.touches[0].clientX - lastX;
+        const dy = e.touches[0].clientY - lastY;
+        currentX += dx;
+        currentY += dy;
+        lastX = e.touches[0].clientX;
+        lastY = e.touches[0].clientY;
+        image.style.transform = `scale(${zoom}) translate(${currentX}px, ${currentY}px)`;
+      } else if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const newZoom = Math.max(0.5, Math.min(3, zoom * (dist / lastTouchDist)));
+        setZoom(newZoom);
+        lastTouchDist = dist;
+        if (newZoom === 1) {
+          setDragPos({ x: 0, y: 0 });
+          currentX = 0;
+          currentY = 0;
+        }
+      }
+      e.preventDefault();
+    };
+
+    const onTouchEnd = () => {
+      if (isDragging) {
+        isDragging = false;
+        setDragPos({ x: currentX, y: currentY });
+      }
+    };
+
+    container.addEventListener("mousedown", onMouseDown);
+    container.addEventListener("touchstart", onTouchStart, { passive: false });
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("touchend", onTouchEnd);
+    container.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener("mousedown", onMouseDown);
+      container.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("touchend", onTouchEnd);
+      container.removeEventListener("wheel", onWheel);
+    };
+  }, [zoom, dragPos, setDragPos, setZoom]);
+
+  // Sync drag state to image transform
+  useEffect(() => {
+    const image = document.getElementById("pan-image");
+    if (image) {
+      image.style.transform = `scale(${zoom}) translate(${dragPos.x}px, ${dragPos.y}px)`;
+    }
+  }, [zoom, dragPos]);
 
   // Toggle folder expand
   const toggleExpand = useCallback((folderId: string) => {
@@ -1261,50 +1401,26 @@ export default function FilesPage() {
           style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowPreview(false); }}
         >
-          {/* Main Content - Image Preview */}
-          <div 
-            className="flex-1 flex items-center justify-center p-8 overflow-auto"
-            style={{ 
-              cursor: zoom > 1 ? (isDraggingRef.current ? 'grabbing' : 'grab') : 'default'
-            }}
+          <button 
+            onClick={() => setShowPreview(false)} 
+            className="absolute top-4 left-4 z-50 p-2 bg-black/50 hover:bg-black/70 rounded-full transition-colors backdrop-blur-sm"
           >
-            <div 
-              ref={containerRef}
-              className="relative max-w-full max-h-full"
-              onMouseDown={(e) => {
-                if (zoom > 1 && e.button === 0) {
-                  isDraggingRef.current = true;
-                  lastMouseRef.current = { x: e.clientX, y: e.clientY };
-                  e.preventDefault();
-                }
-              }}
-              onMouseMove={(e) => {
-                if (isDraggingRef.current) {
-                  const dx = e.clientX - lastMouseRef.current.x;
-                  const dy = e.clientY - lastMouseRef.current.y;
-                  setDragPos(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-                  lastMouseRef.current = { x: e.clientX, y: e.clientY };
-                }
-              }}
-              onMouseUp={() => { isDraggingRef.current = false; }}
-              onMouseLeave={() => { isDraggingRef.current = false; }}
-              style={{ cursor: zoom > 1 ? 'grab' : 'default', userSelect: 'none' }}
-            >
-              {/* Close button top-left */}
-              <button 
-                onClick={() => setShowPreview(false)} 
-                className="absolute -top-12 left-0 p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6 text-white" />
-              </button>
-              
-              {/* Image */}
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="relative">
               {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
                 <img 
+                  id="pan-image"
                   src={selectedFile.url} 
                   alt={selectedFile.name} 
-                  style={{ transform: `scale(${zoom}) translate(${dragPos.x}px, ${dragPos.y}px)` }} 
-                  className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl transition-transform" 
+                  draggable={false}
+                  className="max-w-[90vw] max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+                  style={{
+                    transform: `scale(${zoom}) translate(${dragPos.x}px, ${dragPos.y}px)`,
+                    willChange: 'transform',
+                    transition: 'transform 0.1s ease-out',
+                  }}
                 />
               )}
               {selectedFile.mimeType?.startsWith("video/") && selectedFile.url && (
@@ -1322,25 +1438,21 @@ export default function FilesPage() {
                 </div>
               )}
             </div>
-            
-            {/* Zoom controls - OUTSIDE the image container */}
-            {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
-              <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-900/90 backdrop-blur px-4 py-2 rounded-full shadow-xl border border-gray-700 z-50">
-                <button onClick={() => { setZoom((z) => Math.max(0.5, z - 0.25)); setDragPos({ x: 0, y: 0 }); }} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
-                  <ZoomOut className="w-5 h-5" />
-                </button>
-                <span className="text-sm text-gray-300 w-16 text-center font-mono">{Math.round(zoom * 100)}%</span>
-                <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
-                  <ZoomIn className="w-5 h-5" />
-                </button>
-                <button onClick={() => { setZoom(1); setDragPos({ x: 0, y: 0 }); }} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
-                  <RotateCcw className="w-5 h-5" />
-                </button>
-              </div>
-            )}
           </div>
-          
-          {/* Right Sidebar - Details */}
+          {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-900/90 backdrop-blur px-4 py-2 rounded-full shadow-xl border border-gray-700 z-50">
+              <button onClick={() => { setZoom((z) => Math.max(0.5, z - 0.25)); setDragPos({ x: 0, y: 0 }); }} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                <ZoomOut className="w-5 h-5" />
+              </button>
+              <span className="text-sm text-gray-300 w-16 text-center font-mono">{Math.round(zoom * 100)}%</span>
+              <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                <ZoomIn className="w-5 h-5" />
+              </button>
+              <button onClick={() => { setZoom(1); setDragPos({ x: 0, y: 0 }); }} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                <RotateCcw className="w-5 h-5" />
+              </button>
+            </div>
+          )}
           <div className="w-80 bg-gray-900 border-l border-gray-800 flex flex-col overflow-hidden">
             <div className="p-4 border-b border-gray-800 flex items-center justify-between">
               <h3 className="font-semibold">File Details</h3>
@@ -1349,7 +1461,6 @@ export default function FilesPage() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              {/* Thumbnail */}
               <div className="mb-6">
                 <div className="aspect-square rounded-xl bg-gray-800 flex items-center justify-center mb-4 overflow-hidden">
                   {selectedFile.thumbnailUrl ? (
@@ -1360,8 +1471,6 @@ export default function FilesPage() {
                 </div>
                 <div className="text-center font-medium truncate">{selectedFile.name}</div>
               </div>
-
-              {/* Details */}
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <FileText className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
@@ -1370,7 +1479,6 @@ export default function FilesPage() {
                     <div className="text-sm truncate">{selectedFile.mimeType || "Unknown"}</div>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <Download className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                   <div>
@@ -1378,7 +1486,6 @@ export default function FilesPage() {
                     <div className="text-sm">{formatBytes(Number(selectedFile.fileSize))}</div>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <Calendar className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                   <div>
@@ -1386,7 +1493,6 @@ export default function FilesPage() {
                     <div className="text-sm">{new Date(selectedFile.createdAt).toLocaleDateString()}</div>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <RefreshCw className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                   <div>
@@ -1394,7 +1500,6 @@ export default function FilesPage() {
                     <div className="text-sm">{new Date(selectedFile.updatedAt).toLocaleDateString()}</div>
                   </div>
                 </div>
-
                 {selectedFile.url && (
                   <div className="flex items-start gap-3">
                     <ExternalLink className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
@@ -1407,8 +1512,6 @@ export default function FilesPage() {
                   </div>
                 )}
               </div>
-
-              {/* Actions */}
               <div className="mt-6 pt-4 border-t border-gray-800 space-y-2">
                 <button
                   onClick={() => { setShowPreview(false); setShowShareModal(true); }}
@@ -1430,7 +1533,6 @@ export default function FilesPage() {
           </div>
         </div>
       )}
-
       {/* Details Panel */}
       {showDetails && selectedFile && (
         <div className="w-80 bg-gray-900 border-l border-gray-800 flex flex-col overflow-hidden">
