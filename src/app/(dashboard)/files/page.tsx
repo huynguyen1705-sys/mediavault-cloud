@@ -368,7 +368,7 @@ export default function FilesPage() {
     setDropTargetFolderId(null);
   };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleFileDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     handleUpload(e.dataTransfer.files);
   }, [handleUpload]);
@@ -895,7 +895,7 @@ export default function FilesPage() {
         <div 
           className="flex-1 overflow-auto p-4"
           onDragOver={(e) => e.preventDefault()}
-          onDrop={handleDrop}
+          onDrop={handleFileDrop}
         >
           {/* Empty State */}
           {!trashMode && files.length === 0 && !loading && (
