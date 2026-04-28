@@ -1262,25 +1262,27 @@ export default function FilesPage() {
         >
           {/* Main Content - Image Preview */}
           <div 
-            className="flex-1 flex items-center justify-center p-8 overflow-hidden"
+            className="flex-1 flex items-center justify-center p-8 overflow-auto"
             style={{ 
-              overflow: zoom > 1 ? 'hidden' : 'auto',
               cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default'
             }}
-            onMouseDown={(e) => {
-              if (zoom > 1 && e.target === e.currentTarget) {
-                setIsDragging(true);
-                setDragStart({ x: e.clientX - dragPos.x, y: e.clientY - dragPos.y });
-              }
-            }}
-            onMouseMove={(e) => {
-              if (isDragging) {
-                setDragPos({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
-              }
-            }}
-            onMouseUp={() => setIsDragging(false)}
-            onMouseLeave={() => setIsDragging(false)}
           >
+            <div 
+              className="relative max-w-full max-h-full"
+              onMouseDown={(e) => {
+                if (zoom > 1) {
+                  setIsDragging(true);
+                  setDragStart({ x: e.clientX - dragPos.x, y: e.clientY - dragPos.y });
+                }
+              }}
+              onMouseMove={(e) => {
+                if (isDragging) {
+                  setDragPos({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+                }
+              }}
+              onMouseUp={() => setIsDragging(false)}
+              onMouseLeave={() => setIsDragging(false)}
+            >
             <div className="relative max-w-full max-h-full">
               {/* Close button top-left */}
               <button 
@@ -1315,6 +1317,8 @@ export default function FilesPage() {
               )}
             </div>
             
+            </div>
+            
             {/* Zoom controls - OUTSIDE the image container */}
             {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
               <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-900/90 backdrop-blur px-4 py-2 rounded-full shadow-xl border border-gray-700 z-50">
@@ -1327,7 +1331,6 @@ export default function FilesPage() {
                 </button>
                 <button onClick={() => { setZoom(1); setDragPos({ x: 0, y: 0 }); }} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
                   <RotateCcw className="w-5 h-5" />
-                  <Maximize2 className="w-5 h-5" />
                 </button>
               </div>
             )}
