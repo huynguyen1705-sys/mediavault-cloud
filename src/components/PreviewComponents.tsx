@@ -1,10 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
-// Setup pdf.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-import { Play, Pause, Volume2, Maximize2, FileCode, FileText, FileSpreadsheet, Music } from 'lucide-react';
+// DocViewer loaded dynamically to avoid SSR issues
+const DocViewer = dynamic(() => import('@cyntler/react-doc-viewer'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full" />
+    </div>
+  ),
+});
+import { Play, Pause, Volume2, Maximize2, FileCode, FileText, FileSpreadsheet, Music, FileCheck } from 'lucide-react';
+import dynamic from 'next/dynamic';
 
 // Audio Preview - Native player (auto-stops when modal closes)
 function AudioPreview({ url }: { url: string }) {
@@ -118,128 +125,6 @@ function AudioPreview({ url }: { url: string }) {
             className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-violet-500"
           />
         </div>
-      </div>
-    </div>
-  );
-}
-
-// PDF Preview
-function PdfPreview({ url }: { url: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [numPages, setNumPages] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [scale, setScale] = useState(1.5);
-  const pdfDocRef = useRef<any>(null);
-
-  const loadPdfPage = async (pageNum: number) => {
-    if (!pdfDocRef.current || !canvasRef.current) return;
-
-    try {
-      const page = await pdfDocRef.current.getPage(pageNum);
-      const viewport = page.getViewport({ scale });
-      
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      if (!context) return;
-
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-
-      await page.render({
-        canvasContext: context,
-        viewport,
-      }).promise;
-    } catch (error) {
-      console.error('Error rendering PDF page:', error);
-    }
-  };
-
-  useEffect(() => {
-    const loadPdf = async () => {
-      try {
-        // Use proxy endpoint to bypass CORS
-        const proxyUrl = url.includes('/proxy') ? url : `/api/files/${url.split('/').pop()}/proxy`;
-        
-        const response = await fetch(proxyUrl);
-        if (!response.ok) {
-          throw new Error(`Proxy failed: ${response.status}`);
-        }
-        
-        const blob = await response.blob();
-        const arrayBuffer = await blob.arrayBuffer();
-        
-        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
-        const pdf = await loadingTask.promise;
-        pdfDocRef.current = pdf;
-        setNumPages(pdf.numPages);
-        setLoading(false);
-        loadPdfPage(1);
-      } catch (error) {
-        console.error('Error loading PDF:', error);
-        setError(true);
-        setLoading(false);
-      }
-    };
-
-    loadPdf();
-  }, [url]);
-
-  useEffect(() => {
-    if (!loading && currentPage > 0) {
-      loadPdfPage(currentPage);
-    }
-  }, [currentPage, scale, loading]);
-
-  const goToPrevPage = () => setCurrentPage(p => Math.max(1, p - 1));
-  const goToNextPage = () => setCurrentPage(p => Math.min(numPages, p + 1));
-  const zoomIn = () => setScale(s => Math.min(3, s + 0.25));
-  const zoomOut = () => setScale(s => Math.max(0.5, s - 0.25));
-
-  return (
-    <div className="bg-gray-900 rounded-2xl p-4 shadow-2xl w-full max-w-4xl">
-      {/* PDF Controls */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-800">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={goToPrevPage}
-            disabled={currentPage <= 1}
-            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm transition-colors"
-          >
-            Previous
-          </button>
-          <span className="text-gray-300 text-sm">
-            Page {currentPage} of {numPages}
-          </span>
-          <button
-            onClick={goToNextPage}
-            disabled={currentPage >= numPages}
-            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm transition-colors"
-          >
-            Next
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={zoomOut} className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
-            <Maximize2 className="w-4 h-4 text-gray-400 rotate-90" />
-          </button>
-          <span className="text-gray-400 text-sm w-16 text-center">{Math.round(scale * 100)}%</span>
-          <button onClick={zoomIn} className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
-            <Maximize2 className="w-4 h-4 text-gray-400" />
-          </button>
-        </div>
-      </div>
-
-      {/* PDF Canvas */}
-      <div className="flex justify-center overflow-auto max-h-[60vh] bg-gray-800 rounded-lg p-2">
-        {loading ? (
-          <div className="flex items-center justify-center h-96">
-            <div className="animate-spin w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full" />
-          </div>
-        ) : (
-          <canvas ref={canvasRef} className="mx-auto" />
-        )}
       </div>
     </div>
   );
@@ -427,7 +312,7 @@ function TextPreview({ url }: { url: string }) {
   );
 }
 
-export { AudioPreview, PdfPreview, CodePreview, TextPreview, XlsxPreview };
+export { AudioPreview, CodePreview, TextPreview, XlsxPreview };
 
 // XLSX/Spreadsheet Preview
 function XlsxPreview({ url }: { url: string }) {

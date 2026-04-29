@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { AudioPreview, PdfPreview, CodePreview, TextPreview, XlsxPreview } from "@/components/PreviewComponents";
+import { AudioPreview, CodePreview, TextPreview, XlsxPreview } from "@/components/PreviewComponents";
+import DocViewer from "@cyntler/react-doc-viewer";
 import { useUser } from "@clerk/nextjs";
 import { 
   FolderPlus,
@@ -1673,9 +1674,11 @@ const handleDelete = async (fileId: string) => {
                 <AudioPreview url={selectedFile.url} />
               )}
               
-              {/* PDF PREVIEW */}
-              {(selectedFile.mimeType === "application/pdf" || selectedFile.mimeType?.includes("pdf")) && selectedFile.url && (
-                <PdfPreview url={`/api/files/${selectedFile.id}/proxy`} />
+              {/* DOCUMENT PREVIEW - PDF, DOCX, PPTX */}
+              {(selectedFile.mimeType === "application/pdf" || selectedFile.mimeType?.includes("pdf") || selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.presentationml.presentation") && selectedFile.url && (
+                <div className="bg-gray-900 rounded-2xl shadow-2xl w-[90vw] max-w-5xl overflow-hidden">
+                  <DocViewer documents={[{ uri: `/api/files/${selectedFile.id}/proxy`, fileName: selectedFile.name }]} />
+                </div>
               )}
               
               {/* CODE FILE PREVIEW */}
