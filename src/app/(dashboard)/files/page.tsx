@@ -1374,21 +1374,19 @@ export default function FilesPage() {
             </div>
           </div>
           
-          {/* Zoom controls - Bottom bar on mobile */}
+          {/* Zoom controls - Fixed position */}
           {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
-            <div className="fixed bottom-0 md:bottom-auto left-0 md:absolute md:top-4 md:right-4 md:left-auto w-full md:w-auto z-50">
-              <div className="flex items-center justify-center gap-3 md:gap-2 bg-gray-900/95 backdrop-blur px-6 py-4 md:px-4 md:py-2 md:rounded-full shadow-xl border-t md:border border-gray-800">
-                <button onClick={() => { setZoom((z) => Math.max(0.5, z - 0.25)); setDragPos({ x: 0, y: 0 }); }} className="p-3 md:p-2 hover:bg-gray-800 rounded-full transition-colors touch-manipulation">
-                  <ZoomOut className="w-6 h-6 md:w-5 md:h-5" />
-                </button>
-                <span className="text-base md:text-sm text-gray-300 w-20 md:w-16 text-center font-mono">{Math.round(zoom * 100)}%</span>
-                <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="p-3 md:p-2 hover:bg-gray-800 rounded-full transition-colors touch-manipulation">
-                  <ZoomIn className="w-6 h-6 md:w-5 md:h-5" />
-                </button>
-                <button onClick={() => { setZoom(1); setDragPos({ x: 0, y: 0 }); }} className="p-3 md:p-2 hover:bg-gray-800 rounded-full transition-colors touch-manipulation">
-                  <RotateCcw className="w-6 h-6 md:w-5 md:h-5" />
-                </button>
-              </div>
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-gray-900/95 backdrop-blur px-4 py-2 rounded-full shadow-xl border border-gray-800">
+              <button onClick={() => { setZoom((z) => Math.max(0.5, z - 0.25)); setDragPos({ x: 0, y: 0 }); }} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                <ZoomOut className="w-5 h-5" />
+              </button>
+              <span className="text-sm text-gray-300 w-16 text-center font-mono">{Math.round(zoom * 100)}%</span>
+              <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                <ZoomIn className="w-5 h-5" />
+              </button>
+              <button onClick={() => { setZoom(1); setDragPos({ x: 0, y: 0 }); }} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                <RotateCcw className="w-5 h-5" />
+              </button>
             </div>
           )}
           
