@@ -125,6 +125,7 @@ function AudioPreview({ url }: { url: string }) {
 function PdfPreview({ url }: { url: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.5);
@@ -156,27 +157,18 @@ function PdfPreview({ url }: { url: string }) {
   useEffect(() => {
     const loadPdf = async () => {
       try {
-        // Try proxy first (for CORS), fallback to direct URL
-        let pdfUrl = url;
-        try {
-          const proxyResponse = await fetch(`/api/files/${new URL(url).pathname.split('/').pop()}/proxy`);
-          if (proxyResponse.ok) {
-            const blob = await proxyResponse.blob();
-            const arrayBuffer = await blob.arrayBuffer();
-            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-            const pdf = await loadingTask.promise;
-            pdfDocRef.current = pdf;
-            setNumPages(pdf.numPages);
-            setLoading(false);
-            loadPdfPage(1);
-            return;
-          }
-        } catch (proxyError) {
-          console.log('Proxy failed, trying direct URL:', proxyError);
+        // Use proxy endpoint to bypass CORS
+        const proxyUrl = url.includes('/proxy') ? url : `/api/files/${url.split('/').pop()}/proxy`;
+        
+        const response = await fetch(proxyUrl);
+        if (!response.ok) {
+          throw new Error(`Proxy failed: ${response.status}`);
         }
         
-        // Direct URL fallback
-        const loadingTask = pdfjsLib.getDocument(url);
+        const blob = await response.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        
+        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
         const pdf = await loadingTask.promise;
         pdfDocRef.current = pdf;
         setNumPages(pdf.numPages);
@@ -184,6 +176,7 @@ function PdfPreview({ url }: { url: string }) {
         loadPdfPage(1);
       } catch (error) {
         console.error('Error loading PDF:', error);
+        setError(true);
         setLoading(false);
       }
     };
