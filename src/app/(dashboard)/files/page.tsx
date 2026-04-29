@@ -518,28 +518,49 @@ export default function FilesPage() {
 
   const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
     e.preventDefault();
-    const fileId = e.dataTransfer.getData("fileId");
-    if (!fileId) return;
-
-    // Can't drop into the same folder
-    const file = files.find(f => f.id === fileId);
-    if (file && file.folderId === targetFolderId) {
+    e.stopPropagation();
+    
+    // Get file IDs from drag data
+    let fileIds: string[] = [];
+    
+    const fileIdsData = e.dataTransfer.getData("fileIds");
+    if (fileIdsData) {
+      fileIds = JSON.parse(fileIdsData);
+    } else {
+      const fileId = e.dataTransfer.getData("fileId");
+      if (fileId) fileIds = [fileId];
+    }
+    
+    // Fallback: if no fileIds from drag but selectMode is on, use selected files
+    if (fileIds.length === 0 && selectMode && selectedFiles.size > 0) {
+      fileIds = Array.from(selectedFiles);
+    }
+    
+    if (fileIds.length === 0) {
       setDraggingFileId(null);
       setDropTargetFolderId(null);
       return;
     }
 
     try {
-      const res = await fetch(`/api/files/${fileId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folderId: targetFolderId }),
-      });
-      if (res.ok) {
+      let movedCount = 0;
+      for (const fileId of fileIds) {
+        const file = files.find(f => f.id === fileId);
+        if (file && file.folderId === targetFolderId) continue;
+        
+        const res = await fetch(`/api/files/${fileId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ folderId: targetFolderId }),
+        });
+        if (res.ok) movedCount++;
+      }
+      
+      if (movedCount > 0) {
+        showToastMessage(`${movedCount} file${movedCount > 1 ? 's' : ''} moved`);
+        if (selectMode) clearSelection();
         fetchFiles();
-        if (targetFolderId) {
-          showToastMessage("File moved");
-        }
+        fetchAllFolders();
       }
     } catch (error) {
       console.error("Drop error:", error);
@@ -547,6 +568,7 @@ export default function FilesPage() {
     setDraggingFileId(null);
     setDropTargetFolderId(null);
   };
+
 
   const handleFileDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
