@@ -471,33 +471,35 @@ function XlsxPreview({ url }: { url: string }) {
   const displayData = currentSheet.data.slice(0, maxRows);
 
   return (
-    <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden">
+    <div className="bg-gray-900 rounded-2xl shadow-2xl w-[90vw] max-w-6xl overflow-hidden">
       {/* Header with sheet tabs */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700 overflow-x-auto">
+      <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
         <FileSpreadsheet className="w-5 h-5 text-emerald-400 shrink-0" />
-        {sheets.map((sheet, idx) => (
-          <button
-            key={idx}
-            onClick={() => setActiveSheet(idx)}
-            className={`px-3 py-1.5 text-sm rounded-lg whitespace-nowrap transition-colors ${
-              idx === activeSheet 
-                ? 'bg-emerald-600 text-white' 
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-          >
-            {sheet.name}
-          </button>
-        ))}
+        <div className="flex items-center gap-2 overflow-x-auto">
+          {sheets.map((sheet, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveSheet(idx)}
+              className={`px-3 py-1.5 text-sm rounded-lg whitespace-nowrap transition-colors ${
+                idx === activeSheet 
+                  ? 'bg-emerald-600 text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              {sheet.name}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-auto max-h-[60vh]">
+      {/* Table - single scrollbar only */}
+      <div className="overflow-auto max-h-[70vh]">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-800">
-              <th className="px-4 py-2 text-left text-gray-400 font-medium border-r border-gray-700 sticky top-0 bg-gray-800">#</th>
+              <th className="px-4 py-2 text-left text-gray-400 font-medium border-r border-gray-700 sticky top-0 bg-gray-800 w-12">#</th>
               {displayData[0]?.map((_: any, colIdx: number) => (
-                <th key={colIdx} className="px-4 py-2 text-left text-gray-400 font-medium border-r border-gray-700 sticky top-0 bg-gray-800">
+                <th key={colIdx} className="px-4 py-2 text-left text-gray-400 font-medium border-r border-gray-700 sticky top-0 bg-gray-800 min-w-[120px]">
                   {String.fromCharCode(65 + (colIdx % 26))}{colIdx >= 26 ? Math.floor(colIdx / 26) : ''}
                 </th>
               ))}
@@ -506,7 +508,7 @@ function XlsxPreview({ url }: { url: string }) {
           <tbody>
             {displayData.map((row: any[], rowIdx: number) => (
               <tr key={rowIdx} className="border-b border-gray-800 hover:bg-gray-800/50">
-                <td className="px-4 py-2 text-gray-500 border-r border-gray-700 bg-gray-900">{rowIdx + 1}</td>
+                <td className="px-4 py-2 text-gray-500 border-r border-gray-700 bg-gray-900 w-12">{rowIdx + 1}</td>
                 {(row || []).map((cell: any, colIdx: number) => (
                   <td key={colIdx} className="px-4 py-2 text-gray-200 border-r border-gray-800 whitespace-nowrap">
                     {cell !== null && cell !== undefined ? String(cell).slice(0, 100) : ''}
