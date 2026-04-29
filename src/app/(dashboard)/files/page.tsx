@@ -1312,23 +1312,25 @@ export default function FilesPage() {
         </>
       )}
 
-      {/* Preview Modal */}
+      {/* Preview Modal - Mobile Optimized */}
       {showPreview && selectedFile && (
         <div 
-          className="fixed inset-0 z-50 flex"
-          style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) setShowPreview(false); }}
+          className="fixed inset-0 z-50 flex flex-col md:flex-row"
+          style={{ backgroundColor: 'rgba(0,0,0,0.95)' }}
         >
+          {/* Close button top */}
           <button 
             onClick={() => setShowPreview(false)} 
-            className="absolute top-4 left-4 z-50 p-2 bg-black/50 hover:bg-black/70 rounded-full transition-colors backdrop-blur-sm"
+            className="absolute top-4 right-4 z-50 p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors backdrop-blur-sm md:hidden"
           >
             <X className="w-6 h-6 text-white" />
           </button>
-          <div className="flex-1 flex items-center justify-center p-8">
+          
+          {/* Main Content - Image Preview */}
+          <div className="flex-1 flex items-center justify-center p-4 pb-24 md:pb-4 overflow-hidden">
             <div 
               id="pan-container"
-              className="relative cursor-grab active:cursor-grabbing select-none"
+              className="relative cursor-grab active:cursor-grabbing select-none w-full h-full flex items-center justify-center"
               style={{ touchAction: 'none' }}
             >
               {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
@@ -1337,7 +1339,7 @@ export default function FilesPage() {
                   src={selectedFile.url} 
                   alt={selectedFile.name} 
                   draggable={false}
-                  className="max-w-[90vw] max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+                  className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
                   style={{
                     transform: `scale(${zoom}) translate(${dragPos.x}px, ${dragPos.y}px)`,
                     willChange: 'transform',
@@ -1345,36 +1347,42 @@ export default function FilesPage() {
                 />
               )}
               {selectedFile.mimeType?.startsWith("video/") && selectedFile.url && (
-                <video src={selectedFile.url} controls className="max-w-full max-h-[80vh] rounded-2xl shadow-2xl" />
+                <video src={selectedFile.url} controls className="max-w-full max-h-full rounded-xl shadow-2xl" />
               )}
               {selectedFile.mimeType?.startsWith("audio/") && selectedFile.url && (
                 <div className="bg-gray-900 rounded-2xl p-8 shadow-2xl">
-                  <audio src={selectedFile.url} controls className="w-96" />
+                  <audio src={selectedFile.url} controls className="w-full" />
                 </div>
               )}
               {!selectedFile.url && (
-                <div className="bg-gray-900 rounded-2xl p-16 shadow-2xl text-center">
-                  <File className="w-24 h-24 mx-auto mb-4 text-gray-600" />
+                <div className="bg-gray-900 rounded-2xl p-8 shadow-2xl text-center">
+                  <File className="w-16 h-16 mx-auto mb-4 text-gray-600" />
                   <p className="text-gray-400">Preview not available</p>
                 </div>
               )}
             </div>
           </div>
+          
+          {/* Zoom controls - Bottom bar on mobile */}
           {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-900/90 backdrop-blur px-4 py-2 rounded-full shadow-xl border border-gray-700 z-50">
-              <button onClick={() => { setZoom((z) => Math.max(0.5, z - 0.25)); setDragPos({ x: 0, y: 0 }); }} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
-                <ZoomOut className="w-5 h-5" />
-              </button>
-              <span className="text-sm text-gray-300 w-16 text-center font-mono">{Math.round(zoom * 100)}%</span>
-              <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
-                <ZoomIn className="w-5 h-5" />
-              </button>
-              <button onClick={() => { setZoom(1); setDragPos({ x: 0, y: 0 }); }} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
-                <RotateCcw className="w-5 h-5" />
-              </button>
+            <div className="fixed bottom-0 md:bottom-auto left-0 md:absolute md:top-4 md:right-4 md:left-auto w-full md:w-auto z-50">
+              <div className="flex items-center justify-center gap-3 md:gap-2 bg-gray-900/95 backdrop-blur px-6 py-4 md:px-4 md:py-2 md:rounded-full shadow-xl border-t md:border border-gray-800">
+                <button onClick={() => { setZoom((z) => Math.max(0.5, z - 0.25)); setDragPos({ x: 0, y: 0 }); }} className="p-3 md:p-2 hover:bg-gray-800 rounded-full transition-colors touch-manipulation">
+                  <ZoomOut className="w-6 h-6 md:w-5 md:h-5" />
+                </button>
+                <span className="text-base md:text-sm text-gray-300 w-20 md:w-16 text-center font-mono">{Math.round(zoom * 100)}%</span>
+                <button onClick={() => setZoom((z) => Math.min(3, z + 0.25))} className="p-3 md:p-2 hover:bg-gray-800 rounded-full transition-colors touch-manipulation">
+                  <ZoomIn className="w-6 h-6 md:w-5 md:h-5" />
+                </button>
+                <button onClick={() => { setZoom(1); setDragPos({ x: 0, y: 0 }); }} className="p-3 md:p-2 hover:bg-gray-800 rounded-full transition-colors touch-manipulation">
+                  <RotateCcw className="w-6 h-6 md:w-5 md:h-5" />
+                </button>
+              </div>
             </div>
           )}
-          <div className="w-80 bg-gray-900 border-l border-gray-800 flex flex-col overflow-hidden">
+          
+          {/* Desktop sidebar - Right Panel (hidden on mobile) */}
+          <div className="hidden md:flex w-80 bg-gray-900 border-l border-gray-800 flex-col overflow-hidden">
             <div className="p-4 border-b border-gray-800 flex items-center justify-between">
               <h3 className="font-semibold">File Details</h3>
               <button onClick={() => setShowPreview(false)} className="p-1 hover:bg-gray-800 rounded-lg">
