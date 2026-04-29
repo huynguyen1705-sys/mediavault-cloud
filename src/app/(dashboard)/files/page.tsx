@@ -320,6 +320,87 @@ export default function FilesPage() {
     };
   }, [zoom, dragPos, setDragPos]);
 
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      const key = e.key.toLowerCase();
+      const isMeta = e.metaKey || e.ctrlKey;
+      
+      // Space - Preview selected file
+      if (key === " " && selectedFile) {
+        e.preventDefault();
+        setShowPreview(true);
+      }
+      
+      // Escape - Close modals
+      if (key === "escape") {
+        if (showPreview) setShowPreview(false);
+        if (showDetails) setShowDetails(false);
+        if (contextMenu) setContextMenu(null);
+        if (folderContextMenu) setFolderContextMenu(null);
+      }
+      
+      // Delete/Backspace - Delete selected file
+      if ((key === "delete" || key === "backspace") && selectedFile && !showPreview) {
+        e.preventDefault();
+        handleDelete(selectedFile.id);
+        setSelectedFile(null);
+      }
+      
+      // R - Rename selected file
+      if (key === "r" && selectedFile && !isMeta && !showPreview) {
+        e.preventDefault();
+        setRenamingItem({ type: "file", item: selectedFile });
+        setNewName(selectedFile.name);
+        setShowRenameModal(true);
+      }
+      
+      // Cmd/Ctrl + A - Select all (toggle)
+      if (key === "a" && isMeta) {
+        e.preventDefault();
+        // Toggle select all in current view
+      }
+      
+      // Arrow keys - Navigate files
+      if (["arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key) && files.length > 0) {
+        e.preventDefault();
+        const currentIndex = selectedFile ? files.findIndex(f => f.id === selectedFile.id) : -1;
+        if (key === "arrowdown" || key === "arrowright") {
+          const nextIndex = currentIndex < files.length - 1 ? currentIndex + 1 : 0;
+          setSelectedFile(files[nextIndex]);
+        } else {
+          const prevIndex = currentIndex > 0 ? currentIndex - 1 : files.length - 1;
+          setSelectedFile(files[prevIndex]);
+        }
+      }
+      
+      // + / = - Zoom in
+      if ((key === "+" || key === "=") && showPreview) {
+        e.preventDefault();
+        setZoom(z => Math.min(3, z + 0.25));
+      }
+      
+      // - - Zoom out
+      if (key === "-" && showPreview) {
+        e.preventDefault();
+        setZoom(z => Math.max(0.5, z - 0.25));
+      }
+      
+      // 0 - Reset zoom
+      if (key === "0" && showPreview) {
+        e.preventDefault();
+        setZoom(1);
+        setDragPos({ x: 0, y: 0 });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedFile, showPreview, showDetails, contextMenu, folderContextMenu, files, setShowPreview, setShowDetails, ]);
+
 
 
   // Toggle folder expand
