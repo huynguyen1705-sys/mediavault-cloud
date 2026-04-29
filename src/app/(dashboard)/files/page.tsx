@@ -1019,52 +1019,54 @@ const handleDelete = async (fileId: string) => {
               ))}
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2 shrink-0">
-              <button 
-                onClick={() => { setSelectMode(!selectMode); if (selectMode) clearSelection(); }}
-                className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center gap-2 transition-colors ${
-                  selectMode 
-                    ? "bg-violet-600 hover:bg-violet-500 text-white" 
-                    : "bg-gray-800 hover:bg-gray-700 text-gray-300"
-                }`}
-              >
-                <CheckSquare className="w-4 h-4" />
-                {selectMode ? "Cancel" : "Select"}
-              </button>
-              <button 
-                onClick={() => document.getElementById("file-input")?.click()}
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
-              >
-                <Upload className="w-4 h-4" />
-                Upload
-              </button>
-              <button
-                onClick={() => {
-                  setTrashMode(!trashMode);
-                  if (!trashMode) fetchTrashFiles();
-                  else fetchFiles();
-                }}
-                className={`p-2 rounded-lg transition-colors ${
-                  trashMode 
-                    ? "bg-amber-500/20 text-amber-400" 
-                    : "hover:bg-gray-800 text-gray-400"
-                }`}
-                title={trashMode ? "Back to Files" : "Trash"}
-              >
-                {trashMode ? <Home className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
-              </button>
-              <button
-                onClick={() => { fetchFiles(); fetchAllFolders(); }}
-                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </button>
-            </div>
+            {/* Actions - Normal mode */}
+            {selectedFiles.size === 0 && (
+              <div className="flex items-center gap-2 shrink-0">
+                <button 
+                  onClick={() => { setSelectMode(!selectMode); if (selectMode) clearSelection(); }}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center gap-2 transition-colors ${
+                    selectMode 
+                      ? "bg-violet-600 hover:bg-violet-500 text-white" 
+                      : "bg-gray-800 hover:bg-gray-700 text-gray-300"
+                  }`}
+                >
+                  <CheckSquare className="w-4 h-4" />
+                  {selectMode ? "Cancel" : "Select"}
+                </button>
+                <button 
+                  onClick={() => document.getElementById("file-input")?.click()}
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload
+                </button>
+                <button
+                  onClick={() => {
+                    setTrashMode(!trashMode);
+                    if (!trashMode) fetchTrashFiles();
+                    else fetchFiles();
+                  }}
+                  className={`p-2 rounded-lg transition-colors ${
+                    trashMode 
+                      ? "bg-amber-500/20 text-amber-400" 
+                      : "hover:bg-gray-800 text-gray-400"
+                  }`}
+                  title={trashMode ? "Back to Files" : "Trash"}
+                >
+                  {trashMode ? <Home className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => { fetchFiles(); fetchAllFolders(); }}
+                  className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                </button>
+              </div>
+            )}
             
-            {/* Bulk Action Bar */}
+            {/* Bulk Action Bar - When files selected */}
             {selectedFiles.size > 0 && (
-              <div className="flex items-center justify-between gap-4 mt-4 p-3 bg-violet-600/20 border border-violet-500/30 rounded-lg">
+              <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-violet-300 font-medium">
                   {selectedFiles.size} file{selectedFiles.size > 1 ? "s" : ""} selected
                 </span>
