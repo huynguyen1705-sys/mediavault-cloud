@@ -163,7 +163,17 @@ export default function FilesPage() {
   // NEW: Folder tree state
   const [allFolders, setAllFolders] = useState<FolderTreeNode[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Initialize sidebar state based on screen size (desktop open, mobile closed)
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(true);
+      }
+    };
+    handleResize();
+  }, []);
   const [newFolderParentId, setNewFolderParentId] = useState<string | null>(null);
 
   // Build tree from flat list
