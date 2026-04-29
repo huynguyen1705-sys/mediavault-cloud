@@ -13,6 +13,7 @@ function AudioPreview({ url }: { url: string }) {
 
   useEffect(() => {
     let mounted = true;
+    let wavesurfer: any = null;
 
     const initWaveSurfer = async () => {
       if (!containerRef.current) return;
@@ -22,7 +23,7 @@ function AudioPreview({ url }: { url: string }) {
         
         if (!mounted) return;
         
-        wavesurferRef.current = WaveSurfer.create({
+        wavesurfer = WaveSurfer.create({
           container: containerRef.current,
           waveColor: '#8b5cf6',
           progressColor: '#a78bfa',
@@ -32,17 +33,18 @@ function AudioPreview({ url }: { url: string }) {
           barRadius: 3,
           height: 100,
           normalize: true,
-          backend: 'WebAudio',
         });
 
-        wavesurferRef.current.load(url);
+        wavesurferRef.current = wavesurfer;
+        wavesurfer.load(url);
         
-        wavesurferRef.current.on('ready', () => {
+        wavesurfer.on('ready', () => {
           if (mounted) setLoading(false);
         });
 
-        wavesurferRef.current.on('play', () => setIsPlaying(true));
-        wavesurferRef.current.on('pause', () => setIsPlaying(false));
+        wavesurfer.on('play', () => setIsPlaying(true));
+        wavesurfer.on('pause', () => setIsPlaying(false));
+        wavesurfer.on('finish', () => setIsPlaying(false));
       } catch (error) {
         console.error('WaveSurfer init error:', error);
         if (mounted) setLoading(false);
@@ -53,8 +55,10 @@ function AudioPreview({ url }: { url: string }) {
 
     return () => {
       mounted = false;
-      if (wavesurferRef.current) {
-        wavesurferRef.current.destroy();
+      if (wavesurfer) {
+        wavesurfer.stop();
+        wavesurfer.destroy();
+        wavesurferRef.current = null;
       }
     };
   }, [url]);

@@ -619,7 +619,7 @@ export default function FilesPage() {
 
     // Helper functions for file type detection
   const isCodeFile = (filename: string) => {
-    const codeExtensions = ['js', 'jsx', 'ts', 'tsx', 'py', 'java', 'c', 'cpp', 'h', 'cs', 'go', 'rs', 'rb', 'php', 'swift', 'kt', 'scala', 'html', 'css', 'scss', 'json', 'xml', 'yaml', 'yml', 'sql', 'sh', 'bash', 'zsh', 'ps1', 'bat', 'md', 'txt', 'log', 'env', 'gitignore', 'dockerfile', 'makefile'];
+    const codeExtensions = ['js', 'jsx', 'ts', 'tsx', 'py', 'java', 'c', 'cpp', 'h', 'cs', 'go', 'rs', 'rb', 'php', 'swift', 'kt', 'scala', 'html', 'css', 'scss', 'json', 'xml', 'yaml', 'yml', 'sql', 'sh', 'bash', 'zsh', 'ps1', 'bat', 'env', 'gitignore', 'dockerfile', 'makefile'];
     const ext = filename.split('.').pop()?.toLowerCase() || '';
     return codeExtensions.includes(ext);
   };
