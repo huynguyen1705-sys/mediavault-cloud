@@ -118,6 +118,8 @@ export default function FilesPage() {
   const [storageLimit, setStorageLimit] = useState(5 * 1024 * 1024 * 1024); // 5GB default
   const [uploadQueue, setUploadQueue] = useState<UploadFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
@@ -538,7 +540,100 @@ export default function FilesPage() {
   }, [handleUpload]);
 
   // Delete
-  const handleDelete = async (fileId: string) => {
+    // Bulk operations
+  const toggleFileSelection = (fileId: string) => {
+    setSelectedFiles(prev => {
+      const next = new Set(prev);
+      if (next.has(fileId)) next.delete(fileId);
+      else next.add(fileId);
+      return next;
+    });
+  };
+
+  const selectAllFiles = () => {
+    setSelectedFiles(new Set(files.map(f => f.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedFiles(new Set());
+    setSelectMode(false);
+  };
+
+  const handleBulkDelete = async () => {
+    const fileIds = Array.from(selectedFiles);
+    if (fileIds.length === 0) return;
+    if (!confirm(`Delete ${fileIds.length} file(s)?`)) return;
+    
+    try {
+      for (const fileId of fileIds) {
+        await fetch(`/api/files/${fileId}`, { method: "DELETE" });
+      }
+      clearSelection();
+      fetchFiles();
+      showToastMessage(`Deleted ${fileIds.length} file(s)`);
+    } catch (error) {
+      console.error("Bulk delete error:", error);
+      showToastMessage("Failed to delete files");
+    }
+  };
+
+  const handleBulkDeletePermanent = async () => {
+    const fileIds = Array.from(selectedFiles);
+    if (fileIds.length === 0) return;
+    if (!confirm(`Permanently delete ${fileIds.length} file(s)?`)) return;
+    
+    try {
+      for (const fileId of fileIds) {
+        await fetch(`/api/files/${fileId}?permanent=true`, { method: "DELETE" });
+      }
+      clearSelection();
+      fetchFiles();
+      showToastMessage(`Permanently deleted ${fileIds.length} file(s)`);
+    } catch (error) {
+      console.error("Bulk permanent delete error:", error);
+      showToastMessage("Failed to delete files");
+    }
+  };
+
+    const handleBulkRestore = async () => {
+    const fileIds = Array.from(selectedFiles);
+    if (fileIds.length === 0) return;
+    
+    try {
+      for (const fileId of fileIds) {
+        await fetch(`/api/files/${fileId}/restore`, { method: "POST" });
+      }
+      clearSelection();
+      fetchTrashFiles();
+      showToastMessage(`Restored ${fileIds.length} file(s)`);
+    } catch (error) {
+      console.error("Bulk restore error:", error);
+      showToastMessage("Failed to restore files");
+    }
+  };
+
+  const handleBulkMove = async (targetFolderId: string | null) => {
+    const fileIds = Array.from(selectedFiles);
+    if (fileIds.length === 0) return;
+    
+    try {
+      for (const fileId of fileIds) {
+        await fetch(`/api/files/${fileId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ folderId: targetFolderId }),
+        });
+      }
+      clearSelection();
+      fetchFiles();
+      showToastMessage(`Moved ${fileIds.length} file(s)`);
+    } catch (error) {
+      console.error("Bulk move error:", error);
+      showToastMessage("Failed to move files");
+    }
+  };
+
+const handleDelete = async (fileId: string) => {
     try {
       const res = await fetch(`/api/files/${fileId}`, { method: "DELETE" });
       if (res.ok) {
@@ -927,6 +1022,17 @@ export default function FilesPage() {
             {/* Actions */}
             <div className="flex items-center gap-2 shrink-0">
               <button 
+                onClick={() => { setSelectMode(!selectMode); if (selectMode) clearSelection(); }}
+                className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center gap-2 transition-colors ${
+                  selectMode 
+                    ? "bg-violet-600 hover:bg-violet-500 text-white" 
+                    : "bg-gray-800 hover:bg-gray-700 text-gray-300"
+                }`}
+              >
+                <CheckSquare className="w-4 h-4" />
+                {selectMode ? "Cancel" : "Select"}
+              </button>
+              <button 
                 onClick={() => document.getElementById("file-input")?.click()}
                 className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
               >
@@ -955,6 +1061,60 @@ export default function FilesPage() {
                 <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               </button>
             </div>
+            
+            {/* Bulk Action Bar */}
+            {selectedFiles.size > 0 && (
+              <div className="flex items-center justify-between gap-4 mt-4 p-3 bg-violet-600/20 border border-violet-500/30 rounded-lg">
+                <span className="text-sm text-violet-300 font-medium">
+                  {selectedFiles.size} file{selectedFiles.size > 1 ? "s" : ""} selected
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={selectAllFiles}
+                    className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-sm rounded-lg transition-colors"
+                  >
+                    Select All
+                  </button>
+                  {trashMode ? (
+                    <>
+                      <button
+                        onClick={handleBulkRestore}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-lg transition-colors"
+                      >
+                        Restore
+                      </button>
+                      <button
+                        onClick={handleBulkDeletePermanent}
+                        className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors"
+                      >
+                        Delete Forever
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setShowMoveModal(true)}
+                        className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-sm rounded-lg transition-colors"
+                      >
+                        Move
+                      </button>
+                      <button
+                        onClick={handleBulkDelete}
+                        className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={clearSelection}
+                    className="px-3 py-1.5 hover:bg-gray-800 text-sm rounded-lg transition-colors"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            )}
             <input
               id="file-input"
               type="file"
@@ -1130,17 +1290,45 @@ export default function FilesPage() {
               {sortedFiles.map((file) => (
                 <div
                   key={file.id}
-                  className={`group bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer ${draggingFileId === file.id ? "opacity-50" : ""}`}
+                  className={`group bg-gray-900 border rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer ${
+                    draggingFileId === file.id ? "opacity-50" : ""
+                  } ${
+                    selectedFiles.has(file.id) 
+                      ? "border-violet-500 bg-violet-500/10" 
+                      : "border-gray-800"
+                  }`}
                   draggable={true}
                   onDragStart={(e) => handleDragStart(e, file)}
                   onDragEnd={handleDragEnd}
-                  onClick={() => { setSelectedFile(file); setShowPreview(true); }}
+                  onClick={() => {
+                    if (selectMode) {
+                      toggleFileSelection(file.id);
+                    } else {
+                      setSelectedFile(file);
+                      setShowPreview(true);
+                    }
+                  }}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     setContextMenu({ x: e.clientX, y: e.clientY, file });
                   }}
                 >
-                  <div className="aspect-square mb-3 rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden">
+                  <div className="flex items-center gap-2 mb-3">
+                    {selectMode && (
+                      <div 
+                        onClick={(e) => { e.stopPropagation(); toggleFileSelection(file.id); }}
+                        className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
+                          selectedFiles.has(file.id) 
+                            ? "bg-violet-500 border-violet-500" 
+                            : "border-gray-600 hover:border-violet-400"
+                        }`}
+                      >
+                        {selectedFiles.has(file.id) && <CheckCircle className="w-4 h-4 text-white" />}
+                      </div>
+                    )}
+                    <div className="flex-1" />
+                  </div>
+                  <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden">
                     {file.thumbnailUrl ? (
                       <img 
                         src={file.thumbnailUrl} 
@@ -1179,6 +1367,17 @@ export default function FilesPage() {
                   <tr className="text-left text-sm text-gray-400">
                     <th className="px-4 py-3 font-medium">Name</th>
                     <th className="px-4 py-3 font-medium">Size</th>
+                    <th className="px-4 py-3 w-12">
+                      {selectMode && (
+                        <div 
+                          onClick={selectAllFiles}
+                          className="w-6 h-6 rounded border-2 border-gray-600 hover:border-violet-400 cursor-pointer flex items-center justify-center"
+                        >
+                        </div>
+                      )}
+                    </th>
+                    <th className="px-4 py-3 font-medium">Name</th>
+                    <th className="px-4 py-3 font-medium">Size</th>
                     <th className="px-4 py-3 font-medium">Date</th>
                     <th className="px-4 py-3 font-medium w-12"></th>
                   </tr>
@@ -1187,13 +1386,36 @@ export default function FilesPage() {
                   {sortedFiles.map((file) => (
                     <tr 
                       key={file.id}
-                      className={`hover:bg-gray-800/50 cursor-pointer ${draggingFileId === file.id ? "opacity-50" : ""}`}
+                      className={`hover:bg-gray-800/50 cursor-pointer ${draggingFileId === file.id ? "opacity-50" : ""} ${
+                        selectedFiles.has(file.id) ? "bg-violet-500/10" : ""
+                      }`}
                       draggable={true}
                       onDragStart={(e) => handleDragStart(e, file)}
                       onDragEnd={handleDragEnd}
-                      onClick={() => { setSelectedFile(file); setShowPreview(true); }}
+                      onClick={() => {
+                        if (selectMode) {
+                          toggleFileSelection(file.id);
+                        } else {
+                          setSelectedFile(file);
+                          setShowPreview(true);
+                        }
+                      }}
                       onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, file }); }}
                     >
+                      <td className="px-4 py-3">
+                        {selectMode && (
+                          <div 
+                            onClick={(e) => { e.stopPropagation(); toggleFileSelection(file.id); }}
+                            className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
+                              selectedFiles.has(file.id) 
+                                ? "bg-violet-500 border-violet-500" 
+                                : "border-gray-600 hover:border-violet-400"
+                            }`}
+                          >
+                            {selectedFiles.has(file.id) && <CheckCircle className="w-4 h-4 text-white" />}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {file.thumbnailUrl ? (
