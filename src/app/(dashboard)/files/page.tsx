@@ -120,6 +120,7 @@ export default function FilesPage() {
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -1318,13 +1319,23 @@ export default function FilesPage() {
           className="fixed inset-0 z-50 flex flex-col md:flex-row"
           style={{ backgroundColor: 'rgba(0,0,0,0.95)' }}
         >
-          {/* Close button top */}
-          <button 
-            onClick={() => setShowPreview(false)} 
-            className="absolute top-4 right-4 z-50 p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors backdrop-blur-sm md:hidden"
-          >
-            <X className="w-6 h-6 text-white" />
-          </button>
+          {/* Top bar - Close and Info buttons */}
+          <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+            {/* Info button for mobile */}
+            <button 
+              onClick={() => setMobileDetailsOpen(true)} 
+              className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors backdrop-blur-sm md:hidden"
+            >
+              <Info className="w-6 h-6 text-white" />
+            </button>
+            {/* Close button */}
+            <button 
+              onClick={() => setShowPreview(false)} 
+              className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors backdrop-blur-sm"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+          </div>
           
           {/* Main Content - Image Preview */}
           <div className="flex-1 flex items-center justify-center p-4 pb-24 md:pb-4 overflow-hidden">
@@ -1458,6 +1469,103 @@ export default function FilesPage() {
                   </a>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Mobile Details Panel - Fullscreen Bottom Sheet */}
+      {showPreview && selectedFile && mobileDetailsOpen && (
+        <div 
+          className="fixed inset-0 z-[60] flex flex-col"
+          style={{ backgroundColor: 'rgba(0,0,0,0.98)' }}
+        >
+          {/* Header */}
+          <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+            <h3 className="font-semibold text-lg">File Details</h3>
+            <button onClick={() => setMobileDetailsOpen(false)} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {/* Preview */}
+            <div className="mb-8">
+              <div className="aspect-square rounded-2xl bg-gray-800 flex items-center justify-center mb-4 overflow-hidden">
+                {selectedFile.thumbnailUrl ? (
+                  <img src={selectedFile.thumbnailUrl} alt={selectedFile.name} className="w-full h-full object-cover" />
+                ) : (
+                  getFileIcon(selectedFile.mimeType, "lg")
+                )}
+              </div>
+              <div className="text-center font-semibold text-lg truncate">{selectedFile.name}</div>
+            </div>
+
+            {/* Details */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <FileText className="w-6 h-6 text-gray-400 shrink-0" />
+                <div>
+                  <div className="text-sm text-gray-400">Type</div>
+                  <div className="text-base">{selectedFile.mimeType || "Unknown"}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Download className="w-6 h-6 text-gray-400 shrink-0" />
+                <div>
+                  <div className="text-sm text-gray-400">Size</div>
+                  <div className="text-base">{formatBytes(Number(selectedFile.fileSize))}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Calendar className="w-6 h-6 text-gray-400 shrink-0" />
+                <div>
+                  <div className="text-sm text-gray-400">Created</div>
+                  <div className="text-base">{new Date(selectedFile.createdAt).toLocaleDateString()}</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <RefreshCw className="w-6 h-6 text-gray-400 shrink-0" />
+                <div>
+                  <div className="text-sm text-gray-400">Modified</div>
+                  <div className="text-base">{new Date(selectedFile.updatedAt).toLocaleDateString()}</div>
+                </div>
+              </div>
+
+              {selectedFile.url && (
+                <div className="flex items-center gap-4">
+                  <ExternalLink className="w-6 h-6 text-gray-400 shrink-0" />
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-400">URL</div>
+                    <a href={selectedFile.url} target="_blank" rel="noopener noreferrer" className="text-base text-violet-400 hover:text-violet-300">
+                      Open in browser
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="mt-8 pt-6 border-t border-gray-800 space-y-3">
+              <button
+                onClick={() => { setMobileDetailsOpen(false); setShowShareModal(true); }}
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-violet-600 hover:bg-violet-500 rounded-2xl text-base font-medium transition-colors"
+              >
+                <Share2 className="w-6 h-6" /> Share
+              </button>
+              {selectedFile.url && (
+                <a
+                  href={selectedFile.url}
+                  download={selectedFile.name}
+                  className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gray-800 hover:bg-gray-700 rounded-2xl text-base font-medium transition-colors"
+                >
+                  <Download className="w-6 h-6" /> Download
+                </a>
+              )}
             </div>
           </div>
         </div>
