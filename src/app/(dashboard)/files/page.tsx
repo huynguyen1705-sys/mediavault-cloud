@@ -164,15 +164,18 @@ export default function FilesPage() {
   const [allFolders, setAllFolders] = useState<FolderTreeNode[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   
-  // Initialize sidebar state based on screen size (desktop open, mobile closed)
+  // Initialize sidebar state based on screen size
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setSidebarOpen(true);
-      }
+    const checkScreenSize = () => {
+      const desktop = window.innerWidth >= 768;
+      setIsDesktop(desktop);
+      setSidebarOpen(desktop);
     };
-    handleResize();
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
   const [newFolderParentId, setNewFolderParentId] = useState<string | null>(null);
 
