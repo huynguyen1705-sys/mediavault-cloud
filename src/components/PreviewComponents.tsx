@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
+// Setup pdf.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 import { Play, Pause, Volume2, Maximize2, FileCode, FileText, FileSpreadsheet, Music } from 'lucide-react';
 
 // Audio Preview - Native player (auto-stops when modal closes)
