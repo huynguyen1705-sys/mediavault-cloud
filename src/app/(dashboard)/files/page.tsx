@@ -1392,11 +1392,8 @@ export default function FilesPage() {
           
           {/* Desktop sidebar - Right Panel (hidden on mobile) */}
           <div className="hidden md:flex w-80 bg-gray-900 border-l border-gray-800 flex-col overflow-hidden">
-            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+            <div className="p-4 border-b border-gray-800">
               <h3 className="font-semibold">File Details</h3>
-              <button onClick={() => setShowPreview(false)} className="p-1 hover:bg-gray-800 rounded-lg">
-                <X className="w-4 h-4" />
-              </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <div className="mb-6">
