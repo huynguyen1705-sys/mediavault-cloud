@@ -1319,22 +1319,27 @@ export default function FilesPage() {
           className="fixed inset-0 z-50 flex flex-col md:flex-row"
           style={{ backgroundColor: 'rgba(0,0,0,0.95)' }}
         >
-          {/* Top bar - Close and Info buttons */}
-          <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-            {/* Info button for mobile */}
-            <button 
-              onClick={() => setMobileDetailsOpen(true)} 
-              className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors backdrop-blur-sm md:hidden"
-            >
-              <Info className="w-6 h-6 text-white" />
-            </button>
-            {/* Close button */}
-            <button 
-              onClick={() => setShowPreview(false)} 
-              className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors backdrop-blur-sm"
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
+          {/* Header bar */}
+          <div className="flex items-center justify-between w-full px-4 py-3 bg-gray-900/80 backdrop-blur-sm border-b border-gray-800">
+            <div className="flex items-center gap-3">
+              <h3 className="font-semibold text-white">File Details</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Info button for mobile */}
+              <button 
+                onClick={() => setMobileDetailsOpen(true)} 
+                className="p-2 bg-violet-600 hover:bg-violet-500 rounded-full transition-colors md:hidden"
+              >
+                <Info className="w-5 h-5 text-white" />
+              </button>
+              {/* Close button - colored */}
+              <button 
+                onClick={() => setShowPreview(false)} 
+                className="p-2 bg-red-600 hover:bg-red-500 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
           </div>
           
           {/* Main Content - Image Preview */}
