@@ -10,8 +10,19 @@ const isProtectedRoute = createRouteMatcher([
   "/admin/:path*",
 ]);
 
+// Public API routes that don't need auth
+const isPublicApiRoute = createRouteMatcher([
+  "/api/files/:path*/proxy",
+  "/api/share/:path*",
+]);
+
 export default clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
+
+  // Allow public API routes without auth
+  if (isPublicApiRoute(req)) {
+    return;
+  }
 
   if (isProtectedRoute(req)) {
     await auth.protect();
