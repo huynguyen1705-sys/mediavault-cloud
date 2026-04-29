@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
-// Use R2 API directly for better compatibility
+// Proxy endpoint to fetch files from R2 without CORS issues
+// No auth required - this is an internal API endpoint
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -17,28 +18,26 @@ export async function GET(
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    // Use R2 API URL (S3-compatible)
-    const r2Url = `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${file.storagePath}`;
+    // Use public R2 URL - no auth needed for public bucket
+    const r2Url = `${process.env.R2_PUBLIC_URL}/${file.storagePath}`;
 
-    // Create signed URL for R2 access (or use public URL if available)
-    const response = await fetch(r2Url, {
-      headers: {
-        'Authorization': `Bearer ${process.env.R2_SECRET_ACCESS_KEY}`,
-      }
-    });
+    // Fetch the file from R2
+    const response = await fetch(r2Url);
 
     if (!response.ok) {
+      console.error('R2 fetch failed:', response.status, r2Url);
       return NextResponse.json({ error: `Failed to fetch: ${response.status}` }, { status: 500 });
     }
 
-    // Stream the response directly
-    const data = await response.arrayBuffer();
+    // Get the blob
+    const blob = await response.blob();
 
-    return new NextResponse(data, {
+    return new NextResponse(blob, {
       headers: {
         "Content-Type": file.mimeType || "application/octet-stream",
-        "Content-Length": data.byteLength.toString(),
+        "Content-Length": blob.size.toString(),
         "Content-Disposition": `inline; filename="${file.name || "file"}"`,
+        "Access-Control-Allow-Origin": "*",
         "Cache-Control": "public, max-age=31536000",
       },
     });

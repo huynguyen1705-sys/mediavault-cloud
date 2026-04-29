@@ -135,32 +135,43 @@ function PdfPreview({ proxyUrl, filename }: { proxyUrl: string; filename: string
   // Load PDF document
   useEffect(() => {
     let mounted = true;
+    let cancelled = false;
     
     const loadPdf = async () => {
       try {
         setLoading(true);
         setError(false);
         
+        console.log('Loading PDF from:', proxyUrl);
+        
         const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error('Failed to fetch PDF');
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
         
         const blob = await response.blob();
-        const arrayBuffer = await blob.arrayBuffer();
+        console.log('PDF blob size:', blob.size, 'type:', blob.type);
         
-        if (!mounted) return;
+        if (cancelled || !mounted) return;
+        
+        const arrayBuffer = await blob.arrayBuffer();
+        console.log('PDF arrayBuffer length:', arrayBuffer.byteLength);
+        
+        if (cancelled || !mounted) return;
         
         const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
         const pdf = await loadingTask.promise;
         
-        if (!mounted) return;
+        if (cancelled || !mounted) return;
         
+        console.log('PDF loaded, pages:', pdf.numPages);
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
         setCurrentPage(1);
         setLoading(false);
       } catch (err) {
         console.error('PDF load error:', err);
-        if (mounted) {
+        if (!cancelled && mounted) {
           setError(true);
           setLoading(false);
         }
@@ -171,8 +182,9 @@ function PdfPreview({ proxyUrl, filename }: { proxyUrl: string; filename: string
     
     return () => {
       mounted = false;
+      cancelled = true;
       if (renderTaskRef.current) {
-        renderTaskRef.current.cancel();
+        try { renderTaskRef.current.cancel(); } catch (e) {}
       }
     };
   }, [proxyUrl]);
