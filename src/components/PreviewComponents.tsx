@@ -156,6 +156,26 @@ function PdfPreview({ url }: { url: string }) {
   useEffect(() => {
     const loadPdf = async () => {
       try {
+        // Try proxy first (for CORS), fallback to direct URL
+        let pdfUrl = url;
+        try {
+          const proxyResponse = await fetch(`/api/files/${new URL(url).pathname.split('/').pop()}/proxy`);
+          if (proxyResponse.ok) {
+            const blob = await proxyResponse.blob();
+            const arrayBuffer = await blob.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
+            pdfDocRef.current = pdf;
+            setNumPages(pdf.numPages);
+            setLoading(false);
+            loadPdfPage(1);
+            return;
+          }
+        } catch (proxyError) {
+          console.log('Proxy failed, trying direct URL:', proxyError);
+        }
+        
+        // Direct URL fallback
         const loadingTask = pdfjsLib.getDocument(url);
         const pdf = await loadingTask.promise;
         pdfDocRef.current = pdf;

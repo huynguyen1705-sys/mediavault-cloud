@@ -1675,7 +1675,7 @@ const handleDelete = async (fileId: string) => {
               
               {/* PDF PREVIEW */}
               {(selectedFile.mimeType === "application/pdf" || selectedFile.mimeType?.includes("pdf")) && selectedFile.url && (
-                <PdfPreview url={selectedFile.url} />
+                <PdfPreview url={`/api/files/${selectedFile.id}/proxy`} />
               )}
               
               {/* CODE FILE PREVIEW */}
