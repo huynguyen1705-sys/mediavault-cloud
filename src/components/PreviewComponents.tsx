@@ -1,17 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-// DocViewer loaded dynamically to avoid SSR issues
-const DocViewer = dynamic(() => import('@cyntler/react-doc-viewer'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-64">
-      <div className="animate-spin w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full" />
-    </div>
-  ),
-});
-import { Play, Pause, Volume2, Maximize2, FileCode, FileText, FileSpreadsheet, Music, FileCheck } from 'lucide-react';
-import dynamic from 'next/dynamic';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
+import { Play, Pause, Volume2, Maximize2, FileCode, FileText, FileSpreadsheet, Music, FileCheck, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, Loader2 } from 'lucide-react';
+
+// Setup pdf.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 // Audio Preview - Native player (auto-stops when modal closes)
 function AudioPreview({ url }: { url: string }) {
@@ -37,7 +31,6 @@ function AudioPreview({ url }: { url: string }) {
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
 
-    // Force stop when component unmounts
     return () => {
       audio.pause();
       audio.currentTime = 0;
@@ -79,12 +72,10 @@ function AudioPreview({ url }: { url: string }) {
       <audio ref={audioRef} src={url} />
       
       <div className="flex flex-col items-center gap-6">
-        {/* Icon */}
         <div className={`w-24 h-24 rounded-full bg-violet-600/20 flex items-center justify-center ${isPlaying ? 'animate-pulse' : ''}`}>
           <Music className={`w-12 h-12 text-violet-400 ${isPlaying ? 'animate-bounce' : ''}`} />
         </div>
         
-        {/* Play/Pause */}
         <button
           onClick={togglePlayPause}
           className="w-16 h-16 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-all hover:scale-105"
@@ -96,7 +87,6 @@ function AudioPreview({ url }: { url: string }) {
           )}
         </button>
         
-        {/* Progress */}
         <div className="w-full space-y-2">
           <input
             type="range"
@@ -112,7 +102,6 @@ function AudioPreview({ url }: { url: string }) {
           </div>
         </div>
         
-        {/* Volume */}
         <div className="flex items-center gap-3 w-full">
           <Volume2 className="w-5 h-5 text-gray-500" />
           <input
@@ -130,6 +119,221 @@ function AudioPreview({ url }: { url: string }) {
   );
 }
 
+// PDF Preview with Canvas Rendering
+function PdfPreview({ proxyUrl, filename }: { proxyUrl: string; filename: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [numPages, setNumPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [scale, setScale] = useState(1.5);
+  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [rendering, setRendering] = useState(false);
+  const renderTaskRef = useRef<any>(null);
+
+  // Load PDF document
+  useEffect(() => {
+    let mounted = true;
+    
+    const loadPdf = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error('Failed to fetch PDF');
+        
+        const blob = await response.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        
+        if (!mounted) return;
+        
+        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
+        const pdf = await loadingTask.promise;
+        
+        if (!mounted) return;
+        
+        setPdfDoc(pdf);
+        setNumPages(pdf.numPages);
+        setCurrentPage(1);
+        setLoading(false);
+      } catch (err) {
+        console.error('PDF load error:', err);
+        if (mounted) {
+          setError(true);
+          setLoading(false);
+        }
+      }
+    };
+
+    loadPdf();
+    
+    return () => {
+      mounted = false;
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+      }
+    };
+  }, [proxyUrl]);
+
+  // Render current page
+  const renderPage = useCallback(async (pageNum: number) => {
+    if (!pdfDoc || !canvasRef.current || !containerRef.current) return;
+    
+    try {
+      setRendering(true);
+      
+      // Cancel any ongoing render
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+      }
+      
+      const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale });
+      
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      if (!context) return;
+
+      // Set canvas dimensions
+      const outputScale = window.devicePixelRatio || 1;
+      canvas.height = viewport.height * outputScale;
+      canvas.width = viewport.width * outputScale;
+      canvas.style.height = `${viewport.height}px`;
+      canvas.style.width = `${viewport.width}px`;
+      
+      context.scale(outputScale, outputScale);
+
+      // Render PDF page
+      const renderContext = {
+        canvasContext: context,
+        viewport: viewport,
+      };
+      
+      renderTaskRef.current = page.render(renderContext);
+      await renderTaskRef.current.promise;
+      
+    } catch (err: any) {
+      if (err.name !== 'RenderingCancelledException') {
+        console.error('Render error:', err);
+      }
+    } finally {
+      setRendering(false);
+    }
+  }, [pdfDoc, scale]);
+
+  // Re-render when page or scale changes
+  useEffect(() => {
+    if (pdfDoc && currentPage > 0) {
+      renderPage(currentPage);
+    }
+  }, [pdfDoc, currentPage, scale, renderPage]);
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) setCurrentPage(p => p - 1);
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < numPages) setCurrentPage(p => p + 1);
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-gray-900 rounded-2xl p-8 shadow-2xl w-full max-w-4xl">
+        <div className="flex flex-col items-center justify-center h-96">
+          <Loader2 className="w-12 h-12 text-violet-500 animate-spin mb-4" />
+          <p className="text-gray-400">Loading PDF...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-gray-900 rounded-2xl p-8 shadow-2xl w-full max-w-4xl">
+        <div className="flex flex-col items-center justify-center h-96">
+          <FileCheck className="w-12 h-12 text-red-500 mb-4" />
+          <p className="text-gray-400">Failed to load PDF</p>
+          <button
+            onClick={() => window.open(proxyUrl, '_blank')}
+            className="mt-4 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg"
+          >
+            Open in new tab
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
+        <div className="flex items-center gap-3">
+          <span className="text-gray-300 text-sm font-medium">{filename}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goToPrevPage}
+            disabled={currentPage <= 1}
+            className="p-2 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-400" />
+          </button>
+          <span className="text-gray-300 text-sm min-w-[100px] text-center">
+            {currentPage} / {numPages}
+          </span>
+          <button
+            onClick={goToNextPage}
+            disabled={currentPage >= numPages}
+            className="p-2 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+          >
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setScale(s => Math.max(0.5, s - 0.25))}
+            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <ZoomOut className="w-5 h-5 text-gray-400" />
+          </button>
+          <span className="text-gray-400 text-sm min-w-[60px] text-center">
+            {Math.round(scale * 100)}%
+          </span>
+          <button
+            onClick={() => setScale(s => Math.min(3, s + 0.25))}
+            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <ZoomIn className="w-5 h-5 text-gray-400" />
+          </button>
+          <button
+            onClick={() => setScale(1.5)}
+            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <RotateCcw className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+      </div>
+
+      {/* Canvas Container */}
+      <div 
+        ref={containerRef}
+        className="overflow-auto max-h-[70vh] bg-gray-100 flex justify-center p-4"
+        style={{ minHeight: '500px' }}
+      >
+        <canvas ref={canvasRef} className="shadow-xl" />
+        {rendering && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+            <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Code File Preview with Syntax Highlighting
 function CodePreview({ url, filename }: { url: string; filename: string }) {
   const [code, setCode] = useState<string>('');
@@ -142,7 +346,7 @@ function CodePreview({ url, filename }: { url: string; filename: string }) {
         const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch');
         const text = await response.text();
-        setCode(text.slice(0, 5000)); // Limit to first 5000 chars
+        setCode(text.slice(0, 5000));
         setLoading(false);
       } catch (err) {
         console.error('Error fetching code:', err);
@@ -169,9 +373,7 @@ function CodePreview({ url, filename }: { url: string; filename: string }) {
     return langMap[ext] || 'plaintext';
   };
 
-  // Simple syntax highlighting function
-  const highlightCode = (code: string, language: string) => {
-    // Basic token-based highlighting
+  const highlightCode = (code: string) => {
     const keywords = ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'import', 'export', 'default', 'from', 'async', 'await', 'try', 'catch', 'throw', 'new', 'this', 'true', 'false', 'null', 'undefined', 'typeof', 'instanceof', 'def', 'self', 'lambda', 'with', 'as', 'in', 'not', 'and', 'or', 'pass', 'break', 'continue', 'raise', 'except', 'finally', 'yield'];
     const stringRegex = /(["'`])(?:(?!\1)[^\\]|\\.)*?\1/g;
     const commentRegex = /\/\/.*$|\/\*[\s\S]*?\*\/|#.*$/gm;
@@ -183,7 +385,6 @@ function CodePreview({ url, filename }: { url: string; filename: string }) {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    // Apply highlighting
     highlighted = highlighted
       .replace(commentRegex, '<span class="text-gray-500">$&</span>')
       .replace(stringRegex, '<span class="text-green-400">$&</span>')
@@ -196,12 +397,8 @@ function CodePreview({ url, filename }: { url: string; filename: string }) {
   if (loading) {
     return (
       <div className="bg-gray-900 rounded-2xl p-6 shadow-2xl w-full max-w-4xl">
-        <div className="flex items-center gap-3 mb-4">
-          <FileCode className="w-5 h-5 text-violet-400" />
-          <span className="text-gray-300 font-medium">{filename}</span>
-        </div>
-        <div className="h-96 flex items-center justify-center">
-          <div className="animate-spin w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full" />
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
         </div>
       </div>
     );
@@ -218,7 +415,6 @@ function CodePreview({ url, filename }: { url: string; filename: string }) {
 
   return (
     <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-3">
           <FileCode className="w-5 h-5 text-violet-400" />
@@ -229,15 +425,9 @@ function CodePreview({ url, filename }: { url: string; filename: string }) {
         </div>
         <span className="text-gray-500 text-sm">{code.split('\n').length} lines</span>
       </div>
-
-      {/* Code Content */}
       <div className="overflow-auto max-h-[60vh]">
         <pre className="p-4 text-sm font-mono leading-relaxed overflow-x-auto">
-          <code
-            dangerouslySetInnerHTML={{
-              __html: highlightCode(code, getLanguage(filename))
-            }}
-          />
+          <code dangerouslySetInnerHTML={{ __html: highlightCode(code) }} />
         </pre>
       </div>
     </div>
@@ -256,7 +446,7 @@ function TextPreview({ url }: { url: string }) {
         const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch');
         const text = await response.text();
-        setContent(text.slice(0, 10000)); // Limit to first 10000 chars
+        setContent(text.slice(0, 10000));
         setLoading(false);
       } catch (err) {
         console.error('Error fetching content:', err);
@@ -271,12 +461,8 @@ function TextPreview({ url }: { url: string }) {
   if (loading) {
     return (
       <div className="bg-gray-900 rounded-2xl p-6 shadow-2xl w-full max-w-4xl">
-        <div className="flex items-center gap-3 mb-4">
-          <FileText className="w-5 h-5 text-gray-400" />
-          <span className="text-gray-300 font-medium">Text Preview</span>
-        </div>
-        <div className="h-96 flex items-center justify-center">
-          <div className="animate-spin w-8 h-8 border-2 border-gray-500 border-t-transparent rounded-full" />
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="w-8 h-8 text-gray-500 animate-spin" />
         </div>
       </div>
     );
@@ -293,7 +479,6 @@ function TextPreview({ url }: { url: string }) {
 
   return (
     <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-3">
           <FileText className="w-5 h-5 text-gray-400" />
@@ -301,18 +486,14 @@ function TextPreview({ url }: { url: string }) {
         </div>
         <span className="text-gray-500 text-sm">{content.length} characters</span>
       </div>
-
-      {/* Content */}
       <div className="overflow-auto max-h-[60vh]">
-        <pre className="p-4 text-sm font-mono leading-relaxed whitespace-pre-wrap text-gray-300 overflow-x-auto">
+        <pre className="p-4 text-sm font-mono leading-relaxed whitespace-pre-wrap text-gray-300">
           {content}
         </pre>
       </div>
     </div>
   );
 }
-
-export { AudioPreview, CodePreview, TextPreview, XlsxPreview };
 
 // XLSX/Spreadsheet Preview
 function XlsxPreview({ url }: { url: string }) {
@@ -351,7 +532,7 @@ function XlsxPreview({ url }: { url: string }) {
     return (
       <div className="bg-gray-900 rounded-2xl p-6 shadow-2xl w-full max-w-4xl">
         <div className="h-96 flex items-center justify-center">
-          <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
+          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
         </div>
       </div>
     );
@@ -372,7 +553,6 @@ function XlsxPreview({ url }: { url: string }) {
 
   return (
     <div className="bg-gray-900 rounded-2xl shadow-2xl w-[90vw] max-w-6xl overflow-hidden">
-      {/* Header with sheet tabs */}
       <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
         <FileSpreadsheet className="w-5 h-5 text-emerald-400 shrink-0" />
         <div className="flex items-center gap-2 overflow-x-auto">
@@ -392,7 +572,6 @@ function XlsxPreview({ url }: { url: string }) {
         </div>
       </div>
 
-      {/* Table - single scrollbar only */}
       <div className="overflow-auto max-h-[70vh]">
         <table className="w-full text-sm">
           <thead>
@@ -427,3 +606,5 @@ function XlsxPreview({ url }: { url: string }) {
     </div>
   );
 }
+
+export { AudioPreview, PdfPreview, CodePreview, TextPreview, XlsxPreview };
