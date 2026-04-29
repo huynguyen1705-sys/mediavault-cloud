@@ -320,52 +320,23 @@ export default function FilesPage() {
     };
   }, [zoom, dragPos, setDragPos]);
 
-  // Keyboard Shortcuts
+  // Keyboard Shortcuts - Preview mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       
       const key = e.key.toLowerCase();
-      const isMeta = e.metaKey || e.ctrlKey;
       
-      // Space - Preview selected file
-      if (key === " " && selectedFile) {
-        e.preventDefault();
-        setShowPreview(true);
-      }
-      
-      // Escape - Close modals
+      // Escape - Close preview
       if (key === "escape") {
-        if (showPreview) setShowPreview(false);
+        setShowPreview(false);
         if (showDetails) setShowDetails(false);
         if (contextMenu) setContextMenu(null);
         if (folderContextMenu) setFolderContextMenu(null);
       }
       
-      // Delete/Backspace - Delete selected file
-      if ((key === "delete" || key === "backspace") && selectedFile && !showPreview) {
-        e.preventDefault();
-        handleDelete(selectedFile.id);
-        setSelectedFile(null);
-      }
-      
-      // R - Rename selected file
-      if (key === "r" && selectedFile && !isMeta && !showPreview) {
-        e.preventDefault();
-        setRenamingItem({ type: "file", item: selectedFile });
-        setNewName(selectedFile.name);
-        setShowRenameModal(true);
-      }
-      
-      // Cmd/Ctrl + A - Select all (toggle)
-      if (key === "a" && isMeta) {
-        e.preventDefault();
-        // Toggle select all in current view
-      }
-      
-      // Arrow keys - Navigate files
-      if (["arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key) && files.length > 0) {
+      // Arrow keys - Navigate files in preview mode
+      if (["arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key) && showPreview && files.length > 0) {
         e.preventDefault();
         const currentIndex = selectedFile ? files.findIndex(f => f.id === selectedFile.id) : -1;
         if (key === "arrowdown" || key === "arrowright") {
@@ -399,9 +370,7 @@ export default function FilesPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedFile, showPreview, showDetails, contextMenu, folderContextMenu, files, setShowPreview, setShowDetails, ]);
-
-
+  }, [selectedFile, showPreview, showDetails, contextMenu, folderContextMenu, files]);
 
   // Toggle folder expand
   const toggleExpand = useCallback((folderId: string) => {
