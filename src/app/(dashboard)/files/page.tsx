@@ -1331,7 +1331,7 @@ export default function FilesPage() {
             {/* Close button */}
             <button 
               onClick={() => setShowPreview(false)} 
-              className="p-3 bg-red-600 hover:bg-red-500 rounded-full transition-colors"
+              className="p-3 bg-black/30 hover:bg-black/50 border border-white/50 hover:border-white rounded-full transition-colors"
             >
               <X className="w-6 h-6 text-white" />
             </button>
