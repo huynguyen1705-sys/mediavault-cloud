@@ -1468,20 +1468,10 @@ const handleDelete = async (fileId: string) => {
                     )}
                     <div className="flex-1" />
                   </div>
-                  <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden">
-                    {file.thumbnailUrl ? (
-                      <img 
-                        src={file.thumbnailUrl} 
-                        alt={file.name} 
-                        className="w-full h-full object-cover"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                      />
-                    ) : (
-                      <div className="text-4xl">
-                        {getFileIcon(file.mimeType, "lg")}
-                      </div>
-                    )}
-                  </div>
+                  <MiniPreview 
+                    file={file} 
+                    onPreview={() => { setSelectedFile(file); setShowPreview(true); }}
+                  />
                   <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{file.name}</p>
