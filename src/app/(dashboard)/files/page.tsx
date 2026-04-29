@@ -494,7 +494,14 @@ export default function FilesPage() {
   // Handle drag and drop
   const handleDragStart = (e: React.DragEvent, file: FileItem) => {
     setDraggingFileId(file.id);
-    e.dataTransfer.setData("fileId", file.id);
+    
+    // If select mode is on and multiple files selected, drag all
+    if (selectMode && selectedFiles.size > 0) {
+      const allFileIds = JSON.stringify(Array.from(selectedFiles));
+      e.dataTransfer.setData("fileIds", allFileIds);
+    } else {
+      e.dataTransfer.setData("fileId", file.id);
+    }
     e.dataTransfer.effectAllowed = "move";
   };
 
