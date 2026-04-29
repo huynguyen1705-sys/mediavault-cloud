@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { AudioPreview, PdfPreview, CodePreview, TextPreview } from "@/components/PreviewComponents";
+import { AudioPreview, PdfPreview, CodePreview, TextPreview, XlsxPreview } from "@/components/PreviewComponents";
 import { useUser } from "@clerk/nextjs";
 import { 
   FolderPlus,
@@ -624,7 +624,12 @@ export default function FilesPage() {
     return codeExtensions.includes(ext);
   };
   
-  const isTextFile = (filename: string) => {
+    const isSpreadsheetFile = (filename: string) => {
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    return ['xlsx', 'xls', 'csv', 'ods'].includes(ext);
+  };
+  
+const isTextFile = (filename: string) => {
     const textExtensions = ['txt', 'md', 'markdown', 'log', 'cfg', 'conf', 'ini', 'env', 'gitignore', 'gitattributes', 'editorconfig', 'license', 'readme', 'changelog'];
     const ext = filename.split('.').pop()?.toLowerCase() || '';
     return textExtensions.includes(ext);
@@ -1681,6 +1686,11 @@ const handleDelete = async (fileId: string) => {
               {/* TEXT FILE PREVIEW */}
               {isTextFile(selectedFile.name) && selectedFile.url && (
                 <TextPreview url={selectedFile.url} />
+              )}
+              
+              {/* XLSX/SPREADSHEET PREVIEW */}
+              {isSpreadsheetFile(selectedFile.name) && selectedFile.url && (
+                <XlsxPreview url={selectedFile.url} />
               )}
               
               {/* NO URL AVAILABLE */}

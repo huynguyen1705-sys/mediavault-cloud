@@ -26,7 +26,8 @@
     "react-pdf": "^10.4.1",
     "tailwind-merge": "^3.5.0",
     "uuid": "^14.0.0",
-    "wavesurfer.js": "^7.12.6"
+    "wavesurfer.js": "^7.12.6",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

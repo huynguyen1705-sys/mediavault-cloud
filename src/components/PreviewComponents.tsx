@@ -2,109 +2,121 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import { Play, Pause, Volume2, Maximize2, FileCode, FileText } from 'lucide-react';
+import { Play, Pause, Volume2, Maximize2, FileCode, FileText, FileSpreadsheet, Music } from 'lucide-react';
 
-// Audio Preview with Waveform
+// Audio Preview - Native player (auto-stops when modal closes)
 function AudioPreview({ url }: { url: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const wavesurferRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [volume, setVolume] = useState(1);
 
   useEffect(() => {
-    let mounted = true;
-    let wavesurfer: any = null;
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    const initWaveSurfer = async () => {
-      if (!containerRef.current) return;
-      
-      try {
-        const WaveSurfer = (await import('wavesurfer.js')).default;
-        
-        if (!mounted) return;
-        
-        wavesurfer = WaveSurfer.create({
-          container: containerRef.current,
-          waveColor: '#8b5cf6',
-          progressColor: '#a78bfa',
-          cursorColor: '#c4b5fd',
-          barWidth: 2,
-          barGap: 3,
-          barRadius: 3,
-          height: 100,
-          normalize: true,
-        });
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleEnded = () => setIsPlaying(false);
 
-        wavesurferRef.current = wavesurfer;
-        wavesurfer.load(url);
-        
-        wavesurfer.on('ready', () => {
-          if (mounted) setLoading(false);
-        });
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('ended', handleEnded);
 
-        wavesurfer.on('play', () => setIsPlaying(true));
-        wavesurfer.on('pause', () => setIsPlaying(false));
-        wavesurfer.on('finish', () => setIsPlaying(false));
-      } catch (error) {
-        console.error('WaveSurfer init error:', error);
-        if (mounted) setLoading(false);
-      }
-    };
-
-    initWaveSurfer();
-
+    // Force stop when component unmounts
     return () => {
-      mounted = false;
-      if (wavesurfer) {
-        wavesurfer.stop();
-        wavesurfer.destroy();
-        wavesurferRef.current = null;
-      }
+      audio.pause();
+      audio.currentTime = 0;
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('ended', handleEnded);
     };
-  }, [url]);
+  }, []);
 
   const togglePlayPause = () => {
-    if (wavesurferRef.current) {
-      wavesurferRef.current.playPause();
-    }
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (isPlaying) audio.pause();
+    else audio.play();
+  };
+
+  const formatTime = (time: number) => {
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    if (audioRef.current) audioRef.current.volume = newVolume;
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    setCurrentTime(time);
+    if (audioRef.current) audioRef.current.currentTime = time;
   };
 
   return (
-    <div className="bg-gray-900 rounded-2xl p-6 shadow-2xl w-full max-w-2xl">
-      <div className="flex items-center gap-4 mb-4">
+    <div className="bg-gray-900 rounded-2xl p-8 shadow-2xl w-full max-w-2xl">
+      <audio ref={audioRef} src={url} />
+      
+      <div className="flex flex-col items-center gap-6">
+        {/* Icon */}
+        <div className={`w-24 h-24 rounded-full bg-violet-600/20 flex items-center justify-center ${isPlaying ? 'animate-pulse' : ''}`}>
+          <Music className={`w-12 h-12 text-violet-400 ${isPlaying ? 'animate-bounce' : ''}`} />
+        </div>
+        
+        {/* Play/Pause */}
         <button
           onClick={togglePlayPause}
-          className="w-12 h-12 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-colors"
-          disabled={loading}
+          className="w-16 h-16 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-all hover:scale-105"
         >
           {isPlaying ? (
-            <Pause className="w-6 h-6 text-white" />
+            <Pause className="w-8 h-8 text-white" />
           ) : (
-            <Play className="w-6 h-6 text-white ml-1" />
+            <Play className="w-8 h-8 text-white ml-1" />
           )}
         </button>
-        <div className="flex-1">
-          <p className="text-white font-medium">Audio Preview</p>
-          <p className="text-gray-400 text-sm">Waveform visualization</p>
-        </div>
-        <Volume2 className="w-5 h-5 text-gray-500" />
-      </div>
-      
-      {loading && (
-        <div className="h-24 flex items-center justify-center">
-          <div className="animate-pulse flex gap-1">
-            {[...Array(20)].map((_, i) => (
-              <div
-                key={i}
-                className="w-1 bg-violet-500 rounded-full animate-pulse"
-                style={{ height: `${Math.random() * 60 + 20}px`, animationDelay: `${i * 0.05}s` }}
-              />
-            ))}
+        
+        {/* Progress */}
+        <div className="w-full space-y-2">
+          <input
+            type="range"
+            min={0}
+            max={duration || 0}
+            value={currentTime}
+            onChange={handleSeek}
+            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-violet-500"
+          />
+          <div className="flex justify-between text-sm text-gray-400">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
           </div>
         </div>
-      )}
-      
-      <div ref={containerRef} className="w-full" />
+        
+        {/* Volume */}
+        <div className="flex items-center gap-3 w-full">
+          <Volume2 className="w-5 h-5 text-gray-500" />
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.1}
+            value={volume}
+            onChange={handleVolumeChange}
+            className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-violet-500"
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -400,4 +412,116 @@ function TextPreview({ url }: { url: string }) {
   );
 }
 
-export { AudioPreview, PdfPreview, CodePreview, TextPreview };
+export { AudioPreview, PdfPreview, CodePreview, TextPreview, XlsxPreview };
+
+// XLSX/Spreadsheet Preview
+function XlsxPreview({ url }: { url: string }) {
+  const [sheets, setSheets] = useState<any[]>([]);
+  const [activeSheet, setActiveSheet] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const loadXlsx = async () => {
+      try {
+        const XLSX = await import('xlsx');
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+        
+        const sheetsData = workbook.SheetNames.map((name, idx) => {
+          const sheet = workbook.Sheets[name];
+          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          return { name, data: jsonData };
+        });
+        
+        setSheets(sheetsData);
+        setLoading(false);
+      } catch (err) {
+        console.error('XLSX load error:', err);
+        setError(true);
+        setLoading(false);
+      }
+    };
+
+    loadXlsx();
+  }, [url]);
+
+  if (loading) {
+    return (
+      <div className="bg-gray-900 rounded-2xl p-6 shadow-2xl w-full max-w-4xl">
+        <div className="h-96 flex items-center justify-center">
+          <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error || sheets.length === 0) {
+    return (
+      <div className="bg-gray-900 rounded-2xl p-6 shadow-2xl w-full max-w-4xl text-center">
+        <FileSpreadsheet className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+        <p className="text-gray-400">Unable to load spreadsheet</p>
+      </div>
+    );
+  }
+
+  const currentSheet = sheets[activeSheet];
+  const maxRows = 50;
+  const displayData = currentSheet.data.slice(0, maxRows);
+
+  return (
+    <div className="bg-gray-900 rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden">
+      {/* Header with sheet tabs */}
+      <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700 overflow-x-auto">
+        <FileSpreadsheet className="w-5 h-5 text-emerald-400 shrink-0" />
+        {sheets.map((sheet, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveSheet(idx)}
+            className={`px-3 py-1.5 text-sm rounded-lg whitespace-nowrap transition-colors ${
+              idx === activeSheet 
+                ? 'bg-emerald-600 text-white' 
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            {sheet.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="overflow-auto max-h-[60vh]">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-800">
+              <th className="px-4 py-2 text-left text-gray-400 font-medium border-r border-gray-700 sticky top-0 bg-gray-800">#</th>
+              {displayData[0]?.map((_: any, colIdx: number) => (
+                <th key={colIdx} className="px-4 py-2 text-left text-gray-400 font-medium border-r border-gray-700 sticky top-0 bg-gray-800">
+                  {String.fromCharCode(65 + (colIdx % 26))}{colIdx >= 26 ? Math.floor(colIdx / 26) : ''}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {displayData.map((row: any[], rowIdx: number) => (
+              <tr key={rowIdx} className="border-b border-gray-800 hover:bg-gray-800/50">
+                <td className="px-4 py-2 text-gray-500 border-r border-gray-700 bg-gray-900">{rowIdx + 1}</td>
+                {(row || []).map((cell: any, colIdx: number) => (
+                  <td key={colIdx} className="px-4 py-2 text-gray-200 border-r border-gray-800 whitespace-nowrap">
+                    {cell !== null && cell !== undefined ? String(cell).slice(0, 100) : ''}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {currentSheet.data.length > maxRows && (
+          <div className="px-4 py-3 text-center text-gray-500 text-sm bg-gray-800 border-t border-gray-700">
+            Showing {maxRows} of {currentSheet.data.length} rows
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
