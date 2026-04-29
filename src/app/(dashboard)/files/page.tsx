@@ -1676,11 +1676,12 @@ const handleDelete = async (fileId: string) => {
               
               {/* DOCUMENT PREVIEW - PDF via Google Docs Viewer */}
               {(selectedFile.mimeType === "application/pdf" || selectedFile.mimeType?.includes("pdf")) && selectedFile.url && (
-                <div className="bg-gray-900 rounded-2xl shadow-2xl w-[90vw] max-w-5xl h-[80vh] overflow-hidden">
+                <div className="bg-gray-100 rounded-2xl shadow-2xl w-[90vw] max-w-5xl h-[80vh] overflow-hidden">
                   <iframe
-                    src={`https://docs.google.com/gview?url=${encodeURIComponent(`/api/files/${selectedFile.id}/proxy`)}&embedded=true`}
+                    src={`https://docs.google.com/gview?url=${encodeURIComponent(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://mediavault.suridio.com'}/api/files/${selectedFile.id}/proxy`)}&embedded=true&rm=minimal`}
                     className="w-full h-full border-0"
                     title="PDF Preview"
+                    sandbox="allow-scripts allow-same-origin"
                   />
                 </div>
               )}
