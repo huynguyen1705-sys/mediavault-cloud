@@ -1496,15 +1496,13 @@ const handleDelete = async (fileId: string) => {
             </div>
           )}
 
-          {/* Files List */}
+          {/* Files List - Google Drive Style */}
           {!loading && files.length > 0 && viewMode === "list" && (
             <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
               <table className="w-full">
-                <thead className="bg-gray-800/50">
+                <thead className="bg-gray-800 border-b border-gray-700">
                   <tr className="text-left text-sm text-gray-400">
-                    <th className="px-4 py-3 font-medium">Name</th>
-                    <th className="px-4 py-3 font-medium">Size</th>
-                    <th className="px-4 py-3 w-12">
+                    <th className="px-4 py-3 font-medium w-12">
                       {selectMode && (
                         <div 
                           onClick={selectAllFiles}
@@ -1513,9 +1511,24 @@ const handleDelete = async (fileId: string) => {
                         </div>
                       )}
                     </th>
-                    <th className="px-4 py-3 font-medium">Name</th>
-                    <th className="px-4 py-3 font-medium">Size</th>
-                    <th className="px-4 py-3 font-medium">Date</th>
+                    <th className="px-4 py-3 font-medium min-w-[200px]">
+                      <div className="flex items-center gap-2 cursor-pointer hover:text-white">
+                        Name
+                        <ChevronDown className="w-4 h-4 opacity-50" />
+                      </div>
+                    </th>
+                    <th className="px-4 py-3 font-medium w-32">
+                      <div className="flex items-center gap-2 cursor-pointer hover:text-white">
+                        Size
+                        <ChevronDown className="w-4 h-4 opacity-50" />
+                      </div>
+                    </th>
+                    <th className="px-4 py-3 font-medium w-40">
+                      <div className="flex items-center gap-2 cursor-pointer hover:text-white">
+                        Modified
+                        <ChevronDown className="w-4 h-4 opacity-50" />
+                      </div>
+                    </th>
                     <th className="px-4 py-3 font-medium w-12"></th>
                   </tr>
                 </thead>
@@ -1556,13 +1569,13 @@ const handleDelete = async (fileId: string) => {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {file.thumbnailUrl ? (
-                            <img src={file.thumbnailUrl} alt={file.name} className="w-8 h-8 rounded object-cover" />
+                            <img src={file.thumbnailUrl} alt={file.name} className="w-8 h-8 rounded object-cover shrink-0" />
                           ) : getFileIcon(file.mimeType, "sm")}
                           <span className="font-medium truncate">{file.name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-400 text-sm">{formatBytes(Number(file.fileSize))}</td>
-                      <td className="px-4 py-3 text-gray-400 text-sm">{formatDate(file.createdAt)}</td>
+                      <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{formatBytes(Number(file.fileSize))}</td>
+                      <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{formatDate(file.updatedAt || file.createdAt)}</td>
                       <td className="px-4 py-3">
                         <button 
                           className="p-1 hover:bg-gray-700 rounded"
