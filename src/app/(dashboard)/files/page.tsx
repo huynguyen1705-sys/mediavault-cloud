@@ -1674,8 +1674,19 @@ const handleDelete = async (fileId: string) => {
                 <AudioPreview url={selectedFile.url} />
               )}
               
-              {/* DOCUMENT PREVIEW - PDF, DOCX, PPTX */}
-              {(selectedFile.mimeType === "application/pdf" || selectedFile.mimeType?.includes("pdf") || selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.presentationml.presentation") && selectedFile.url && (
+              {/* DOCUMENT PREVIEW - PDF via Google Docs Viewer */}
+              {(selectedFile.mimeType === "application/pdf" || selectedFile.mimeType?.includes("pdf")) && selectedFile.url && (
+                <div className="bg-gray-900 rounded-2xl shadow-2xl w-[90vw] max-w-5xl h-[80vh] overflow-hidden">
+                  <iframe
+                    src={`https://docs.google.com/gview?url=${encodeURIComponent(`/api/files/${selectedFile.id}/proxy`)}&embedded=true`}
+                    className="w-full h-full border-0"
+                    title="PDF Preview"
+                  />
+                </div>
+              )}
+              
+              {/* DOCX/PPTX via DocViewer */}
+              {(selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.presentationml.presentation") && selectedFile.url && (
                 <div className="bg-gray-900 rounded-2xl shadow-2xl w-[90vw] max-w-5xl overflow-hidden">
                   <DocViewer documents={[{ uri: `/api/files/${selectedFile.id}/proxy`, fileName: selectedFile.name }]} />
                 </div>
