@@ -19,12 +19,14 @@
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.11.0",
     "next": "16.2.4",
+    "pdfjs-dist": "^4.10.38",
     "prisma": "^5.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-pdf": "^10.4.1",
     "tailwind-merge": "^3.5.0",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.0",
+    "wavesurfer.js": "^7.12.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import dynamic from "next/dynamic";
+import { AudioPreview, PdfPreview, CodePreview, TextPreview } from "@/components/PreviewComponents";
 import { useUser } from "@clerk/nextjs";
 import { 
   FolderPlus,
@@ -125,6 +127,9 @@ export default function FilesPage() {
   const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+  const [pdfPages, setPdfPages] = useState<string[]>([]);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const wavesurferRef = useRef<any>(null);
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef({
     active: false,
@@ -612,7 +617,20 @@ export default function FilesPage() {
     }
   };
 
-  const handleBulkMove = async (targetFolderId: string | null) => {
+    // Helper functions for file type detection
+  const isCodeFile = (filename: string) => {
+    const codeExtensions = ['js', 'jsx', 'ts', 'tsx', 'py', 'java', 'c', 'cpp', 'h', 'cs', 'go', 'rs', 'rb', 'php', 'swift', 'kt', 'scala', 'html', 'css', 'scss', 'json', 'xml', 'yaml', 'yml', 'sql', 'sh', 'bash', 'zsh', 'ps1', 'bat', 'md', 'txt', 'log', 'env', 'gitignore', 'dockerfile', 'makefile'];
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    return codeExtensions.includes(ext);
+  };
+  
+  const isTextFile = (filename: string) => {
+    const textExtensions = ['txt', 'md', 'markdown', 'log', 'cfg', 'conf', 'ini', 'env', 'gitignore', 'gitattributes', 'editorconfig', 'license', 'readme', 'changelog'];
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    return textExtensions.includes(ext);
+  };
+
+const handleBulkMove = async (targetFolderId: string | null) => {
     const fileIds = Array.from(selectedFiles);
     if (fileIds.length === 0) return;
     
@@ -1611,34 +1629,61 @@ const handleDelete = async (fileId: string) => {
             </button>
           </div>
           
-          {/* Main Content - Image Preview */}
+          {/* Main Content - Comprehensive File Preview */}
           <div className="flex-1 flex items-center justify-center p-4 pb-24 md:pb-4 overflow-hidden">
             <div 
               id="pan-container"
-              className="relative cursor-grab active:cursor-grabbing select-none w-full h-full flex items-center justify-center"
+              className="relative select-none w-full h-full flex items-center justify-center"
               style={{ touchAction: 'none' }}
             >
+              {/* IMAGE PREVIEW */}
               {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
-                <img 
-                  id="pan-image"
-                  src={selectedFile.url} 
-                  alt={selectedFile.name} 
-                  draggable={false}
-                  className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
-                  style={{
-                    transform: `scale(${zoom}) translate(${dragPos.x}px, ${dragPos.y}px)`,
-                    willChange: 'transform',
-                  }}
-                />
-              )}
-              {selectedFile.mimeType?.startsWith("video/") && selectedFile.url && (
-                <video src={selectedFile.url} controls className="max-w-full max-h-full rounded-xl shadow-2xl" />
-              )}
-              {selectedFile.mimeType?.startsWith("audio/") && selectedFile.url && (
-                <div className="bg-gray-900 rounded-2xl p-8 shadow-2xl">
-                  <audio src={selectedFile.url} controls className="w-full" />
+                <div className="cursor-grab active:cursor-grabbing w-full h-full flex items-center justify-center">
+                  <img 
+                    id="pan-image"
+                    src={selectedFile.url} 
+                    alt={selectedFile.name} 
+                    draggable={false}
+                    className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+                    style={{
+                      transform: `scale(${zoom}) translate(${dragPos.x}px, ${dragPos.y}px)`,
+                      willChange: 'transform',
+                    }}
+                  />
                 </div>
               )}
+              
+              {/* VIDEO PREVIEW */}
+              {selectedFile.mimeType?.startsWith("video/") && selectedFile.url && (
+                <video 
+                  src={selectedFile.url} 
+                  controls 
+                  className="max-w-full max-h-[70vh] rounded-xl shadow-2xl" 
+                  autoPlay
+                />
+              )}
+              
+              {/* AUDIO PREVIEW - Waveform Player */}
+              {selectedFile.mimeType?.startsWith("audio/") && selectedFile.url && (
+                <AudioPreview url={selectedFile.url} />
+              )}
+              
+              {/* PDF PREVIEW */}
+              {(selectedFile.mimeType === "application/pdf" || selectedFile.mimeType?.includes("pdf")) && selectedFile.url && (
+                <PdfPreview url={selectedFile.url} />
+              )}
+              
+              {/* CODE FILE PREVIEW */}
+              {isCodeFile(selectedFile.name) && selectedFile.url && (
+                <CodePreview url={selectedFile.url} filename={selectedFile.name} />
+              )}
+              
+              {/* TEXT FILE PREVIEW */}
+              {isTextFile(selectedFile.name) && selectedFile.url && (
+                <TextPreview url={selectedFile.url} />
+              )}
+              
+              {/* NO URL AVAILABLE */}
               {!selectedFile.url && (
                 <div className="bg-gray-900 rounded-2xl p-8 shadow-2xl text-center">
                   <File className="w-16 h-16 mx-auto mb-4 text-gray-600" />
