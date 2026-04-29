@@ -64,6 +64,7 @@ import {
   Info,
   Calendar,
   ExternalLink,
+  Play,
 } from "lucide-react";
 import { formatBytes, formatDate } from "@/lib/utils";
 
@@ -909,6 +910,119 @@ const handleDelete = async (fileId: string) => {
     if (mimeType.includes("presentation") || mimeType.includes("powerpoint")) return <Presentation className={`${base} text-orange-400`} />;
     
     return <File className={`${base} text-gray-400`} />;
+  };
+
+  // Mini Content Preview for grid view
+  const MiniPreview = ({ file, onPreview }: { file: FileItem; onPreview: () => void }) => {
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const isPdf = file.mimeType?.includes('pdf') || ext === 'pdf';
+    const isDocx = file.mimeType?.includes('wordprocessingml') || ['docx', 'doc'].includes(ext);
+    const isXlsx = file.mimeType?.includes('spreadsheet') || ['xlsx', 'xls', 'csv'].includes(ext);
+    const isCode = ['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'go', 'rs', 'rb', 'php', 'swift', 'kt', 'html', 'css', 'json', 'yaml', 'sql', 'sh', 'md', 'txt'].includes(ext);
+    const isText = ['log', 'cfg', 'conf', 'ini', 'env'].includes(ext);
+    
+    // For files with thumbnails (images/videos), show the thumbnail
+    if (file.thumbnailUrl) {
+      return (
+        <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden relative group cursor-pointer" onClick={onPreview}>
+          <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+        </div>
+      );
+    }
+    
+    // PDF Mini Preview
+    if (isPdf) {
+      return (
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity" onClick={onPreview}>
+          <FileText className="w-10 h-10 text-white/90 mb-2" />
+          <span className="text-[10px] text-white/70 font-medium">PDF</span>
+        </div>
+      );
+    }
+    
+    // DOCX Mini Preview  
+    if (isDocx) {
+      return (
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity" onClick={onPreview}>
+          <FileText className="w-10 h-10 text-white/90 mb-2" />
+          <span className="text-[10px] text-white/70 font-medium">DOCX</span>
+        </div>
+      );
+    }
+    
+    // XLSX Mini Preview
+    if (isXlsx) {
+      return (
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-green-500 to-green-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity" onClick={onPreview}>
+          <FileSpreadsheet className="w-10 h-10 text-white/90 mb-2" />
+          <span className="text-[10px] text-white/70 font-medium">{ext.toUpperCase()}</span>
+        </div>
+      );
+    }
+    
+    // Code Mini Preview with syntax colors
+    if (isCode) {
+      return (
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 flex flex-col items-center justify-center p-2 cursor-pointer hover:opacity-90 transition-opacity overflow-hidden" onClick={onPreview}>
+          <div className="grid grid-cols-3 gap-1 mb-1">
+            <div className="w-3 h-3 rounded-sm bg-violet-500" />
+            <div className="w-3 h-3 rounded-sm bg-emerald-500" />
+            <div className="w-3 h-3 rounded-sm bg-amber-500" />
+            <div className="w-3 h-3 rounded-sm bg-pink-500" />
+            <div className="w-3 h-3 rounded-sm bg-blue-500" />
+            <div className="w-3 h-3 rounded-sm bg-red-500" />
+          </div>
+          <span className="text-[9px] text-gray-400 font-mono">{ext.toUpperCase()}</span>
+        </div>
+      );
+    }
+    
+    // Text Mini Preview
+    if (isText) {
+      return (
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity overflow-hidden" onClick={onPreview}>
+          <div className="space-y-1 mb-2">
+            <div className="w-12 h-1.5 bg-gray-500 rounded" />
+            <div className="w-10 h-1.5 bg-gray-600 rounded" />
+            <div className="w-8 h-1.5 bg-gray-500 rounded" />
+          </div>
+          <span className="text-[9px] text-gray-400">TEXT</span>
+        </div>
+      );
+    }
+    
+    // Audio Mini Preview
+    if (file.mimeType?.startsWith('audio/')) {
+      return (
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-pink-500 to-pink-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity" onClick={onPreview}>
+          <Headphones className="w-10 h-10 text-white/90 mb-2" />
+          <div className="flex gap-0.5">
+            <div className="w-1 h-4 bg-white/50 rounded-t" />
+            <div className="w-1 h-6 bg-white/50 rounded-t" />
+            <div className="w-1 h-3 bg-white/50 rounded-t" />
+            <div className="w-1 h-5 bg-white/50 rounded-t" />
+          </div>
+        </div>
+      );
+    }
+    
+    // Video Mini Preview (without thumbnail)
+    if (file.mimeType?.startsWith('video/')) {
+      return (
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-blue-600 to-purple-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity" onClick={onPreview}>
+          <Film className="w-10 h-10 text-white/90 mb-2" />
+          <Play className="w-6 h-6 text-white/70" />
+        </div>
+      );
+    }
+    
+    // Default file icon
+    return (
+      <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors" onClick={onPreview}>
+        <File className="w-10 h-10 text-gray-500" />
+      </div>
+    );
   };
 
   // Status icon
