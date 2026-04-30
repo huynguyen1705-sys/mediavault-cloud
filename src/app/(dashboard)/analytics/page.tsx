@@ -167,8 +167,8 @@ export default function AnalyticsPage() {
   }
 
   const sum = data?.summary;
-  const storagePct = sum ? Math.round((sum.totalStorage / sum.storageLimit) * 100) : 0;
-  const bandwidthPct = sum ? Math.round((sum.totalBandwidth / sum.bandwidthLimit) * 100) : 0;
+  const storagePct = sum && sum.storageLimit > 0 ? Math.round((sum.totalStorage / sum.storageLimit) * 100) : 0;
+  const bandwidthPct = sum && sum.bandwidthLimit > 0 ? Math.round((sum.totalBandwidth / sum.bandwidthLimit) * 100) : 0;
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
@@ -212,7 +212,7 @@ export default function AnalyticsPage() {
                   style={{ width: `${Math.min(storagePct, 100)}%` }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">{storagePct}% of {formatBytes(sum?.storageLimit || 0)}</p>
+              <p className="text-xs text-gray-500 mt-1">{storagePct > 0 ? storagePct + "%" : "0%"} of {sum?.storageLimit && sum.storageLimit > 0 ? formatBytes(sum.storageLimit) : "N/A"}</p>
             </div>
 
             <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
@@ -224,7 +224,7 @@ export default function AnalyticsPage() {
                   style={{ width: `${Math.min(bandwidthPct, 100)}%` }}
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">{bandwidthPct}% of {formatBytes(sum?.bandwidthLimit || 0)}</p>
+              <p className="text-xs text-gray-500 mt-1">{bandwidthPct > 0 ? bandwidthPct + "%" : "0%"} of {sum?.bandwidthLimit && sum.bandwidthLimit > 0 ? formatBytes(sum.bandwidthLimit) : "N/A"}</p>
             </div>
 
             <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
