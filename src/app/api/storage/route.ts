@@ -12,13 +12,14 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { clerkUserId: userId },
+      include: { plan: true },
     });
 
     if (!user) {
-      // User not found - return default values instead of 500
+      // Return default 1GB for free tier
       return NextResponse.json({
         usedBytes: 0,
-        limitBytes: 5 * 1024 * 1024 * 1024,
+        limitBytes: 1024 * 1024 * 1024, // 1GB
         plan: "free",
       });
     }
@@ -32,21 +33,23 @@ export async function GET() {
       _sum: { fileSize: true },
     });
 
-    // Default limit: 5GB for free tier
-    const storageLimit = 5 * 1024 * 1024 * 1024;
+    // Get limit from plan (convert GB to bytes)
+    let storageLimit = 1024 * 1024 * 1024; // 1GB default
+    if (user.plan?.storageGb) {
+      storageLimit = user.plan.storageGb * 1024 * 1024 * 1024;
+    }
 
     return NextResponse.json({
       usedBytes: Number(storageUsed._sum.fileSize) || 0,
       limitBytes: storageLimit,
-      plan: "free",
+      plan: user.plan?.name || "free",
     });
   } catch (error) {
     console.error("Storage stats error:", error);
     return NextResponse.json({
       usedBytes: 0,
-      limitBytes: 5 * 1024 * 1024 * 1024,
+      limitBytes: 1024 * 1024 * 1024, // 1GB
       plan: "free",
-      error: "Using default values"
     });
   }
 }

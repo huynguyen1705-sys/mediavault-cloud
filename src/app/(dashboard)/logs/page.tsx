@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Download, Filter, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Download, Filter, ChevronLeft, ChevronRight, Search, Shield, User } from "lucide-react";
 
 interface AuditLogEntry {
   id: string;
@@ -68,6 +68,7 @@ export default function LogsPage() {
   const { user, isLoaded } = useUser();
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -102,6 +103,7 @@ export default function LogsPage() {
       setLogs(json.logs || []);
       setTotalCount(json.total || 0);
       setTotalPages(Math.ceil((json.total || 0) / pageSize));
+      setIsAdmin(json.isAdmin || false);
     } catch (e) {
       console.error(e);
     }
@@ -125,9 +127,18 @@ export default function LogsPage() {
     <div className="max-w-7xl mx-auto px-6 py-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">📋 Audit Logs</h1>
-          <p className="text-gray-400 mt-1">{totalCount.toLocaleString()} events recorded</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white">📋 Audit Logs</h1>
+            <p className="text-gray-400 mt-1">{totalCount.toLocaleString()} events recorded</p>
+          </div>
+          {/* Admin Badge */}
+          {isAdmin && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-violet-500/20 border border-violet-500/30 rounded-full">
+              <Shield className="w-4 h-4 text-violet-400" />
+              <span className="text-sm text-violet-300 font-medium">Admin View</span>
+            </div>
+          )}
         </div>
         <div className="flex gap-3">
           <button

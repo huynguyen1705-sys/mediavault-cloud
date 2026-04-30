@@ -49,20 +49,27 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/80 backdrop-blur-lg border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <Cloud className="w-6 h-6 text-white" />
+          {/* Mobile: Menu button (left) */}
+          <button
+            className="md:hidden p-2 -ml-2 text-gray-400 hover:text-white"
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+
+          {/* Logo - center on mobile */}
+          <Link href="/" className="absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:translate-x-0 flex items-center gap-2">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg md:rounded-xl flex items-center justify-center">
+              <Cloud className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+            <span className="text-lg md:text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
               MediaVault
             </span>
           </Link>
 
-          {/* Desktop Nav */}
+          {/* Desktop Nav - hidden on mobile */}
           <div className="hidden md:flex items-center gap-8">
             {!isSignedIn ? (
-              // Guest: show Home/Features/Pricing
               guestLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -77,7 +84,6 @@ export default function Navbar() {
                 </Link>
               ))
             ) : (
-              // Logged in: show dashboard pages only
               dashboardLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -92,7 +98,6 @@ export default function Navbar() {
                 </Link>
               ))
             )}
-            {/* Admin link - only for admins */}
             {isSignedIn && !loading && isAdmin && (
               <Link
                 href="/admin"
@@ -107,19 +112,19 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Auth - positioned in corner */}
-          <div className="flex items-center gap-4">
+          {/* Auth/Avatar - right side (mobile & desktop) */}
+          <div className="flex items-center gap-2 md:gap-4">
             {!isSignedIn ? (
               <>
                 <Link
                   href="/login"
-                  className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+                  className="hidden md:inline text-sm font-medium text-gray-400 hover:text-white transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/register"
-                  className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors"
+                  className="px-3 py-1.5 md:px-4 md:py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs md:text-sm font-medium rounded-lg transition-colors"
                 >
                   Get Started
                 </Link>
@@ -130,14 +135,6 @@ export default function Navbar() {
               </div>
             )}
           </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 text-gray-400 hover:text-white"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
         </div>
       </div>
 

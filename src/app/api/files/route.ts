@@ -23,6 +23,8 @@ export async function GET(request: NextRequest) {
     const folderId = searchParams.get("folderId");
     const type = searchParams.get("type"); // image, video, audio
     const search = searchParams.get("search");
+    const dateFilter = searchParams.get("date"); // today, week, month
+    const sizeFilter = searchParams.get("size"); // small (<1MB), medium (1-10MB), large (>10MB)
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
 
@@ -46,6 +48,36 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       where.name = { contains: search, mode: "insensitive" };
+    }
+
+    // Date filter
+    if (dateFilter) {
+      const now = new Date();
+      if (dateFilter === "today") {
+        where.createdAt = { gte: new Date(now.setHours(0, 0, 0, 0)) };
+      } else if (dateFilter === "week") {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        where.createdAt = { gte: weekAgo };
+      } else if (dateFilter === "month") {
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        where.createdAt = { gte: monthAgo };
+      }
+    }
+
+    // Size filter
+    if (sizeFilter) {
+      if (sizeFilter === "small") {
+        where.fileSize = { lt: 1024 * 1024 }; // < 1MB
+      } else if (sizeFilter === "medium") {
+        where.AND = [
+          { fileSize: { gte: 1024 * 1024 } }, // >= 1MB
+          { fileSize: { lte: 10 * 1024 * 1024 } }, // <= 10MB
+        ];
+      } else if (sizeFilter === "large") {
+        where.fileSize = { gt: 10 * 1024 * 1024 }; // > 10MB
+      }
     }
 
     // Fetch files with presigned URLs

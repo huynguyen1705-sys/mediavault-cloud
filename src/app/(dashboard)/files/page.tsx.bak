@@ -65,7 +65,6 @@ import {
   Calendar,
   ExternalLink,
   Play,
-  SlidersHorizontal,
 } from "lucide-react";
 import { formatBytes, formatDate } from "@/lib/utils";
 
@@ -114,13 +113,6 @@ export default function FilesPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
-  const [filterDate, setFilterDate] = useState<string>("all"); // all, today, week, month
-  const [filterSize, setFilterSize] = useState<string>("all"); // all, small, medium, large
-  const [showFilters, setShowFilters] = useState(false); // Toggle filters on mobile
-  const [searchHistory, setSearchHistory] = useState<string[]>([]);
-  const [showSearchHistory, setShowSearchHistory] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -278,8 +270,6 @@ export default function FilesPage() {
       params.set("folderId", currentFolderId || "root");
       if (searchQuery) params.set("search", searchQuery);
       if (filterType !== "all") params.set("type", filterType);
-      if (filterDate !== "all") params.set("date", filterDate);
-      if (filterSize !== "all") params.set("size", filterSize);
 
       const res = await fetch(`/api/files?${params}`);
       if (res.ok) {
@@ -1105,23 +1095,25 @@ const handleDelete = async (fileId: string) => {
       )}
 
       {/* LEFT SIDEBAR - Folder Tree */}
-      <div className={`${sidebarOpen ? "w-full md:w-64" : "w-0"} transition-all duration-200 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden fixed md:relative inset-0 z-20 md:z-auto`}>
+      <div className={`${sidebarOpen ? "w-64" : "w-0"} transition-all duration-200 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden`}>
         {/* Header */}
-        <div className="p-3 border-b border-gray-800 flex items-center justify-between md:justify-between">
-          <span className="text-sm font-medium text-gray-400">Folders</span>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="p-1 hover:bg-gray-800 rounded"
-          >
-            <ChevronRight className="w-4 h-4 text-gray-500 rotate-180" />
-          </button>
+        <div className="p-3 border-b border-gray-800">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-400">Folders</span>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="p-1 hover:bg-gray-800 rounded"
+            >
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
         </div>
 
-        {/* Folder Tree - scrollable */}
-        <div className="flex-1 overflow-y-auto py-2 px-2">
+        {/* Folder Tree */}
+        <div className="flex-1 overflow-y-auto py-2">
           {/* My Files root */}
           <div
-            className={`flex items-center gap-2 px-3 py-3 rounded-lg cursor-pointer transition-all duration-150 ${
+            className={`flex items-center gap-2 px-3 py-2 mx-2 rounded-lg cursor-pointer transition-all duration-150 ${
               currentFolderId === null ? "bg-violet-500/20 text-violet-400" : dropTargetFolderId === null
                 ? "bg-violet-500/30 border-2 border-violet-500"
                 : "text-gray-300 hover:bg-gray-800/50"
@@ -1130,7 +1122,7 @@ const handleDelete = async (fileId: string) => {
             onDragOver={(e) => handleDragOver(e, null)}
             onDrop={(e) => handleDrop(e, null)}
           >
-            <Home className="w-5 h-5 shrink-0" />
+            <Home className="w-4 h-4 shrink-0" />
             <span className="text-sm font-medium truncate">My Files</span>
           </div>
 
@@ -1147,12 +1139,12 @@ const handleDelete = async (fileId: string) => {
         </div>
 
         {/* Storage Quota */}
-        <div className="px-4 py-3 border-t border-gray-800">
-          <div className="flex items-center justify-between text-xs text-gray-400 mb-1.5">
+        <div className="px-3 py-2 border-t border-gray-800">
+          <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>Storage</span>
-            <span>{formatBytes(storageUsed)} / {formatBytes(storageLimit)}</span>
+            <span>{Math.round(storageUsed / 1024 / 1024)} MB / {Math.round(storageLimit / 1024 / 1024 / 1024)} GB</span>
           </div>
-          <div className="w-full bg-gray-800 rounded-full h-2.5 overflow-hidden">
+          <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
             <div 
               className={`h-full rounded-full transition-all ${storageUsed / storageLimit > 0.9 ? "bg-red-500" : storageUsed / storageLimit > 0.7 ? "bg-amber-500" : "bg-violet-500"}`}
               style={{ width: `${Math.min((storageUsed / storageLimit) * 100, 100)}%` }}
@@ -1164,7 +1156,7 @@ const handleDelete = async (fileId: string) => {
         <div className="p-3 border-t border-gray-800">
           <button
             onClick={() => setShowNewFolderModal(true)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-300 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-300 transition-colors"
           >
             <FolderPlus className="w-4 h-4" />
             New Folder
@@ -1176,10 +1168,9 @@ const handleDelete = async (fileId: string) => {
       {!sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="absolute left-0 bottom-8 mb-4 z-10 flex items-center gap-1.5 px-2 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-r-lg border border-l-0 border-gray-700 md:hidden"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 bg-gray-800 hover:bg-gray-700 rounded-r-lg border border-l-0 border-gray-700"
         >
           <ChevronRight className="w-4 h-4 text-gray-400 rotate-180" />
-          <span className="text-xs text-gray-400 whitespace-nowrap">My Folders</span>
         </button>
       )}
 
@@ -1229,30 +1220,27 @@ const handleDelete = async (fileId: string) => {
                   <Upload className="w-4 h-4" />
                   Upload
                 </button>
-                {/* Trash & Refresh - hidden on mobile */}
-                <div className="hidden md:flex items-center gap-1">
-                  <button
-                    onClick={() => {
-                      setTrashMode(!trashMode);
-                      if (!trashMode) fetchTrashFiles();
-                      else fetchFiles();
-                    }}
-                    className={`p-2 rounded-lg transition-colors ${
-                      trashMode 
-                        ? "bg-amber-500/20 text-amber-400" 
-                        : "hover:bg-gray-800 text-gray-400"
-                    }`}
-                    title={trashMode ? "Back to Files" : "Trash"}
-                  >
-                    {trashMode ? <Home className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
-                  </button>
-                  <button
-                    onClick={() => { fetchFiles(); fetchAllFolders(); }}
-                    className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    setTrashMode(!trashMode);
+                    if (!trashMode) fetchTrashFiles();
+                    else fetchFiles();
+                  }}
+                  className={`p-2 rounded-lg transition-colors ${
+                    trashMode 
+                      ? "bg-amber-500/20 text-amber-400" 
+                      : "hover:bg-gray-800 text-gray-400"
+                  }`}
+                  title={trashMode ? "Back to Files" : "Trash"}
+                >
+                  {trashMode ? <Home className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => { fetchFiles(); fetchAllFolders(); }}
+                  className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                </button>
               </div>
             )}
             
@@ -1318,163 +1306,61 @@ const handleDelete = async (fileId: string) => {
             />
           </div>
 
-          {/* Search & Filters - 1 row on all devices */}
-          <div className="flex flex-wrap items-center gap-2 mt-4">
-            {/* Search Input with History */}
-            <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
+          {/* Search & Filters */}
+          <div className="flex items-center gap-4 mt-4">
+            <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input
-                ref={searchInputRef}
                 type="text"
                 placeholder="Search files..."
                 value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  // Debounced search
-                  if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-                  searchDebounceRef.current = setTimeout(() => {
-                    if (e.target.value.trim()) {
-                      // Add to history (max 5 items)
-                      setSearchHistory(prev => {
-                        const filtered = prev.filter(h => h !== e.target.value.trim());
-                        return [e.target.value.trim(), ...filtered].slice(0, 5);
-                      });
-                    }
-                  }, 500);
-                }}
-                onFocus={() => setShowSearchHistory(true)}
-                onBlur={() => setTimeout(() => setShowSearchHistory(false), 200)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && searchQuery.trim()) {
-                    setSearchHistory(prev => {
-                      const filtered = prev.filter(h => h !== searchQuery.trim());
-                      return [searchQuery.trim(), ...filtered].slice(0, 5);
-                    });
-                    fetchFiles();
-                  }
-                  if (e.key === "Escape") {
-                    setSearchQuery("");
-                    fetchFiles();
-                  }
-                }}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500 transition-colors"
               />
-              {/* Search History Dropdown */}
-              {showSearchHistory && searchHistory.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-800 rounded-lg shadow-xl z-50 overflow-hidden">
-                  <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-800">Recent searches</div>
-                  {searchHistory.map((item, idx) => (
-                    <button
-                      key={idx}
-                      onMouseDown={() => {
-                        setSearchQuery(item);
-                        setShowSearchHistory(false);
-                        fetchFiles();
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-800 flex items-center gap-2"
-                    >
-                      <Clock className="w-3 h-3" />
-                      {item}
-                      <X className="w-3 h-3 ml-auto opacity-50" onClick={(e) => {
-                        e.stopPropagation();
-                        setSearchHistory(prev => prev.filter(h => h !== item));
-                      }} />
-                    </button>
-                  ))}
-                </div>
-              )}
-              {searchQuery && (
-                <button
-                  onClick={() => { setSearchQuery(""); fetchFiles(); }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
             </div>
-
-            {/* Filter button - toggle on mobile */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`md:hidden p-2 bg-gray-900 border border-gray-800 rounded-lg transition-colors ${
-                showFilters || filterType !== "all" || filterDate !== "all" || filterSize !== "all"
-                  ? "text-violet-400 border-violet-500/50"
-                  : "text-gray-400 hover:text-white"
-              }`}
-              title="Toggle filters"
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="px-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
             >
-              <SlidersHorizontal className="w-4 h-4" />
-            </button>
-
-            {/* Filters row - collapsible on mobile */}
-            <div className={`flex flex-wrap md:flex-nowrap items-center gap-2 ${showFilters ? 'flex' : 'hidden md:flex'}`}>
-              <select
-                value={filterType}
-                onChange={(e) => { setFilterType(e.target.value); fetchFiles(); }}
-                className="px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
-              >
-                <option value="all">All</option>
-                <option value="image">Images</option>
-                <option value="video">Videos</option>
-                <option value="audio">Audio</option>
-              </select>
-              {/* Date Filter */}
-              <select
-                value={filterDate}
-                onChange={(e) => { setFilterDate(e.target.value); fetchFiles(); }}
-                className="px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
-                title="Filter by date"
-              >
-                <option value="all">Any Time</option>
-                <option value="today">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-              </select>
-              {/* Size Filter */}
-              <select
-                value={filterSize}
-                onChange={(e) => { setFilterSize(e.target.value); fetchFiles(); }}
-                className="px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
-                title="Filter by size"
-              >
-                <option value="all">Any Size</option>
-                <option value="small">&lt;1MB</option>
-                <option value="medium">1-10MB</option>
-                <option value="large">&gt;10MB</option>
-              </select>
-              <div className="flex items-center border border-gray-800 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setViewMode("grid")}
-                  className={`p-2 ${viewMode === "grid" ? "bg-gray-800 text-white" : "text-gray-500 hover:text-white"}`}
-                >
-                  <Grid className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode("list")}
-                  className={`p-2 ${viewMode === "list" ? "bg-gray-800 text-white" : "text-gray-500 hover:text-white"}`}
-                >
-                  <List className="w-4 h-4" />
-                </button>
-              </div>
-              {/* Sort Controls */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
-              >
-                <option value="date">Date</option>
-                <option value="name">Name</option>
-                <option value="size">Size</option>
-                <option value="type">Type</option>
-              </select>
+              <option value="all">All Files</option>
+              <option value="image">Images</option>
+              <option value="video">Videos</option>
+              <option value="audio">Audio</option>
+            </select>
+            <div className="flex items-center border border-gray-800 rounded-lg overflow-hidden">
               <button
-                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                className="p-2 bg-gray-900 border border-gray-800 rounded-lg hover:bg-gray-800 transition-colors"
-                title={sortOrder === "asc" ? "Ascending" : "Descending"}
+                onClick={() => setViewMode("grid")}
+                className={`p-2 ${viewMode === "grid" ? "bg-gray-800 text-white" : "text-gray-500 hover:text-white"}`}
               >
-                {sortOrder === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                <Grid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-2 ${viewMode === "list" ? "bg-gray-800 text-white" : "text-gray-500 hover:text-white"}`}
+              >
+                <List className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Sort Controls */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
+            >
+              <option value="date">Date</option>
+              <option value="name">Name</option>
+              <option value="size">Size</option>
+              <option value="type">Type</option>
+            </select>
+            <button
+              onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              className="p-2 bg-gray-900 border border-gray-800 rounded-lg hover:bg-gray-800 transition-colors"
+              title={sortOrder === "asc" ? "Ascending" : "Descending"}
+            >
+              {sortOrder === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+            </button>
           </div>
           {/* Trash Banner */}
           {trashMode && trashFiles.length > 0 && (

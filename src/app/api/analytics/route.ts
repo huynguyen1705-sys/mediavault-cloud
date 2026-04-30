@@ -5,7 +5,7 @@ import prisma from "@/lib/db";
 // GET /api/analytics?range=7|30|90
 export async function GET(request: NextRequest) {
   try {
-    const { userId: clerkUserId } = auth();
+    const { userId: clerkUserId } = await auth();
     if (!clerkUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -24,19 +24,33 @@ export async function GET(request: NextRequest) {
     });
 
     const userId = userRecord?.id;
-    console.log("[Analytics] clerkUserId:", clerkUserId, "-> internalUserId:", userId);
+    console.log("[Analytics] clerkUserId:", clerkUserId, "-> internalUserId:", userId, "plan:", userRecord?.plan);
 
     if (!userId) {
       return NextResponse.json({ error: "User not found in database" }, { status: 404 });
     }
 
-    // Get user's plan limits
+    // Get user's plan from included relation or fallback lookup
     let storageLimit = 1 * 1024 * 1024 * 1024; // Default 1GB
     let bandwidthLimit = 10 * 1024 * 1024 * 1024; // Default 10GB
 
     if (userRecord?.plan) {
       storageLimit = userRecord.plan.storageGb * 1024 * 1024 * 1024;
       bandwidthLimit = (userRecord.plan.bandwidthGb || 10) * 1024 * 1024 * 1024;
+    } else if (userRecord?.planId) {
+      // Fallback: lookup plan by planId
+      const userPlan = await prisma.plan.findUnique({ where: { id: userRecord.planId } });
+      if (userPlan) {
+        storageLimit = userPlan.storageGb * 1024 * 1024 * 1024;
+        bandwidthLimit = (userPlan.bandwidthGb || 10) * 1024 * 1024 * 1024;
+      }
+    } else {
+      // Fallback to free plan by name
+      const freePlan = await prisma.plan.findUnique({ where: { name: "free" } });
+      if (freePlan) {
+        storageLimit = freePlan.storageGb * 1024 * 1024 * 1024;
+        bandwidthLimit = (freePlan.bandwidthGb || 10) * 1024 * 1024 * 1024;
+      }
     }
 
     console.log("[Analytics] storageLimit:", storageLimit, "bandwidthLimit:", bandwidthLimit);
