@@ -1,19 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
 
 // GET /api/analytics?range=7|30|90
 export async function GET(request: NextRequest) {
   try {
+    const { userId } = auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const range = parseInt(searchParams.get("range") || "30");
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - range);
 
-    // Storage usage over time (from files aggregate)
+    // Get user's plan for limits
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { plan: true },
+    });
+
+    const storageLimit = user?.plan.storageGb
+      ? user.plan.storageGb * 1024 * 1024 * 1024
+      : 1 * 1024 * 1024 * 1024;
+    const bandwidthLimit = 10 * 1024 * 1024 * 1024; // Default 10GB/month
+
+    // Storage usage over time - FILTERED BY USER
     const filesOverTime = await prisma.file.groupBy({
       by: ["createdAt"],
       where: {
+        userId: userId,
         createdAt: { gte: startDate },
         deletedAt: null,
       },
@@ -22,24 +40,25 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "asc" },
     });
 
-    // Bandwidth usage over time
+    // Bandwidth usage over time - FILTERED BY USER
     const bandwidthOverTime = await prisma.bandwidthLog.groupBy({
       by: ["createdAt"],
       where: {
+        userId: userId,
         createdAt: { gte: startDate },
       },
       _sum: { bytesUsed: true },
       orderBy: { createdAt: "asc" },
     });
 
-    // File type breakdown
-    const allFiles = await prisma.file.findMany({
-      where: { deletedAt: null },
+    // File type breakdown - FILTERED BY USER
+    const userFiles = await prisma.file.findMany({
+      where: { userId: userId, deletedAt: null },
       select: { mimeType: true },
     });
 
     const mimeCounts: Record<string, number> = {};
-    for (const f of allFiles) {
+    for (const f of userFiles) {
       if (!f.mimeType) {
         mimeCounts["other"] = (mimeCounts["other"] || 0) + 1;
       } else if (f.mimeType.startsWith("image/")) {
@@ -84,18 +103,19 @@ export async function GET(request: NextRequest) {
       return result;
     };
 
-    // Summary stats
+    // User's total stats - FILTERED BY USER
     const totalStorage = await prisma.file.aggregate({
-      where: { deletedAt: null },
+      where: { userId: userId, deletedAt: null },
       _sum: { fileSize: true },
     });
 
     const totalBandwidth = await prisma.bandwidthLog.aggregate({
+      where: { userId: userId },
       _sum: { bytesUsed: true },
     });
 
     const totalFiles = await prisma.file.count({
-      where: { deletedAt: null },
+      where: { userId: userId, deletedAt: null },
     });
 
     return NextResponse.json({
@@ -115,8 +135,8 @@ export async function GET(request: NextRequest) {
         totalStorage: Number(totalStorage._sum.fileSize || 0),
         totalBandwidth: Number(totalBandwidth._sum.bytesUsed || 0),
         totalFiles,
-        storageLimit: 0,
-        bandwidthLimit: 0,
+        storageLimit,
+        bandwidthLimit,
       },
     });
   } catch (error) {
