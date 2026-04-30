@@ -1,0 +1,102 @@
+/* Light mode styles - applied when .light class is on html element */
+
+html.light {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+}
+
+/* Override dark backgrounds */
+html.light body,
+html.light .bg-gray-950 {
+  background-color: var(--bg-primary) !important;
+}
+
+html.light .bg-gray-900 {
+  background-color: var(--bg-secondary) !important;
+}
+
+html.light .bg-gray-800 {
+  background-color: var(--bg-tertiary) !important;
+}
+
+html.light .bg-gray-700 {
+  background-color: #e2e8f0 !important;
+}
+
+/* Text colors */
+html.light .text-white,
+html.light .text-gray-100,
+html.light .text-gray-300 {
+  color: var(--text-primary) !important;
+}
+
+html.light .text-gray-400 {
+  color: var(--text-secondary) !important;
+}
+
+/* Gradient text */
+html.light .bg-clip-text {
+  -webkit-text-fill-color: initial;
+  color: #6366f1 !important;
+}
+
+/* Navbar */
+html.light nav {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(12px);
+  border-color: var(--border-color) !important;
+}
+
+/* Cards */
+html.light .rounded-xl,
+html.light .rounded-2xl,
+html.light .rounded-lg {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Buttons */
+html.light button.bg-gray-800,
+html.light button.bg-gray-900 {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Inputs */
+html.light input,
+html.light select {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Tables */
+html.light thead {
+  background-color: var(--bg-secondary) !important;
+}
+
+html.light td,
+html.light th {
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Progress bars */
+html.light .h-2,
+html.light .h-3 {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Sidebar */
+html.light .border-r {
+  border-color: var(--border-color) !important;
+}
+
+/* Modal overlays */
+html.light .fixed.inset-0 {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}

@@ -1,139 +1,109 @@
-/* Light Mode Theme - add .light class to html element */
+/* Light Mode Theme - activated by adding .light class to html element */
 
-/* Base colors for light mode */
+/* Apply light mode when .light class is present */
 .light {
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;
   --bg-tertiary: #f1f5f9;
   --bg-card: #ffffff;
-  --bg-elevated: #f8fafc;
-  
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
-  
   --border-color: #e2e8f0;
-  --border-hover: #cbd5e1;
-  
-  --accent-primary: #6366f1;
-  --accent-primary-hover: #4f46e5;
-  --accent-secondary: #8b5cf6;
-  
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
 }
 
-/* Apply light mode styles */
-.light body,
-.light [class*="bg-gray-950"],
-.light [class*="bg-gray-900"] {
-  background-color: var(--bg-primary) !important;
+/* Main body and background */
+.light {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
 }
 
-.light [class*="bg-gray-800"] {
-  background-color: var(--bg-tertiary) !important;
-}
-
-.light [class*="bg-gray-700"] {
-  background-color: var(--bg-secondary) !important;
-}
+/* Dark backgrounds override */
+.light .bg-gray-950 { background-color: #ffffff !important; }
+.light .bg-gray-900 { background-color: #f8fafc !important; }
+.light .bg-gray-900\/80 { background-color: #f8fafc !important; }
+.light .bg-gray-900\/50 { background-color: #f8fafc !important; }
+.light .bg-gray-900\/30 { background-color: #f8fafc !important; }
+.light .bg-gray-800 { background-color: #e2e8f0 !important; }
+.light .bg-gray-700 { background-color: #cbd5e1 !important; }
 
 /* Cards and containers */
-.light [class*="bg-gray-900"],
-.light .bg-gray-900\/80,
-.light .bg-gray-900\/50 {
-  background-color: var(--bg-card) !important;
+.light [class*="rounded-xl"],
+.light [class*="rounded-2xl"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
 }
 
+/* Borders */
 .light [class*="border-gray-800"],
 .light [class*="border-gray-700"] {
-  border-color: var(--border-color) !important;
+  border-color: #e2e8f0 !important;
 }
 
-/* Text colors */
-.light [class*="text-white"],
-.light [class*="text-gray-300"],
-.light [class*="text-gray-400"] {
-  color: var(--text-primary) !important;
+/* Text colors - white/gray -> dark */
+.light .text-white,
+.light .text-gray-100,
+.light .text-gray-300 {
+  color: #0f172a !important;
 }
 
-.light [class*="text-gray-500"] {
-  color: var(--text-secondary) !important;
-}
-
-/* Buttons */
-.light button[class*="bg-gray-800"],
-.light [class*="bg-gray-900"] {
-  background-color: var(--bg-tertiary) !important;
-  border-color: var(--border-color) !important;
-}
-
-/* Inputs */
-.light input,
-.light select,
-.light textarea {
-  background-color: var(--bg-secondary) !important;
-  border-color: var(--border-color) !important;
-  color: var(--text-primary) !important;
-}
-
-.light input::placeholder {
-  color: var(--text-muted) !important;
-}
-
-/* Hover states */
-.light button:hover,
-.light [class*="hover:bg-gray-700"] {
-  background-color: var(--bg-tertiary) !important;
-}
-
-/* Gradients */
-.light [class*="bg-gradient-to-r"] {
-  filter: brightness(0.9) saturate(1.1);
-}
+.light .text-gray-400 { color: #64748b !important; }
+.light .text-gray-500 { color: #475569 !important; }
 
 /* Navbar */
-.light nav {
-  background-color: var(--bg-card) !important;
-  border-color: var(--border-color) !important;
+.light nav.fixed {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
 }
 
 /* Sidebar */
 .light [class*="border-r"] {
-  border-color: var(--border-color) !important;
+  border-color: #e2e8f0 !important;
 }
 
-/* Cards */
-.light [class*="rounded-xl"],
-.light [class*="rounded-2xl"] {
-  background-color: var(--bg-card) !important;
-  border-color: var(--border-color) !important;
+/* Buttons */
+.light button.bg-gray-800,
+.light button.bg-gray-900 {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
-/* Modal */
-.light [class*="fixed inset-0"][class*="bg-black"] {
-  background-color: rgba(0, 0, 0, 0.5) !important;
+.light button:hover.bg-gray-700,
+.light button:hover.bg-gray-800 {
+  background-color: #cbd5e1 !important;
 }
 
-/* Table */
-.light thead {
-  background-color: var(--bg-secondary) !important;
+/* Inputs */
+.light input,
+.light select {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
-.light tr[class*="border-b"] {
-  border-color: var(--border-color) !important;
+.light input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Tables */
+.light thead { background-color: #f8fafc !important; }
+.light td,
+.light th {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Progress bars */
+.light .bg-gray-800.h-2,
+.light .bg-gray-800.h-3 {
+  background-color: #e2e8f0 !important;
 }
 
 /* Scrollbar */
-.light ::-webkit-scrollbar {
-  background-color: var(--bg-secondary);
-}
+.light ::-webkit-scrollbar { background-color: #f1f5f9; }
+.light ::-webkit-scrollbar-thumb { background-color: #cbd5e1; }
 
-.light ::-webkit-scrollbar-thumb {
-  background-color: var(--border-color);
-}
-
-.light ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--border-hover);
+/* Logo gradient (keep violet but less contrast) */
+.light [class*="bg-gradient-to-r"] {
+  filter: brightness(0.8) saturate(1.2);
 }
