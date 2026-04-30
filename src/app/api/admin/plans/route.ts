@@ -154,3 +154,69 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Failed to update plan" }, { status: 500 });
   }
 }
+
+// PUT - Full update a plan (admin only)
+export async function PUT(request: NextRequest) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const adminUser = await prisma.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    if (!adminUser?.isAdmin) {
+      return NextResponse.json({ error: "Forbidden - Admin only" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const {
+      id,
+      name,
+      displayName,
+      priceMonthly,
+      storageGb,
+      bandwidthGb,
+      maxFileSizeMb,
+      fileRetentionDays,
+      isActive,
+    } = body;
+
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing plan id" }, { status: 400 });
+    }
+
+    const plan = await prisma.plan.update({
+      where: { id },
+      data: {
+        name,
+        displayName,
+        priceMonthly,
+        storageGb,
+        bandwidthGb,
+        maxFileSizeMb,
+        fileRetentionDays,
+        isActive,
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        userId: adminUser.id,
+        action: "PLAN_UPDATED",
+        resourceType: "plan",
+        resourceId: id,
+        details: body,
+      },
+    });
+
+
+    return NextResponse.json({ success: true, plan });
+  } catch (error) {
+    console.error("Update plan error:", error);
+    return NextResponse.json({ error: "Failed to update plan" }, { status: 500 });
+  }
+}

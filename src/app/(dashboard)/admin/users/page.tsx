@@ -4,74 +4,74 @@ import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
   Users,
-  Shield,
-  Crown,
-  Ban,
-  CheckCircle,
-  Trash2,
+  CreditCard,
   Loader2,
-  Plus,
+  Search,
+  Ban,
+  Shield,
+  UserCheck,
+  UserX,
+  ChevronDown,
+  Edit,
+  Check,
   X,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import Link from "next/link";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes, formatDate } from "@/lib/utils";
 
-interface Stats {
-  totalUsers: number;
-  totalFiles: number;
-  totalFolders: number;
-  totalBandwidthBytes: number;
-  totalStorageBytes: number;
-  recentSignups: number;
-}
-
-interface User {
+interface UserData {
   id: string;
   email: string | null;
   displayName: string | null;
-  avatarUrl: string | null;
   planName: string;
+  storageGb: number;
   storageUsedBytes: number;
-  storageUsedGb: number;
   filesCount: number;
-  isSuspended: boolean;
+  bandwidthUsedBytes: number;
   isAdmin: boolean;
+  isSuspended: boolean;
   createdAt: string;
+  lastLoginAt: string | null;
 }
 
 interface Plan {
   id: string;
   name: string;
   displayName: string;
-  description: string | null;
   priceMonthly: number;
   storageGb: number;
-  maxFileSizeMb: number;
   bandwidthGb: number;
+  maxFileSizeMb: number;
   fileRetentionDays: number;
-  allowDownload: boolean;
-  allowShare: boolean;
-  allowEmbed: boolean;
-  isActive: boolean;
   userCount: number;
+  isActive: boolean;
 }
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+interface EditPlanData {
+  id: string;
+  name: string;
+  displayName: string;
+  priceMonthly: number;
+  storageGb: number;
+  bandwidthGb: number;
+  maxFileSizeMb: number;
+  fileRetentionDays: number;
+  isActive: boolean;
 }
 
-export default function AdminPage() {
+export default function AdminUsersPage() {
   const { user, isLoaded } = useUser();
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserData[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"users" | "plans">("users");
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [planFilter, setPlanFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [editingPlan, setEditingPlan] = useState<EditPlanData | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -82,64 +82,115 @@ export default function AdminPage() {
             window.location.href = "/dashboard";
             return;
           }
-          Promise.all([
-            fetch("/api/admin/stats"),
-            fetch("/api/admin/users"),
-            fetch("/api/admin/plans"),
-          ]).then(async ([statsRes, usersRes, plansRes]) => {
-            if (!statsRes.ok) {
-              window.location.href = "/dashboard";
-              return;
-            }
-            const [statsData, usersData, plansData] = await Promise.all([
-              statsRes.json(),
-              usersRes.json(),
-              plansRes.json(),
-            ]);
-            setStats(statsData.stats || statsData);
-            setUsers(usersData.users || []);
-            setPlans(plansData.plans || []);
-            setLoading(false);
-          });
+          fetchData();
         });
     }
   }, [isLoaded, user]);
 
-  const handleUserAction = async (targetUserId: string, action: string) => {
-    setActionLoading(targetUserId);
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const res = await fetch("/api/admin/users", {
+      const [usersRes, plansRes] = await Promise.all([
+        fetch("/api/admin/users"),
+        fetch("/api/admin/plans"),
+      ]);
+      if (usersRes.ok) {
+        const data = await usersRes.json();
+        setUsers(data.users || []);
+      }
+      if (plansRes.ok) {
+        const data = await plansRes.json();
+        setPlans(data.plans || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+    }
+    setLoading(false);
+  };
+
+  const handleToggleSuspend = async (userId: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch(`/api/admin/users`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetUserId, action }),
+        body: JSON.stringify({ userId, suspended: !currentStatus }),
       });
       if (res.ok) {
-        const data = await res.json();
-        // Update local state
-        setUsers((prev) =>
-          prev.map((u) => {
-            if (u.id === targetUserId) {
-              switch (action) {
-                case "suspend":
-                  return { ...u, isSuspended: true };
-                case "unsuspend":
-                  return { ...u, isSuspended: false };
-                case "make_admin":
-                  return { ...u, isAdmin: true };
-                case "remove_admin":
-                  return { ...u, isAdmin: false };
-                default:
-                  return u;
-              }
-            }
-            return u;
-          })
-        );
+        setUsers(users.map(u =>
+          u.id === userId ? { ...u, isSuspended: !currentStatus } : u
+        ));
       }
-    } finally {
-      setActionLoading(null);
+    } catch (error) {
+      console.error("Failed to toggle suspend:", error);
     }
   };
+
+  const handleToggleAdmin = async (userId: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch(`/api/admin/manage-admin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, admin: !currentStatus }),
+      });
+      if (res.ok) {
+        setUsers(users.map(u =>
+          u.id === userId ? { ...u, isAdmin: !currentStatus } : u
+        ));
+      }
+    } catch (error) {
+      console.error("Failed to toggle admin:", error);
+    }
+  };
+
+  const handleSavePlan = async () => {
+    if (!editingPlan) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/plans`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingPlan),
+      });
+      if (res.ok) {
+        setPlans(plans.map(p =>
+          p.id === editingPlan.id ? { ...p, ...editingPlan } : p
+        ));
+        setEditingPlan(null);
+      }
+    } catch (error) {
+      console.error("Failed to save plan:", error);
+    }
+    setSaving(false);
+  };
+
+  const handleTogglePlanActive = async (planId: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch(`/api/admin/plans`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId, active: !currentStatus }),
+      });
+      if (res.ok) {
+        setPlans(plans.map(p =>
+          p.id === planId ? { ...p, isActive: !currentStatus } : p
+        ));
+      }
+    } catch (error) {
+      console.error("Failed to toggle plan:", error);
+    }
+  };
+
+  const filteredUsers = users.filter(u => {
+    const matchSearch = !searchQuery ||
+      u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.displayName?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchPlan = planFilter === "all" || u.planName === planFilter;
+    const matchStatus = statusFilter === "all" ||
+      (statusFilter === "suspended" && u.isSuspended) ||
+      (statusFilter === "active" && !u.isSuspended) ||
+      (statusFilter === "admin" && u.isAdmin);
+    return matchSearch && matchPlan && matchStatus;
+  });
 
   if (!isLoaded || loading) {
     return (
@@ -154,65 +205,19 @@ export default function AdminPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-1 text-white">Admin Panel</h1>
-          <p className="text-gray-400">Manage users and plans</p>
+          <h1 className="text-3xl font-bold mb-1 text-white">Users & Plans</h1>
+          <p className="text-gray-400">Manage users, plans, and subscriptions</p>
         </div>
         <Link
-          href="/admin/dashboard"
+          href="/admin"
           className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm rounded-lg transition-colors"
         >
-          ← Dashboard
+          ← Back to Admin
         </Link>
       </div>
 
-      {/* Stats Cards */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="p-4 bg-gray-900/80 border border-gray-800 rounded-xl">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-violet-500/20 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-violet-400" />
-              </div>
-              <span className="text-gray-400 text-sm">Total Users</span>
-            </div>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <div className="text-xs text-gray-500 mt-1">+{stats.recentSignups} this week</div>
-          </div>
-
-          <div className="p-4 bg-gray-900/80 border border-gray-800 rounded-xl">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center">
-                <Shield className="w-5 h-5 text-cyan-400" />
-              </div>
-              <span className="text-gray-400 text-sm">Total Files</span>
-            </div>
-            <div className="text-2xl font-bold">{stats.totalFiles}</div>
-          </div>
-
-          <div className="p-4 bg-gray-900/80 border border-gray-800 rounded-xl">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-green-400" />
-              </div>
-              <span className="text-gray-400 text-sm">Storage Used</span>
-            </div>
-            <div className="text-2xl font-bold">{formatBytes(stats.totalStorageBytes)}</div>
-          </div>
-
-          <div className="p-4 bg-gray-900/80 border border-gray-800 rounded-xl">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
-                <Shield className="w-5 h-5 text-amber-400" />
-              </div>
-              <span className="text-gray-400 text-sm">Bandwidth</span>
-            </div>
-            <div className="text-2xl font-bold">{formatBytes(stats.totalBandwidthBytes)}</div>
-          </div>
-        </div>
-      )}
-
       {/* Tabs */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-4 mb-6">
         <button
           onClick={() => setActiveTab("users")}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -222,125 +227,148 @@ export default function AdminPage() {
           }`}
         >
           <Users className="w-4 h-4 inline mr-2" />
-          Users
+          Users ({users.length})
         </button>
         <button
           onClick={() => setActiveTab("plans")}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             activeTab === "plans"
-              ? "bg-violet-600 text-white"
+              ? "bg-cyan-600 text-white"
               : "bg-gray-800 text-gray-400 hover:text-white"
           }`}
         >
-          <Shield className="w-4 h-4 inline mr-2" />
-          Plans
+          <CreditCard className="w-4 h-4 inline mr-2" />
+          Plans ({plans.length})
         </button>
       </div>
 
       {/* Users Table */}
       {activeTab === "users" && (
-        <div className="bg-gray-900/80 border border-gray-800 rounded-xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-800">
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">User</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Plan</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Storage</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Files</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Joined</th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-gray-400">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-violet-500/20 rounded-full flex items-center justify-center text-violet-400 text-sm font-medium">
-                        {u.email?.[0]?.toUpperCase() || "?"}
-                      </div>
-                      <div>
-                        <div className="font-medium text-white">{u.email || "No email"}</div>
-                        <div className="text-xs text-gray-500">
-                          {u.isAdmin ? "👑 Admin" : "User"}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-400">{u.planName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-400">{u.storageUsedGb.toFixed(2)} GB</td>
-                  <td className="px-4 py-3 text-sm text-gray-400">{u.filesCount}</td>
-                  <td className="px-4 py-3">
-                    {u.isSuspended ? (
-                      <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">Suspended</span>
-                    ) : (
-                      <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">Active</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{formatDate(u.createdAt)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-2">
-                      {u.isSuspended ? (
-                        <button
-                          onClick={() => handleUserAction(u.id, "unsuspend")}
-                          disabled={actionLoading === u.id}
-                          className="p-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-lg transition-colors disabled:opacity-50"
-                          title="Unsuspend"
-                        >
-                          {actionLoading === u.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <CheckCircle className="w-4 h-4" />
-                          )}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleUserAction(u.id, "suspend")}
-                          disabled={actionLoading === u.id}
-                          className="p-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors disabled:opacity-50"
-                          title="Suspend"
-                        >
-                          {actionLoading === u.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Ban className="w-4 h-4" />
-                          )}
-                        </button>
-                      )}
-                      {u.isAdmin ? (
-                        <button
-                          onClick={() => handleUserAction(u.id, "remove_admin")}
-                          disabled={actionLoading === u.id}
-                          className="p-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-lg transition-colors disabled:opacity-50"
-                          title="Remove Admin"
-                        >
-                          <Crown className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleUserAction(u.id, "make_admin")}
-                          disabled={actionLoading === u.id}
-                          className="p-1.5 bg-violet-500/20 hover:bg-violet-500/30 text-violet-400 rounded-lg transition-colors disabled:opacity-50"
-                          title="Make Admin"
-                        >
-                          <Crown className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+        <>
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-4 mb-6">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
+              />
+            </div>
+            <select
+              value={planFilter}
+              onChange={(e) => setPlanFilter(e.target.value)}
+              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-violet-500"
+            >
+              <option value="all">All Plans</option>
+              {plans.filter(p => p.isActive).map(plan => (
+                <option key={plan.id} value={plan.name}>{plan.displayName}</option>
               ))}
-              {users.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                    No users found
-                  </td>
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-violet-500"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <div className="bg-gray-900/80 border border-gray-800 rounded-xl overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-800">
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">User</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Plan</th>
+                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-400">Storage</th>
+                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-400">Files</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Joined</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Status</th>
+                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-400">Actions</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredUsers.map((u) => (
+                  <tr key={u.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-white">{u.displayName || "No name"}</div>
+                      <div className="text-xs text-gray-500">{u.email}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-1 bg-violet-500/20 text-violet-400 text-xs rounded">
+                        {u.planName}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-right text-gray-400">
+                      {formatBytes(u.storageUsedBytes)} / {u.storageGb}GB
+                    </td>
+                    <td className="px-4 py-3 text-sm text-right text-gray-400">{u.filesCount}</td>
+                    <td className="px-4 py-3 text-sm text-gray-400">
+                      {formatDate(u.createdAt)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1">
+                        {u.isAdmin && (
+                          <span className="px-2 py-1 bg-violet-500/20 text-violet-400 text-xs rounded">
+                            Admin
+                          </span>
+                        )}
+                        {u.isSuspended && (
+                          <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">
+                            Suspended
+                          </span>
+                        )}
+                        {!u.isAdmin && !u.isSuspended && (
+                          <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleToggleSuspend(u.id, u.isSuspended)}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            u.isSuspended
+                              ? "bg-green-500/20 hover:bg-green-500/30 text-green-400"
+                              : "bg-red-500/20 hover:bg-red-500/30 text-red-400"
+                          }`}
+                          title={u.isSuspended ? "Unsuspend" : "Suspend"}
+                        >
+                          {u.isSuspended ? <UserCheck className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => handleToggleAdmin(u.id, u.isAdmin)}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            u.isAdmin
+                              ? "bg-amber-500/20 hover:bg-amber-500/30 text-amber-400"
+                              : "bg-violet-500/20 hover:bg-violet-500/30 text-violet-400"
+                          }`}
+                          title={u.isAdmin ? "Remove Admin" : "Make Admin"}
+                        >
+                          {u.isAdmin ? <Shield className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                      No users found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Plans Table */}
@@ -357,6 +385,7 @@ export default function AdminPage() {
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Retention</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Users</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Status</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-gray-400">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -373,23 +402,168 @@ export default function AdminPage() {
                   <td className="px-4 py-3 text-sm text-gray-400">{plan.fileRetentionDays} days</td>
                   <td className="px-4 py-3 text-sm text-gray-400">{plan.userCount}</td>
                   <td className="px-4 py-3">
-                    {plan.isActive ? (
-                      <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">Active</span>
-                    ) : (
-                      <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded">Inactive</span>
-                    )}
+                    <button
+                      onClick={() => handleTogglePlanActive(plan.id, plan.isActive)}
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
+                        plan.isActive
+                          ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                          : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                      }`}
+                    >
+                      {plan.isActive ? (
+                        <ToggleRight className="w-4 h-4" />
+                      ) : (
+                        <ToggleLeft className="w-4 h-4" />
+                      )}
+                      {plan.isActive ? "Active" : "Inactive"}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => setEditingPlan({
+                        id: plan.id,
+                        name: plan.name,
+                        displayName: plan.displayName,
+                        priceMonthly: plan.priceMonthly,
+                        storageGb: plan.storageGb,
+                        bandwidthGb: plan.bandwidthGb,
+                        maxFileSizeMb: plan.maxFileSizeMb,
+                        fileRetentionDays: plan.fileRetentionDays,
+                        isActive: plan.isActive,
+                      })}
+                      className="p-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 rounded-lg transition-colors"
+                      title="Edit Plan"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
               ))}
               {plans.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                     No plans found
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Edit Plan Modal */}
+      {editingPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}>
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-white">Edit Plan</h2>
+              <button
+                onClick={() => setEditingPlan(null)}
+                className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Display Name</label>
+                <input
+                  type="text"
+                  value={editingPlan.displayName}
+                  onChange={(e) => setEditingPlan({ ...editingPlan, displayName: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Price ($/mo)</label>
+                  <input
+                    type="number"
+                    value={editingPlan.priceMonthly}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, priceMonthly: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Storage (GB)</label>
+                  <input
+                    type="number"
+                    value={editingPlan.storageGb}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, storageGb: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Bandwidth (GB)</label>
+                  <input
+                    type="number"
+                    value={editingPlan.bandwidthGb}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, bandwidthGb: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Max File (MB)</label>
+                  <input
+                    type="number"
+                    value={editingPlan.maxFileSizeMb}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, maxFileSizeMb: parseInt(e.target.value) || 0 })}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Retention (days)</label>
+                <input
+                  type="number"
+                  value={editingPlan.fileRetentionDays}
+                  onChange={(e) => setEditingPlan({ ...editingPlan, fileRetentionDays: parseInt(e.target.value) || 0 })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-4">
+                <label className="text-sm text-gray-400">Active</label>
+                <button
+                  onClick={() => setEditingPlan({ ...editingPlan, isActive: !editingPlan.isActive })}
+                  className={`p-2 rounded-lg transition-colors ${
+                    editingPlan.isActive
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-gray-700 text-gray-500"
+                  }`}
+                >
+                  {editingPlan.isActive ? (
+                    <ToggleRight className="w-8 h-8" />
+                  ) : (
+                    <ToggleLeft className="w-8 h-8" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingPlan(null)}
+                className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSavePlan}
+                disabled={saving}
+                className="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Save
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
