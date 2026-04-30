@@ -895,6 +895,36 @@ const handleDelete = async (fileId: string) => {
     setTimeout(() => setShowToast(false), 3000);
   };
 
+  const downloadFolderAsZip = async (folderId: string, folderName: string) => {
+    showToastMessage(`Preparing ${folderName}.zip...`);
+    try {
+      const res = await fetch(`/api/folders/${folderId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folderId }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        showToastMessage(error.error || "Failed to download folder");
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${folderName.replace(/[^a-zA-Z0-9-_]/g, "_")}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      showToastMessage(`Downloaded ${folderName}.zip`);
+    } catch (err) {
+      showToastMessage("Failed to download folder");
+    }
+  };
+
   // Folder Tree Node Component
   const FolderTreeNode = ({ folder, level = 0 }: { folder: FolderTreeNode; level: number }) => {
     const hasChildren = folder.children.length > 0;
@@ -1872,6 +1902,15 @@ const handleDelete = async (fileId: string) => {
               className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
             >
               <Copy className="w-4 h-4" /> Copy ID
+            </button>
+            <button
+              onClick={() => {
+                downloadFolderAsZip(folderContextMenu.folder.id, folderContextMenu.folder.name);
+                setFolderContextMenu(null);
+              }}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3 text-violet-400"
+            >
+              <Archive className="w-4 h-4" /> Download as ZIP
             </button>
             <hr className="my-2 border-gray-800" />
             <button
