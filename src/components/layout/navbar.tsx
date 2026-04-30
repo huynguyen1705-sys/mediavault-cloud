@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
-import { Cloud, Menu, X } from "lucide-react";
+import { Cloud, Menu, X, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function Navbar() {
@@ -43,7 +43,6 @@ export default function Navbar() {
     { href: "/analytics", label: "Analytics" },
     { href: "/settings", label: "Settings" },
     { href: "/logs", label: "Logs" },
-    { href: "/theme", label: "🌙 Theme" },
   ];
 
   return (
@@ -131,7 +130,20 @@ export default function Navbar() {
                 </Link>
               </>
             ) : (
-              <div className="flex items-center">
+              <div className="flex items-center gap-3">
+                {/* Theme Toggle Button */}
+                <button
+                  onClick={() => {
+                    const next = document.documentElement.classList.contains("light") ? "dark" : "light";
+                    document.documentElement.classList.remove("light", "dark");
+                    document.documentElement.classList.add(next);
+                    localStorage.setItem("mv-theme", next);
+                  }}
+                  className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                  title="Toggle theme"
+                >
+                  <Moon className="w-5 h-5" />
+                </button>
                 <UserButton />
               </div>
             )}
