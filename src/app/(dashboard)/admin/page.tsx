@@ -87,7 +87,7 @@ export default function AdminPage() {
         </Link>
 
         <Link
-          href="/admin"
+          href="/admin/users"
           className="group p-6 bg-gray-900/80 border border-gray-800 rounded-xl hover:border-cyan-500/50 transition-all"
         >
           <div className="flex items-center justify-between">
