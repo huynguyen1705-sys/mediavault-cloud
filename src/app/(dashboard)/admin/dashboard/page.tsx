@@ -64,21 +64,24 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (isLoaded && user) {
       Promise.all([
-        fetch("/api/admin/stats"),
-        fetch("/api/admin/charts"),
+        fetch("/api/admin/stats", { credentials: "include" }),
+        fetch("/api/admin/charts", { credentials: "include" }),
       ]).then(async ([statsRes, chartsRes]) => {
-        if (!statsRes.ok || !chartsRes.ok) {
-          window.location.href = "/dashboard";
+        if (!statsRes.ok) {
+          console.error("Admin stats error:", statsRes.status);
+          setLoading(false);
           return;
         }
         const [statsData, chartsData] = await Promise.all([
           statsRes.json(),
-          chartsRes.json(),
+          chartsRes.ok ? chartsRes.json() : { dailySignups: [], dailyStorage: [], dailyBandwidth: [], activeUsers: 0, planDistribution: [], fileTypes: [] },
         ]);
-        setStats(statsData);
+        setStats(statsData.stats || statsData);
         setChartData(chartsData);
         setLoading(false);
       });
+    } else if (isLoaded && !user) {
+      setLoading(false);
     }
   }, [isLoaded, user]);
 
