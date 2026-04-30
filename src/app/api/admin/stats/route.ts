@@ -49,8 +49,8 @@ export async function GET() {
         totalUsers,
         totalFiles,
         totalFolders,
-        totalBandwidthBytes: totalBandwidth._sum.bytesDownloaded || 0,
-        totalStorageBytes: storageUsedResult._sum.storageUsedBytes || 0,
+        totalBandwidthBytes: Number(totalBandwidth._sum.bytesDownloaded || 0),
+        totalStorageBytes: Number(storageUsedResult._sum.storageUsedBytes || 0),
         recentSignups,
       },
     });
