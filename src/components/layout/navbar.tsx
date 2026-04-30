@@ -17,12 +17,13 @@ export default function Navbar() {
   useEffect(() => {
     if (isSignedIn && user) {
       // Check admin status
-      fetch("/api/admin/stats")
-        .then(r => {
-          if (r.ok) setIsAdmin(true);
-          setLoading(false);
+      fetch("/api/admin/check")
+        .then(r => r.json())
+        .then(data => {
+          setIsAdmin(data.isAdmin || false);
         })
-        .catch(() => setLoading(false));
+        .catch(() => setIsAdmin(false));
+      setLoading(false);
     } else {
       setLoading(false);
     }
