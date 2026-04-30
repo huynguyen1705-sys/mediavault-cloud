@@ -16,16 +16,34 @@ export async function GET(request: NextRequest) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - range);
 
-    // Get user's plan for limits
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { plan: true },
-    });
+    // Get user's plan for limits - default to free plan if not found
+    let userPlan = null;
+    let storageLimit = 1 * 1024 * 1024 * 1024; // Default 1GB
+    let bandwidthLimit = 10 * 1024 * 1024 * 1024; // Default 10GB
 
-    const storageLimit = user?.plan.storageGb
-      ? user.plan.storageGb * 1024 * 1024 * 1024
-      : 1 * 1024 * 1024 * 1024;
-    const bandwidthLimit = 10 * 1024 * 1024 * 1024; // Default 10GB/month
+    if (userId) {
+      const userRecord = await prisma.user.findUnique({
+        where: { clerkUserId: userId },
+        include: { plan: true },
+      });
+      
+      if (userRecord?.plan) {
+        userPlan = userRecord.plan;
+        storageLimit = userPlan.storageGb * 1024 * 1024 * 1024;
+        bandwidthLimit = (userPlan.bandwidthGb || 10) * 1024 * 1024 * 1024;
+      } else {
+        // Fallback to free plan
+        const freePlan = await prisma.plan.findUnique({ where: { name: "free" } });
+        if (freePlan) {
+          userPlan = freePlan;
+          storageLimit = freePlan.storageGb * 1024 * 1024 * 1024;
+          bandwidthLimit = (freePlan.bandwidthGb || 10) * 1024 * 1024 * 1024;
+        }
+      }
+    }
+
+
+    console.log("[Analytics] userId:", userId, "userRecord:", userRecord ? "found" : "null", "plan:", userPlan?.name || "null");
 
     // Storage usage over time - FILTERED BY USER
     const filesOverTime = await prisma.file.groupBy({
