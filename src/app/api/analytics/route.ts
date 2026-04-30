@@ -5,8 +5,8 @@ import prisma from "@/lib/db";
 // GET /api/analytics?range=7|30|90
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = auth();
-    if (!userId) {
+    const { userId: clerkUserId } = auth();
+    if (!clerkUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -16,40 +16,36 @@ export async function GET(request: NextRequest) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - range);
 
-    // Get user's plan for limits - default to free plan if not found
-    let userPlan = null;
+    // IMPORTANT: Clerk userId (user_xxx) != internal DB user_id (UUID)
+    // Must lookup internal user record first
+    const userRecord = await prisma.user.findUnique({
+      where: { clerkUserId },
+      include: { plan: true },
+    });
+
+    const userId = userRecord?.id;
+    console.log("[Analytics] clerkUserId:", clerkUserId, "-> internalUserId:", userId);
+
+    if (!userId) {
+      return NextResponse.json({ error: "User not found in database" }, { status: 404 });
+    }
+
+    // Get user's plan limits
     let storageLimit = 1 * 1024 * 1024 * 1024; // Default 1GB
     let bandwidthLimit = 10 * 1024 * 1024 * 1024; // Default 10GB
 
-    if (userId) {
-      const userRecord = await prisma.user.findUnique({
-        where: { clerkUserId: userId },
-        include: { plan: true },
-      });
-      
-      if (userRecord?.plan) {
-        userPlan = userRecord.plan;
-        storageLimit = userPlan.storageGb * 1024 * 1024 * 1024;
-        bandwidthLimit = (userPlan.bandwidthGb || 10) * 1024 * 1024 * 1024;
-      } else {
-        // Fallback to free plan
-        const freePlan = await prisma.plan.findUnique({ where: { name: "free" } });
-        if (freePlan) {
-          userPlan = freePlan;
-          storageLimit = freePlan.storageGb * 1024 * 1024 * 1024;
-          bandwidthLimit = (freePlan.bandwidthGb || 10) * 1024 * 1024 * 1024;
-        }
-      }
+    if (userRecord?.plan) {
+      storageLimit = userRecord.plan.storageGb * 1024 * 1024 * 1024;
+      bandwidthLimit = (userRecord.plan.bandwidthGb || 10) * 1024 * 1024 * 1024;
     }
 
+    console.log("[Analytics] storageLimit:", storageLimit, "bandwidthLimit:", bandwidthLimit);
 
-    console.log("[Analytics] userId:", userId, "userRecord:", userRecord ? "found" : "null", "plan:", userPlan?.name || "null");
-
-    // Storage usage over time - FILTERED BY USER
+    // Storage usage over time - FILTERED BY INTERNAL USER ID
     const filesOverTime = await prisma.file.groupBy({
       by: ["createdAt"],
       where: {
-        userId: userId,
+        userId,
         createdAt: { gte: startDate },
         deletedAt: null,
       },
@@ -58,20 +54,20 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "asc" },
     });
 
-    // Bandwidth usage over time - FILTERED BY USER
+    // Bandwidth usage over time - FILTERED BY INTERNAL USER ID
     const bandwidthOverTime = await prisma.bandwidthLog.groupBy({
       by: ["createdAt"],
       where: {
-        userId: userId,
+        userId,
         createdAt: { gte: startDate },
       },
       _sum: { bytesUsed: true },
       orderBy: { createdAt: "asc" },
     });
 
-    // File type breakdown - FILTERED BY USER
+    // File type breakdown - FILTERED BY INTERNAL USER ID
     const userFiles = await prisma.file.findMany({
-      where: { userId: userId, deletedAt: null },
+      where: { userId, deletedAt: null },
       select: { mimeType: true },
     });
 
@@ -121,19 +117,19 @@ export async function GET(request: NextRequest) {
       return result;
     };
 
-    // User's total stats - FILTERED BY USER
+    // User's total stats - FILTERED BY INTERNAL USER ID
     const totalStorage = await prisma.file.aggregate({
-      where: { userId: userId, deletedAt: null },
+      where: { userId, deletedAt: null },
       _sum: { fileSize: true },
     });
 
     const totalBandwidth = await prisma.bandwidthLog.aggregate({
-      where: { userId: userId },
+      where: { userId },
       _sum: { bytesUsed: true },
     });
 
     const totalFiles = await prisma.file.count({
-      where: { userId: userId, deletedAt: null },
+      where: { userId, deletedAt: null },
     });
 
     return NextResponse.json({
