@@ -43,6 +43,7 @@ export default function Navbar() {
     { href: "/analytics", label: "Analytics" },
     { href: "/settings", label: "Settings" },
     { href: "/logs", label: "Logs" },
+    { href: "/theme", label: "🌙 Theme" },
   ];
 
   return (
