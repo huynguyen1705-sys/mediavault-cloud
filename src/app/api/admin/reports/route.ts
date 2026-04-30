@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
           WHEN mime_type LIKE 'application/pdf' THEN 'Documents'
           ELSE 'Other'
         END as type,
-        COALESCE(SUM(size_bytes), 0) as size,
+        COALESCE(SUM(file_size), 0) as size,
         COUNT(*) as count
       FROM files
       WHERE deleted_at IS NULL
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     const storageTrend = await prisma.$queryRaw<Array<{ date: string; size: bigint }>>`
       SELECT 
         DATE(uploaded_at) as date,
-        SUM(size_bytes) as size
+        SUM(file_size) as size
       FROM files
       WHERE uploaded_at >= ${startDate} AND deleted_at IS NULL
       GROUP BY DATE(uploaded_at)

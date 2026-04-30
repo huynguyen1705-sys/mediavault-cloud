@@ -38,7 +38,7 @@ export async function GET() {
           WHEN mime_type LIKE 'application/pdf' THEN 'Documents'
           ELSE 'Other'
         END as type,
-        COALESCE(SUM(size_bytes), 0) as size,
+        COALESCE(SUM(file_size), 0) as size,
         COUNT(*) as count
       FROM files
       WHERE deleted_at IS NULL
