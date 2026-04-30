@@ -139,7 +139,7 @@ export default function SettingsPage() {
     <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-1">Settings</h1>
+        <h1 className="text-3xl font-bold mb-1 text-white">Settings</h1>
         <p className="text-gray-400">Manage your account and preferences</p>
       </div>
 
@@ -170,7 +170,7 @@ export default function SettingsPage() {
       {activeTab === "profile" && (
         <div className="space-y-6">
           <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-6">
-            <h2 className="text-lg font-semibold mb-4">Profile Information</h2>
+            <h2 className="text-lg font-semibold mb-4 text-white">Profile Information</h2>
             <div className="flex items-center gap-6 mb-6">
               <div className="relative">
                 {userData?.user.avatarUrl ? (
@@ -186,7 +186,7 @@ export default function SettingsPage() {
                 )}
               </div>
               <div>
-                <div className="text-xl font-semibold">{userData?.user.displayName || "No name set"}</div>
+                <div className="text-xl font-semibold text-white">{userData?.user.displayName || "No name set"}</div>
                 <div className="text-gray-400 text-sm">{userData?.user.email}</div>
                 {userData?.user.isAdmin && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-violet-500/20 text-violet-400 text-xs font-medium rounded-full mt-2">
@@ -201,7 +201,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-6">
-            <h2 className="text-lg font-semibold mb-4">Danger Zone</h2>
+            <h2 className="text-lg font-semibold mb-4 text-white">Danger Zone</h2>
             <div className="flex items-center justify-between p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
               <div>
                 <div className="font-medium text-red-400">Delete Account</div>
@@ -220,14 +220,14 @@ export default function SettingsPage() {
       {activeTab === "storage" && (
         <div className="space-y-6">
           <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-6">
-            <h2 className="text-lg font-semibold mb-4">Current Plan</h2>
+            <h2 className="text-lg font-semibold mb-4 text-white">Current Plan</h2>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-violet-500/20 rounded-xl flex items-center justify-center">
                   <HardDrive className="w-6 h-6 text-violet-400" />
                 </div>
                 <div>
-                  <div className="text-xl font-semibold">{userData?.user.plan.displayName || "Free"} Plan</div>
+                  <div className="text-xl font-semibold text-white">{userData?.user.plan.displayName || "Free"} Plan</div>
                   <div className="text-sm text-gray-400">{userData?.user.plan.storageGb} GB storage</div>
                 </div>
               </div>
@@ -284,7 +284,7 @@ export default function SettingsPage() {
       {activeTab === "security" && (
         <div className="space-y-6">
           <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-6">
-            <h2 className="text-lg font-semibold mb-4">Password</h2>
+            <h2 className="text-lg font-semibold mb-4 text-white">Password</h2>
             <p className="text-sm text-gray-400 mb-4">
               Password management is handled by Clerk for security reasons.
             </p>
@@ -295,7 +295,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-6">
-            <h2 className="text-lg font-semibold mb-4">Two-Factor Authentication (2FA)</h2>
+            <h2 className="text-lg font-semibold mb-4 text-white">Two-Factor Authentication (2FA)</h2>
             <p className="text-sm text-gray-400 mb-4">
               Add an extra layer of security to your account by requiring a verification code in addition to your password.
             </p>
@@ -319,7 +319,7 @@ export default function SettingsPage() {
       {activeTab === "domains" && (
         <div className="space-y-6">
           <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-6">
-            <h2 className="text-lg font-semibold mb-4">Allowed Embed Domains</h2>
+            <h2 className="text-lg font-semibold mb-4 text-white">Allowed Embed Domains</h2>
             <p className="text-sm text-gray-400 mb-4">
               Add domains that are allowed to embed your media files. This is useful for your own websites.
               {!userData?.user.plan.allowEmbed && (
