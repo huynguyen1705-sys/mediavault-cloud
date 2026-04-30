@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
-import { Cloud, Menu, X, Moon } from "lucide-react";
+import { Cloud, Menu, X, Moon, Sun } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function Navbar() {
@@ -12,6 +12,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
     if (isSignedIn && user) {
@@ -26,6 +27,22 @@ export default function Navbar() {
       setLoading(false);
     }
   }, [isSignedIn, user]);
+
+  // Track theme changes
+  useEffect(() => {
+    const updateTheme = () => {
+      setIsDark(!document.documentElement.classList.contains("light"));
+    };
+    updateTheme();
+    window.addEventListener('storage', updateTheme);
+    // Watch for class changes
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => {
+      window.removeEventListener('storage', updateTheme);
+      observer.disconnect();
+    };
+  }, []);
 
   const isActive = (path: string) => pathname === path;
 
@@ -134,15 +151,16 @@ export default function Navbar() {
                 {/* Theme Toggle Button */}
                 <button
                   onClick={() => {
-                    const next = document.documentElement.classList.contains("light") ? "dark" : "light";
+                    const next = isDark ? "light" : "dark";
                     document.documentElement.classList.remove("light", "dark");
                     document.documentElement.classList.add(next);
                     localStorage.setItem("mv-theme", next);
+                    setIsDark(!isDark);
                   }}
                   className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
                   title="Toggle theme"
                 >
-                  <Moon className="w-5 h-5" />
+                  {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
                 <UserButton />
               </div>
