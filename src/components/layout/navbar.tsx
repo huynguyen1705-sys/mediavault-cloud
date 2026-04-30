@@ -107,7 +107,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Auth */}
+          {/* Auth - positioned in corner */}
           <div className="flex items-center gap-4">
             {!isSignedIn ? (
               <>
@@ -125,7 +125,9 @@ export default function Navbar() {
                 </Link>
               </>
             ) : (
-              <UserButton />
+              <div className="flex items-center">
+                <UserButton />
+              </div>
             )}
           </div>
 
