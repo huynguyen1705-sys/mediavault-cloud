@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
-import { Shield, Users, BarChart3, Settings, ChevronRight } from "lucide-react";
+import { Shield, Users, BarChart3, Settings, ChevronRight, FileText } from "lucide-react";
 
 export default function AdminPage() {
   const { user, isLoaded } = useUser();
@@ -101,6 +101,24 @@ export default function AdminPage() {
               </div>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all" />
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/reports"
+          className="group p-6 bg-gray-900/80 border border-gray-800 rounded-xl hover:border-amber-500/50 transition-all"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                <FileText className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-white">Reports</h2>
+                <p className="text-sm text-gray-400">Usage reports & export</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
           </div>
         </Link>
 
