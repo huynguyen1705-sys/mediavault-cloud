@@ -70,7 +70,7 @@ export default function DashboardPage() {
     <div className="p-6 max-w-7xl mx-auto">
       {/* Welcome */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">
+        <h1 className="text-3xl font-bold mb-2 text-white">
           Welcome back, {user?.firstName || "User"}
         </h1>
         <p className="text-gray-400">
@@ -89,7 +89,7 @@ export default function DashboardPage() {
               <FolderOpen className="w-6 h-6 text-violet-400" />
             </div>
             <div>
-              <h3 className="font-semibold">Open File Manager</h3>
+              <h3 className="font-semibold text-white">Open File Manager</h3>
               <p className="text-sm text-gray-400">View and manage files</p>
             </div>
           </div>
@@ -104,7 +104,7 @@ export default function DashboardPage() {
               <ArrowUp className="w-6 h-6 text-emerald-400" />
             </div>
             <div>
-              <h3 className="font-semibold">Upload Files</h3>
+              <h3 className="font-semibold text-white">Upload Files</h3>
               <p className="text-sm text-gray-400">Drag & drop or click</p>
             </div>
           </div>
@@ -119,7 +119,7 @@ export default function DashboardPage() {
               <Clock className="w-6 h-6 text-amber-400" />
             </div>
             <div>
-              <h3 className="font-semibold">Billing & Plan</h3>
+              <h3 className="font-semibold text-white">Billing & Plan</h3>
               <p className="text-sm text-gray-400">Upgrade to Pro</p>
             </div>
           </div>
@@ -171,7 +171,7 @@ export default function DashboardPage() {
             <Cloud className="w-5 h-5 text-violet-400" />
           </div>
           <div>
-            <div className="font-medium">{userData?.user.plan.displayName || "Free"} Plan</div>
+            <div className="font-medium text-white">{userData?.user.plan.displayName || "Free"} Plan</div>
             <div className="text-sm text-gray-400">
               {userData?.user.plan.storageGb || 1} GB storage
               {(userData?.user.plan.fileRetentionDays ?? 0) > 0 
@@ -199,7 +199,7 @@ export default function DashboardPage() {
       <div className="bg-gray-900 border border-gray-800 rounded-xl">
         <div className="p-4 border-b border-gray-800">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Quick Stats</h2>
+            <h2 className="text-lg font-semibold text-white">Quick Stats</h2>
           </div>
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
