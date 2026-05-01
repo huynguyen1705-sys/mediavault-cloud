@@ -107,6 +107,79 @@ interface UploadFile {
   error?: string;
 }
 
+// ============================================================
+// CONTEXT MENU - Separate component to prevent parent re-render
+// ============================================================
+const ContextMenuPortal = memo(function ContextMenuPortal({
+  x, y, file, trashMode,
+  onClose, onView, onDetails, onShare, onMove, onRename, onCopyLink,
+  onDelete, onRestore, onPermanentDelete, getMenuPosition
+}: {
+  x: number; y: number; file: FileItem; trashMode: boolean;
+  onClose: () => void;
+  onView: () => void; onDetails: () => void; onShare: () => void;
+  onMove: () => void; onRename: () => void; onCopyLink: () => void;
+  onDelete: () => void; onRestore: () => void; onPermanentDelete: () => void;
+  getMenuPosition: (x: number, y: number) => React.CSSProperties;
+}) {
+  // Close on outside click without blocking the page
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const menu = document.getElementById('ctx-menu-portal');
+      if (menu && !menu.contains(e.target as Node)) onClose();
+    };
+    // Small delay so the triggering click doesn't immediately close
+    const t = setTimeout(() => document.addEventListener('mousedown', handler), 10);
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
+  }, [onClose]);
+
+  const menuStyle: React.CSSProperties = {
+    ...getMenuPosition(x, y),
+    position: 'fixed',
+    zIndex: 9999,
+    minWidth: '180px',
+    backgroundColor: '#0f1623',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: '10px',
+    padding: '4px 0',
+    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+  };
+
+  const itemCls = "w-full px-3 py-1.5 text-left text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2.5 transition-colors duration-100";
+  const dividerCls = "my-1 border-t border-white/5";
+
+  return (
+    <div id="ctx-menu-portal" style={menuStyle}>
+      <button className={itemCls} onClick={onView}><Eye className="w-3.5 h-3.5 text-gray-500" /> View</button>
+      <button className={itemCls} onClick={onDetails}><Info className="w-3.5 h-3.5 text-gray-500" /> Details</button>
+      <hr className={dividerCls} />
+      <button className={itemCls} onClick={onShare}><Share2 className="w-3.5 h-3.5 text-violet-400" /> Share</button>
+      <button className={itemCls} onClick={onMove}><FolderInput className="w-3.5 h-3.5 text-gray-500" /> Move to...</button>
+      <button className={itemCls} onClick={onRename}><Edit className="w-3.5 h-3.5 text-gray-500" /> Rename</button>
+      <button className={itemCls} onClick={onCopyLink}><Copy className="w-3.5 h-3.5 text-gray-500" /> Copy Link</button>
+      {file.url && (
+        <a
+          href={file.url}
+          download={file.name}
+          className={itemCls}
+          onClick={onClose}
+        >
+          <Download className="w-3.5 h-3.5 text-blue-400" /> Download
+        </a>
+      )}
+      <hr className={dividerCls} />
+      {trashMode ? (
+        <>
+          <button className={`${itemCls} text-emerald-400 hover:text-emerald-300`} onClick={onRestore}><RotateCcw className="w-3.5 h-3.5" /> Restore</button>
+          <button className={`${itemCls} text-red-400 hover:text-red-300`} onClick={onPermanentDelete}><XCircle className="w-3.5 h-3.5" /> Delete Forever</button>
+        </>
+      ) : (
+        <button className={`${itemCls} text-red-400 hover:text-red-300`} onClick={onDelete}><Trash2 className="w-3.5 h-3.5" /> Move to Trash</button>
+      )}
+    </div>
+  );
+});
+
 export default function FilesPage() {
   const { user, isLoaded } = useUser();
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
@@ -176,6 +249,11 @@ export default function FilesPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [folderContextMenu, setFolderContextMenu] = useState<{ x: number; y: number; folder: FolderTreeNode } | null>(null);
+  // Refs for keyboard handler - avoids re-creating listener on every state change
+  const contextMenuRef = useRef<{ x: number; y: number; file: FileItem } | null>(null);
+  const folderContextMenuRef = useRef<{ x: number; y: number; folder: FolderTreeNode } | null>(null);
+  useEffect(() => { contextMenuRef.current = contextMenu; }, [contextMenu]);
+  useEffect(() => { folderContextMenuRef.current = folderContextMenu; }, [folderContextMenu]);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [movingFile, setMovingFile] = useState<FileItem | null>(null);
   const [showRenameModal, setShowRenameModal] = useState(false);
@@ -395,8 +473,8 @@ export default function FilesPage() {
       if (key === "escape") {
         setShowPreview(false);
         if (showDetails) setShowDetails(false);
-        if (contextMenu) setContextMenu(null);
-        if (folderContextMenu) setFolderContextMenu(null);
+        if (contextMenuRef.current) setContextMenu(null);
+        if (folderContextMenuRef.current) setFolderContextMenu(null);
       }
 
       // Arrow keys - Navigate files in preview mode
@@ -475,7 +553,7 @@ export default function FilesPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedFile, showPreview, showDetails, contextMenu, folderContextMenu, files]);
+  }, [selectedFile, showPreview, showDetails, selectMode, files]); // removed contextMenu/folderContextMenu to prevent image reload
 
   // Toggle folder expand
   const toggleExpand = useCallback((folderId: string) => {
@@ -2167,125 +2245,25 @@ const handleDelete = async (fileId: string) => {
         </div>
       </div>
 
-      {/* Context Menu */}
+      {/* Context Menu - Lightweight, no overlay, close on outside click via useEffect */}
       {contextMenu && (
-        <>
-          {/* Invisible click-away layer - no background overlay */}
-          <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
-          <div className="fixed z-50 rounded-xl py-1 min-w-[190px]"
-            style={{ 
-              ...getSmartMenuPosition(contextMenu.x, contextMenu.y),
-              backgroundColor: '#111827',
-              border: '1px solid #1f2937',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-              willChange: 'transform'
-            }}
-          >
-            {/* Recent Actions - Show last 3 actions */}
-            {recentActions.length > 0 && (
-              <>
-                <div className="px-4 py-1.5 text-xs text-gray-500 uppercase tracking-wider">Recent</div>
-                {recentActions.slice(0, 3).map((action, index) => (
-                  <button
-                    key={`${action.fileId}-${action.timestamp}`}
-                    onClick={() => {
-                      const file = files.find(f => f.id === action.fileId);
-                      if (file) {
-                        setSelectedFile(file);
-                        if (action.action === "Shared") setShowShareModal(true);
-                        else if (action.action === "Deleted") { handleDelete(action.fileId); }
-                        else setShowPreview(true);
-                      }
-                      setContextMenu(null);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3 text-violet-400"
-                  >
-                    {action.action === "Shared" && <Share2 className="w-4 h-4" />}
-                    {action.action === "Deleted" && <Trash2 className="w-4 h-4" />}
-                    {action.action === "Downloaded" && <Download className="w-4 h-4" />}
-                    <span className="truncate flex-1">{action.fileName}</span>
-                    <span className="text-[10px] text-gray-500">{action.action}</span>
-                  </button>
-                ))}
-                <hr className="my-2 border-gray-800" />
-              </>
-            )}
-            <button
-              onClick={() => { setSelectedFile(contextMenu.file); setShowPreview(true); setContextMenu(null); }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
-            >
-              <Eye className="w-4 h-4 text-gray-400" /> View
-            </button>
-            <button
-              onClick={() => { setSelectedFile(contextMenu.file); setShowDetails(true); setContextMenu(null); }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
-            >
-              <Info className="w-4 h-4 text-gray-400" /> Details
-            </button>
-            <button
-              onClick={() => { setSelectedFile(contextMenu.file); setShowShareModal(true); setContextMenu(null); }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
-            >
-              <Share2 className="w-4 h-4 text-violet-400" /> Share
-            </button>
-            <button
-              onClick={() => { setMovingFile(contextMenu.file); setShowMoveModal(true); setContextMenu(null); }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
-            >
-              <FolderInput className="w-4 h-4 text-gray-400" /> Move to...
-            </button>
-            <button
-              onClick={() => { setRenamingItem({ type: "file", item: contextMenu.file }); setNewName(contextMenu.file.name); setShowRenameModal(true); setContextMenu(null); }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
-            >
-              <Edit className="w-4 h-4 text-gray-400" /> Rename
-            </button>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.origin + "/api/files/" + contextMenu.file.id);
-                showToastMessage("Link copied!");
-                setContextMenu(null);
-              }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
-            >
-              <Copy className="w-4 h-4 text-gray-400" /> Copy Link
-            </button>
-            {contextMenu.file.url && (
-              <a
-                href={contextMenu.file.url}
-                download={contextMenu.file.name}
-                className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
-                onClick={() => setContextMenu(null)}
-              >
-                <Download className="w-4 h-4 text-blue-400" /> Download
-              </a>
-            )}
-            <hr className="my-1.5 border-gray-700/60" />
-            {trashMode ? (
-              <>
-                <button
-                  onClick={() => handleRestore(contextMenu.file.id)}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-emerald-500/10 flex items-center gap-3 text-emerald-400 transition-colors"
-                >
-                  <RotateCcw className="w-4 h-4" /> Restore
-                </button>
-                <button
-                  onClick={() => handlePermanentDelete(contextMenu.file.id)}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-red-500/10 flex items-center gap-3 text-red-400 transition-colors"
-                >
-                  <XCircle className="w-4 h-4" /> Delete Forever
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => handleDelete(contextMenu.file.id)}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-red-500/10 flex items-center gap-3 text-red-400 transition-colors"
-              >
-                <Trash2 className="w-4 h-4" /> Move to Trash
-              </button>
-            )}
-          </div>
-        </>
+        <ContextMenuPortal
+          x={contextMenu.x}
+          y={contextMenu.y}
+          file={contextMenu.file}
+          trashMode={trashMode}
+          onClose={() => setContextMenu(null)}
+          onView={() => { setSelectedFile(contextMenu.file); setShowPreview(true); setContextMenu(null); }}
+          onDetails={() => { setSelectedFile(contextMenu.file); setShowDetails(true); setContextMenu(null); }}
+          onShare={() => { setSelectedFile(contextMenu.file); setShowShareModal(true); setContextMenu(null); }}
+          onMove={() => { setMovingFile(contextMenu.file); setShowMoveModal(true); setContextMenu(null); }}
+          onRename={() => { setRenamingItem({ type: "file", item: contextMenu.file }); setNewName(contextMenu.file.name); setShowRenameModal(true); setContextMenu(null); }}
+          onCopyLink={() => { navigator.clipboard.writeText(window.location.origin + "/api/files/" + contextMenu.file.id); showToastMessage("Link copied!"); setContextMenu(null); }}
+          onDelete={() => handleDelete(contextMenu.file.id)}
+          onRestore={() => handleRestore(contextMenu.file.id)}
+          onPermanentDelete={() => handlePermanentDelete(contextMenu.file.id)}
+          getMenuPosition={getSmartMenuPosition}
+        />
       )}
 
       {/* Mobile Bottom Sheet Menu */}
