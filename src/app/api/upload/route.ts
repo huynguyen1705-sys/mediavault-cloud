@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Storage limit exceeded. Please upgrade your plan." },
         { status: 403 }
-    );
+      );
+    }
 
     // Generate unique file key for R2
     const fileKey = generateFileKey(userId, file.name);
