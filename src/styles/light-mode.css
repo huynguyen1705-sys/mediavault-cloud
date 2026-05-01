@@ -107,3 +107,17 @@
 .light [class*="bg-gradient-to-r"] {
   filter: brightness(0.8) saturate(1.2);
 }
+/* Fix thumbnail container - keep it light but not too bright */
+.light .aspect-square.rounded-lg.bg-gray-800 {
+  background-color: #f1f5f9 !important;
+}
+
+/* Fix thumbnail images */
+.light .aspect-square img {
+  filter: none !important;
+}
+
+/* Fix file type icons container */
+.light [class*="rounded-lg"][class*="bg-gradient-to-br"] {
+  filter: brightness(0.95);
+}
