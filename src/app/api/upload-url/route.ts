@@ -3,8 +3,6 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
 import { getUploadPresignedUrl, generateFileKey } from "@/lib/r2";
 
-const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
-
 // GET - Generate presigned URL for direct R2 upload
 export async function GET(request: NextRequest) {
   try {
@@ -26,15 +24,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const sizeInBytes = parseInt(fileSize);
-    if (sizeInBytes > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: `File too large. Max size is ${MAX_FILE_SIZE / 1024 / 1024}MB` },
-        { status: 400 }
-      );
-    }
-
-    // Get user profile
+    // Get user profile with plan
     const userProfile = await prisma.user.findUnique({
       where: { clerkUserId: userId },
       include: { plan: true },
@@ -46,6 +36,22 @@ export async function GET(request: NextRequest) {
 
     if (userProfile.isSuspended) {
       return NextResponse.json({ error: "Account suspended" }, { status: 403 });
+    }
+
+    // Determine max file size by plan type
+    const planLimits: Record<string, number> = {
+      free: 10 * 1024 * 1024,      // 10MB
+      pro: 2000 * 1024 * 1024,     // 2000MB
+      trial: 10 * 1024 * 1024,     // 10MB for trial
+    };
+    const maxFileSize = planLimits[userProfile.plan.name.toLowerCase()] ?? 10 * 1024 * 1024;
+
+    const sizeInBytes = parseInt(fileSize);
+    if (sizeInBytes > maxFileSize) {
+      return NextResponse.json(
+        { error: `File too large. Maximum size for your plan (${userProfile.plan.name}) is ${Math.round(maxFileSize / 1024 / 1024)}MB. Please upgrade your plan.` },
+        { status: 400 }
+      );
     }
 
     // Check storage limit
@@ -69,7 +75,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       uploadUrl,
       fileKey,
-      maxSize: MAX_FILE_SIZE,
+      maxSize: maxFileSize,
     });
   } catch (error) {
     console.error("Generate upload URL error:", error);
