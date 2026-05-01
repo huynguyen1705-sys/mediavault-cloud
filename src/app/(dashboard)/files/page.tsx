@@ -5,13 +5,13 @@ import dynamic from "next/dynamic";
 import { AudioPreview, PdfPreview, CodePreview, TextPreview, XlsxPreview } from "@/components/PreviewComponents";
 import DocViewer from "@cyntler/react-doc-viewer";
 import { useUser } from "@clerk/nextjs";
-import { 
+import {
   FolderPlus,
-  FolderInput, 
-  Upload, 
-  Grid, 
-  List, 
-  Search, 
+  FolderInput,
+  Upload,
+  Grid,
+  List,
+  Search,
   MoreVertical,
   CheckSquare,
   Image,
@@ -115,7 +115,7 @@ export default function FilesPage() {
     }
     return 'grid';
   });
-  
+
   // Save view mode to localStorage
   const handleSetViewMode = (mode: 'grid' | 'list') => {
     setViewMode(mode);
@@ -133,6 +133,8 @@ export default function FilesPage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
+  // Cache presigned URLs to avoid image reload on re-fetch
+  const urlCacheRef = useRef<Record<string, { url: string | null; thumbnailUrl: string | null; cachedAt: number }>>({}); 
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<{ id: string | null; name: string }[]>([{ id: null, name: "My Files" }]);
@@ -187,7 +189,7 @@ export default function FilesPage() {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
-  
+
   // Initialize sidebar state based on screen size
   useEffect(() => {
     const checkScreenSize = () => {
@@ -228,12 +230,12 @@ export default function FilesPage() {
   const buildTree = useCallback((folders: FolderItem[]): FolderTreeNode[] => {
     const map = new Map<string, FolderTreeNode>();
     const roots: FolderTreeNode[] = [];
-    
+
     // Create nodes
     folders.forEach(f => {
       map.set(f.id, { ...f, children: [] });
     });
-    
+
     // Build hierarchy
     folders.forEach(f => {
       const node = map.get(f.id)!;
@@ -243,14 +245,14 @@ export default function FilesPage() {
         roots.push(node);
       }
     });
-    
+
     // Sort alphabetically
     const sortNodes = (nodes: FolderTreeNode[]) => {
       nodes.sort((a, b) => a.name.localeCompare(b.name));
       nodes.forEach(n => sortNodes(n.children));
     };
     sortNodes(roots);
-    
+
     return roots;
   }, []);
 
@@ -298,7 +300,23 @@ export default function FilesPage() {
       const res = await fetch(`/api/files?${params}`);
       if (res.ok) {
         const data = await res.json();
-        setFiles(data.files || []);
+        const now = Date.now();
+        const cacheMaxAge = 23 * 60 * 60 * 1000; // 23 hours
+        // Merge with cached URLs to avoid re-generating presigned URLs
+        const mergedFiles = (data.files || []).map((file: FileItem) => {
+          const cached = urlCacheRef.current[file.id];
+          if (cached && (now - cached.cachedAt) < cacheMaxAge) {
+            return { ...file, url: cached.url, thumbnailUrl: cached.thumbnailUrl };
+          }
+          // Cache the new URL
+          urlCacheRef.current[file.id] = {
+            url: file.url,
+            thumbnailUrl: file.thumbnailUrl,
+            cachedAt: now,
+          };
+          return file;
+        });
+        setFiles(mergedFiles);
         setFolders(data.folders || []);
       }
     } catch (error) {
@@ -370,9 +388,9 @@ export default function FilesPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      
+
       const key = e.key.toLowerCase();
-      
+
       // Escape - Close preview
       if (key === "escape") {
         setShowPreview(false);
@@ -380,7 +398,7 @@ export default function FilesPage() {
         if (contextMenu) setContextMenu(null);
         if (folderContextMenu) setFolderContextMenu(null);
       }
-      
+
       // Arrow keys - Navigate files in preview mode
       if (["arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key) && showPreview && files.length > 0) {
         e.preventDefault();
@@ -393,26 +411,26 @@ export default function FilesPage() {
           setSelectedFile(files[prevIndex]);
         }
       }
-      
+
       // + / = - Zoom in
       if ((key === "+" || key === "=") && showPreview) {
         e.preventDefault();
         setZoom(z => Math.min(3, z + 0.25));
       }
-      
+
       // - - Zoom out
       if (key === "-" && showPreview) {
         e.preventDefault();
         setZoom(z => Math.max(0.5, z - 0.25));
       }
-      
+
       // 0 - Reset zoom
       if (key === "0" && showPreview) {
         e.preventDefault();
         setZoom(1);
         setDragPos({ x: 0, y: 0 });
       }
-      
+
       // Keyboard shortcuts for file actions (when a file is selected)
       if (selectedFile && !showPreview) {
         if (key === "d") {
@@ -440,14 +458,14 @@ export default function FilesPage() {
           setShowDetails(true);
         }
       }
-      
+
       // Ctrl+A - Select all
       if (key === "a" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         setSelectMode(true);
         setSelectedFiles(new Set(files.map(f => f.id)));
       }
-      
+
       // Escape - Exit select mode
       if (key === "escape" && selectMode) {
         setSelectMode(false);
@@ -472,13 +490,13 @@ export default function FilesPage() {
   // Navigate to folder
   const navigateToFolder = useCallback((folderId: string | null, folderName: string) => {
     setCurrentFolderId(folderId);
-    
+
     if (folderId === null) {
       setBreadcrumbs([{ id: null, name: "My Files" }]);
     } else {
       // Build path to root
       const path: { id: string | null; name: string }[] = [{ id: null, name: "My Files" }];
-      
+
       const findPath = (nodes: FolderTreeNode[], targetId: string): boolean => {
         for (const node of nodes) {
           if (node.id === targetId) {
@@ -492,7 +510,7 @@ export default function FilesPage() {
         }
         return false;
       };
-      
+
       findPath(allFolders, folderId);
       setBreadcrumbs(path.reverse());
     }
@@ -528,7 +546,7 @@ export default function FilesPage() {
           fileSize: String(actualFile.size),
         });
         if (currentFolderId) params.set("folderId", currentFolderId);
-        
+
         const urlRes = await fetch(`/api/upload-url?${params.toString()}`);
         if (!urlRes.ok) throw new Error("Failed to get upload URL");
         const { uploadUrl, fileKey } = await urlRes.json();
@@ -572,7 +590,7 @@ export default function FilesPage() {
   // Handle drag and drop
   const handleDragStart = (e: React.DragEvent, file: FileItem) => {
     setDraggingFileId(file.id);
-    
+
     // If select mode is on and multiple files selected, drag all
     if (selectMode && selectedFiles.size > 0) {
       const allFileIds = JSON.stringify(Array.from(selectedFiles));
@@ -597,10 +615,10 @@ export default function FilesPage() {
   const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Get file IDs from drag data
     let fileIds: string[] = [];
-    
+
     const fileIdsData = e.dataTransfer.getData("fileIds");
     if (fileIdsData) {
       fileIds = JSON.parse(fileIdsData);
@@ -608,12 +626,12 @@ export default function FilesPage() {
       const fileId = e.dataTransfer.getData("fileId");
       if (fileId) fileIds = [fileId];
     }
-    
+
     // Fallback: if no fileIds from drag but selectMode is on, use selected files
     if (fileIds.length === 0 && selectMode && selectedFiles.size > 0) {
       fileIds = Array.from(selectedFiles);
     }
-    
+
     if (fileIds.length === 0) {
       setDraggingFileId(null);
       setDropTargetFolderId(null);
@@ -625,7 +643,7 @@ export default function FilesPage() {
       for (const fileId of fileIds) {
         const file = files.find(f => f.id === fileId);
         if (file && file.folderId === targetFolderId) continue;
-        
+
         const res = await fetch(`/api/files/${fileId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -633,7 +651,7 @@ export default function FilesPage() {
         });
         if (res.ok) movedCount++;
       }
-      
+
       if (movedCount > 0) {
         showToastMessage(`${movedCount} file${movedCount > 1 ? 's' : ''} moved`);
         if (selectMode) clearSelection();
@@ -677,7 +695,7 @@ export default function FilesPage() {
     const fileIds = Array.from(selectedFiles);
     if (fileIds.length === 0) return;
     if (!confirm(`Delete ${fileIds.length} file(s)?`)) return;
-    
+
     try {
       for (const fileId of fileIds) {
         await fetch(`/api/files/${fileId}`, { method: "DELETE" });
@@ -695,7 +713,7 @@ export default function FilesPage() {
     const fileIds = Array.from(selectedFiles);
     if (fileIds.length === 0) return;
     if (!confirm(`Permanently delete ${fileIds.length} file(s)?`)) return;
-    
+
     try {
       for (const fileId of fileIds) {
         await fetch(`/api/files/${fileId}?permanent=true`, { method: "DELETE" });
@@ -712,7 +730,7 @@ export default function FilesPage() {
     const handleBulkRestore = async () => {
     const fileIds = Array.from(selectedFiles);
     if (fileIds.length === 0) return;
-    
+
     try {
       for (const fileId of fileIds) {
         await fetch(`/api/files/${fileId}/restore`, { method: "POST" });
@@ -732,12 +750,12 @@ export default function FilesPage() {
     const ext = filename.split('.').pop()?.toLowerCase() || '';
     return codeExtensions.includes(ext);
   };
-  
+
     const isSpreadsheetFile = (filename: string) => {
     const ext = filename.split('.').pop()?.toLowerCase() || '';
     return ['xlsx', 'xls', 'csv', 'ods'].includes(ext);
   };
-  
+
 const isTextFile = (filename: string) => {
     const textExtensions = ['txt', 'md', 'markdown', 'log', 'cfg', 'conf', 'ini', 'env', 'gitignore', 'gitattributes', 'editorconfig', 'license', 'readme', 'changelog'];
     const ext = filename.split('.').pop()?.toLowerCase() || '';
@@ -747,7 +765,7 @@ const isTextFile = (filename: string) => {
 const handleBulkMove = async (targetFolderId: string | null) => {
     const fileIds = Array.from(selectedFiles);
     if (fileIds.length === 0) return;
-    
+
     try {
       for (const fileId of fileIds) {
         await fetch(`/api/files/${fileId}`, {
@@ -853,9 +871,9 @@ const handleDelete = async (fileId: string) => {
       const res = await fetch("/api/folders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          name: newFolderName.trim(), 
-          parentId: newFolderParentId || null 
+        body: JSON.stringify({
+          name: newFolderName.trim(),
+          parentId: newFolderParentId || null
         }),
       });
       if (res.ok) {
@@ -967,29 +985,29 @@ const handleDelete = async (fileId: string) => {
     const padding = 10;
     let left = x;
     let top = y;
-    
+
     if (typeof window !== 'undefined') {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      
+
       // Prefer left side - flip to left if too close to right edge
       if (x + menuWidth + padding > vw) {
         left = x - menuWidth - 10;
         // If still off screen, clamp to left
         if (left < padding) left = padding;
       }
-      
+
       // For bottom edge - flip menu ABOVE the click point
       if (y + menuHeight + padding > vh) {
         top = y - menuHeight - 10;
         if (top < padding) top = padding;
       }
-      
+
       // Ensure minimum positions
       left = Math.max(padding, left);
       top = Math.max(padding, top);
     }
-    
+
     return { left, top };
   };
 
@@ -1033,8 +1051,8 @@ const handleDelete = async (fileId: string) => {
       <div className="group">
         <div
           className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer transition-all duration-150 ${
-            isActive 
-              ? "bg-violet-500/20 text-violet-400" 
+            isActive
+              ? "bg-violet-500/20 text-violet-400"
               : dropTargetFolderId === folder.id
                 ? "bg-violet-500/30 border-2 border-violet-500"
                 : "text-gray-300 hover:bg-gray-800/50"
@@ -1077,10 +1095,10 @@ const handleDelete = async (fileId: string) => {
   // File icon helper
   const getFileIcon = (mimeType: string | null, size: "sm" | "md" | "lg" = "md") => {
     if (!mimeType) return <Folder className="w-5 h-5 text-amber-400" />;
-    
+
     const base = size === "sm" ? "w-4 h-4" : size === "lg" ? "w-8 h-8" : "w-6 h-6";
     const iconBase = size === "sm" ? "w-3 h-3" : size === "lg" ? "w-6 h-6" : "w-4 h-4";
-    
+
     if (mimeType.startsWith("image/")) return <Image className={`${base} text-emerald-400`} />;
     if (mimeType.startsWith("video/")) return <Film className={`${base} text-blue-400`} />;
     if (mimeType.startsWith("audio/")) return <Headphones className={`${base} text-pink-400`} />;
@@ -1088,7 +1106,7 @@ const handleDelete = async (fileId: string) => {
     if (mimeType.includes("zip") || mimeType.includes("archive") || mimeType.includes("compressed")) return <Archive className={`${base} text-amber-400`} />;
     if (mimeType.includes("spreadsheet") || mimeType.includes("excel") || mimeType.includes("csv")) return <FileSpreadsheet className={`${base} text-green-400`} />;
     if (mimeType.includes("presentation") || mimeType.includes("powerpoint")) return <Presentation className={`${base} text-orange-400`} />;
-    
+
     return <File className={`${base} text-gray-400`} />;
   };
 
@@ -1100,7 +1118,7 @@ const handleDelete = async (fileId: string) => {
     const isXlsx = file.mimeType?.includes('spreadsheet') || ['xlsx', 'xls', 'csv'].includes(ext);
     const isCode = ['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'go', 'rs', 'rb', 'php', 'swift', 'kt', 'html', 'css', 'json', 'yaml', 'sql', 'sh', 'md', 'txt'].includes(ext);
     const isText = ['log', 'cfg', 'conf', 'ini', 'env'].includes(ext);
-    
+
     // For files with thumbnails (images/videos), show the thumbnail
     if (file.thumbnailUrl) {
       return (
@@ -1127,7 +1145,7 @@ const handleDelete = async (fileId: string) => {
         </div>
       );
     }
-    
+
     // Get file type badge info
     const getFileTypeBadge = () => {
       if (isPdf) return { text: "PDF", color: "bg-red-500" };
@@ -1140,7 +1158,7 @@ const handleDelete = async (fileId: string) => {
       return null;
     };
     const badge = getFileTypeBadge();
-    
+
     // PDF Mini Preview
     if (isPdf) {
       return (
@@ -1151,8 +1169,8 @@ const handleDelete = async (fileId: string) => {
         </div>
       );
     }
-    
-    // DOCX Mini Preview  
+
+    // DOCX Mini Preview
     if (isDocx) {
       return (
         <div className="aspect-square rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity relative" onClick={onPreview}>
@@ -1162,7 +1180,7 @@ const handleDelete = async (fileId: string) => {
         </div>
       );
     }
-    
+
     // XLSX Mini Preview
     if (isXlsx) {
       return (
@@ -1173,7 +1191,7 @@ const handleDelete = async (fileId: string) => {
         </div>
       );
     }
-    
+
     // Code Mini Preview with syntax colors
     if (isCode) {
       return (
@@ -1191,7 +1209,7 @@ const handleDelete = async (fileId: string) => {
         </div>
       );
     }
-    
+
     // Text Mini Preview
     if (isText) {
       return (
@@ -1206,7 +1224,7 @@ const handleDelete = async (fileId: string) => {
         </div>
       );
     }
-    
+
     // Audio Mini Preview
     if (file.mimeType?.startsWith('audio/')) {
       return (
@@ -1221,7 +1239,7 @@ const handleDelete = async (fileId: string) => {
         </div>
       );
     }
-    
+
     // Video Mini Preview (without thumbnail)
     if (file.mimeType?.startsWith('video/')) {
       return (
@@ -1231,7 +1249,7 @@ const handleDelete = async (fileId: string) => {
         </div>
       );
     }
-    
+
     // Default file icon
     return (
       <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors" onClick={onPreview}>
@@ -1316,7 +1334,7 @@ const handleDelete = async (fileId: string) => {
             <span>{formatBytes(storageUsed)} / {formatBytes(storageLimit)}</span>
           </div>
           <div className="w-full bg-gray-800 rounded-full h-2.5 overflow-hidden">
-            <div 
+            <div
               className={`h-full rounded-full transition-all ${storageUsed / storageLimit > 0.9 ? "bg-red-500" : storageUsed / storageLimit > 0.7 ? "bg-amber-500" : "bg-violet-500"}`}
               style={{ width: `${Math.min((storageUsed / storageLimit) * 100, 100)}%` }}
             />
@@ -1359,8 +1377,8 @@ const handleDelete = async (fileId: string) => {
                   <button
                     onClick={() => navigateToFolder(crumb.id, crumb.name)}
                     className={`text-sm px-2 py-1 rounded flex items-center gap-1.5 ${
-                      index === breadcrumbs.length - 1 
-                        ? "bg-gray-800 text-white font-medium" 
+                      index === breadcrumbs.length - 1
+                        ? "bg-gray-800 text-white font-medium"
                         : "text-gray-400 hover:text-white hover:bg-gray-800"
                     }`}
                   >
@@ -1374,18 +1392,18 @@ const handleDelete = async (fileId: string) => {
             {/* Actions - Normal mode */}
             {selectedFiles.size === 0 && (
               <div className="flex items-center gap-2 shrink-0">
-                <button 
+                <button
                   onClick={() => { setSelectMode(!selectMode); if (selectMode) clearSelection(); }}
                   className={`px-4 py-2 text-sm font-medium rounded-lg flex items-center gap-2 transition-colors ${
-                    selectMode 
-                      ? "bg-violet-600 hover:bg-violet-500 text-white" 
+                    selectMode
+                      ? "bg-violet-600 hover:bg-violet-500 text-white"
                       : "bg-gray-800 hover:bg-gray-700 text-gray-300"
                   }`}
                 >
                   <CheckSquare className="w-4 h-4" />
                   {selectMode ? "Cancel" : "Select"}
                 </button>
-                <button 
+                <button
                   onClick={() => document.getElementById("file-input")?.click()}
                   className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
                 >
@@ -1401,8 +1419,8 @@ const handleDelete = async (fileId: string) => {
                       else fetchFiles();
                     }}
                     className={`p-2 rounded-lg transition-colors ${
-                      trashMode 
-                        ? "bg-amber-500/20 text-amber-400" 
+                      trashMode
+                        ? "bg-amber-500/20 text-amber-400"
                         : "hover:bg-gray-800 text-gray-400"
                     }`}
                     title={trashMode ? "Back to Files" : "Trash"}
@@ -1418,7 +1436,7 @@ const handleDelete = async (fileId: string) => {
                 </div>
               </div>
             )}
-            
+
             {/* Bulk Action Bar - Sticky when files selected */}
             {selectedFiles.size > 0 && (
               <div className="sticky top-0 z-20 flex items-center justify-between gap-4 bg-gray-900/95 backdrop-blur px-4 py-3 border-b border-gray-800 shadow-lg">
@@ -1684,7 +1702,7 @@ const handleDelete = async (fileId: string) => {
               {/* Overall progress bar */}
               <div className="flex items-center gap-3">
                 <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all duration-300"
                     style={{ width: `${(uploadQueue.filter(f => f.status === "completed").length / uploadQueue.length) * 100}%` }}
                   />
@@ -1713,7 +1731,7 @@ const handleDelete = async (fileId: string) => {
                     {file.status === "uploading" && (
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
                             style={{ width: `${file.progress || 0}%` }}
                           />
@@ -1742,10 +1760,10 @@ const handleDelete = async (fileId: string) => {
         )}
 
         {/* Content Area */}
-        <div 
+        <div
           className={`flex-1 overflow-auto p-4 transition-colors relative ${
-            isDragging 
-              ? "bg-violet-500/10 ring-2 ring-violet-500 ring-dashed rounded-2xl" 
+            isDragging
+              ? "bg-violet-500/10 ring-2 ring-violet-500 ring-dashed rounded-2xl"
               : ""
           }`}
           onDragOver={(e) => {
@@ -1782,7 +1800,7 @@ const handleDelete = async (fileId: string) => {
               <p className="text-gray-500 mb-6 text-center max-w-sm">
                 Drag and drop files here or click the button below to upload your first files
               </p>
-              <button 
+              <button
                 onClick={() => document.getElementById("file-input")?.click()}
                 className="px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-colors flex items-center gap-2"
               >
@@ -1865,8 +1883,8 @@ const handleDelete = async (fileId: string) => {
                   className={`group bg-gray-900 border rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer ${
                     draggingFileId === file.id ? "opacity-50" : ""
                   } ${
-                    selectedFiles.has(file.id) 
-                      ? "border-violet-500 bg-violet-500/10" 
+                    selectedFiles.has(file.id)
+                      ? "border-violet-500 bg-violet-500/10"
                       : "border-gray-800"
                   }`}
                   draggable={true}
@@ -1902,11 +1920,11 @@ const handleDelete = async (fileId: string) => {
                 >
                   <div className="flex items-center gap-2 mb-3">
                     {selectMode && (
-                      <div 
+                      <div
                         onClick={(e) => { e.stopPropagation(); toggleFileSelection(file.id); }}
                         className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
-                          selectedFiles.has(file.id) 
-                            ? "bg-violet-500 border-violet-500" 
+                          selectedFiles.has(file.id)
+                            ? "bg-violet-500 border-violet-500"
                             : "border-gray-600 hover:border-violet-400"
                         }`}
                       >
@@ -1915,8 +1933,8 @@ const handleDelete = async (fileId: string) => {
                     )}
                     <div className="flex-1" />
                   </div>
-                  <MiniPreview 
-                    file={file} 
+                  <MiniPreview
+                    file={file}
                     onPreview={() => { setSelectedFile(file); setShowPreview(true); }}
                   />
                   <div className="flex items-start gap-2">
@@ -1944,7 +1962,7 @@ const handleDelete = async (fileId: string) => {
                 {/* Checkbox/icon col */}
                 <div className="flex items-center">
                   {selectMode ? (
-                    <div 
+                    <div
                       onClick={selectAllFiles}
                       className="w-4 h-4 rounded border border-gray-600 hover:border-violet-400 cursor-pointer flex items-center justify-center transition-colors"
                     />
@@ -1985,7 +2003,7 @@ const handleDelete = async (fileId: string) => {
                 {/* Actions col */}
                 <div className="flex items-center justify-end pr-1">Actions</div>
               </div>
-              
+
               {/* Table Rows */}
               <div className="divide-y divide-gray-800/40">
                 {sortedFiles.map((file) => {
@@ -2009,8 +2027,8 @@ const handleDelete = async (fileId: string) => {
                   <div
                     key={file.id}
                     className={`grid grid-cols-[40px_1fr_80px_110px_130px_80px] gap-0 px-4 h-14 cursor-pointer group transition-all duration-150 ${
-                      selectedFiles.has(file.id) 
-                        ? "bg-violet-500/10 border-l-2 border-l-violet-500" 
+                      selectedFiles.has(file.id)
+                        ? "bg-violet-500/10 border-l-2 border-l-violet-500"
                         : "hover:bg-gray-800/50 border-l-2 border-l-transparent"
                     } ${
                       draggingFileId === file.id ? "opacity-50" : ""
@@ -2045,11 +2063,11 @@ const handleDelete = async (fileId: string) => {
                     {/* Checkbox column */}
                     <div className="flex items-center">
                       {selectMode ? (
-                        <div 
+                        <div
                           onClick={(e) => { e.stopPropagation(); toggleFileSelection(file.id); }}
                           className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all duration-150 ${
-                            selectedFiles.has(file.id) 
-                              ? "bg-violet-500 border-violet-500" 
+                            selectedFiles.has(file.id)
+                              ? "bg-violet-500 border-violet-500"
                               : "border-gray-600 hover:border-violet-400"
                           }`}
                         >
@@ -2067,7 +2085,7 @@ const handleDelete = async (fileId: string) => {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* File name column */}
                     <div className="flex items-center gap-3 min-w-0 pr-3">
                       {selectMode && (
@@ -2099,17 +2117,17 @@ const handleDelete = async (fileId: string) => {
                         {typeInfo.label.slice(0, 4)}
                       </span>
                     </div>
-                    
+
                     {/* Size column */}
                     <div className="flex items-center text-sm text-gray-400 tabular-nums">
                       {formatBytes(Number(file.fileSize))}
                     </div>
-                    
+
                     {/* Modified column */}
                     <div className="flex items-center text-sm text-gray-500 tabular-nums">
                       {formatDate(file.updatedAt || file.createdAt)}
                     </div>
-                    
+
                     {/* Actions column */}
                     <div className="flex items-center justify-end gap-0.5">
                       <button
@@ -2126,7 +2144,7 @@ const handleDelete = async (fileId: string) => {
                       >
                         <Share2 className="w-3.5 h-3.5" />
                       </button>
-                      <button 
+                      <button
                         title="More"
                         className="p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-700/60 opacity-0 group-hover:opacity-100 transition-all duration-150"
                         onClick={(e) => { e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, file }); }}
@@ -2338,7 +2356,7 @@ const handleDelete = async (fileId: string) => {
       {folderContextMenu && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setFolderContextMenu(null)} />
-          <div 
+          <div
             className="fixed z-50 bg-gray-900 border border-gray-800 rounded-xl shadow-xl py-2 min-w-[180px]"
             style={getSmartMenuPosition(folderContextMenu.x, folderContextMenu.y)}
           >
@@ -2402,31 +2420,31 @@ const handleDelete = async (fileId: string) => {
 
       {/* Preview Modal - Mobile Optimized */}
       {showPreview && selectedFile && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex flex-col md:flex-row"
           style={{ backgroundColor: 'rgba(0,0,0,0.95)' }}
         >
           {/* Top bar - Close and Info buttons */}
           <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
             {/* Info button for mobile */}
-            <button 
-              onClick={() => setMobileDetailsOpen(true)} 
+            <button
+              onClick={() => setMobileDetailsOpen(true)}
               className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors backdrop-blur-sm md:hidden"
             >
               <Info className="w-6 h-6 text-white" />
             </button>
             {/* Close button */}
-            <button 
-              onClick={() => setShowPreview(false)} 
+            <button
+              onClick={() => setShowPreview(false)}
               className="p-3 bg-black/30 hover:bg-black/50 border border-white/50 hover:border-white rounded-full transition-colors"
             >
               <X className="w-6 h-6 text-white" />
             </button>
           </div>
-          
+
           {/* Main Content - Comprehensive File Preview */}
           <div className="flex-1 flex items-center justify-center p-4 pb-24 md:pb-4 overflow-hidden">
-            <div 
+            <div
               id="pan-container"
               className="relative select-none w-full h-full flex items-center justify-center"
               style={{ touchAction: 'none' }}
@@ -2434,10 +2452,10 @@ const handleDelete = async (fileId: string) => {
               {/* IMAGE PREVIEW */}
               {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
                 <div className="cursor-grab active:cursor-grabbing w-full h-full flex items-center justify-center">
-                  <img 
+                  <img
                     id="pan-image"
-                    src={selectedFile.url} 
-                    alt={selectedFile.name} 
+                    src={selectedFile.url}
+                    alt={selectedFile.name}
                     draggable={false}
                     className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
                     style={{
@@ -2447,49 +2465,49 @@ const handleDelete = async (fileId: string) => {
                   />
                 </div>
               )}
-              
+
               {/* VIDEO PREVIEW */}
               {selectedFile.mimeType?.startsWith("video/") && selectedFile.url && (
-                <video 
-                  src={selectedFile.url} 
-                  controls 
-                  className="max-w-full max-h-[70vh] rounded-xl shadow-2xl" 
+                <video
+                  src={selectedFile.url}
+                  controls
+                  className="max-w-full max-h-[70vh] rounded-xl shadow-2xl"
                   autoPlay
                 />
               )}
-              
+
               {/* AUDIO PREVIEW - Waveform Player */}
               {selectedFile.mimeType?.startsWith("audio/") && selectedFile.url && (
                 <AudioPreview url={selectedFile.url} />
               )}
-              
+
               {/* PDF PREVIEW */}
               {(selectedFile.mimeType === "application/pdf" || selectedFile.mimeType?.includes("pdf")) && selectedFile.url && (
                 <PdfPreview proxyUrl={`/api/files/${selectedFile.id}/proxy`} filename={selectedFile.name} />
               )}
-              
+
               {/* DOCX/PPTX via DocViewer */}
               {(selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.presentationml.presentation") && selectedFile.url && (
                 <div className="bg-gray-900 rounded-2xl shadow-2xl w-[90vw] max-w-5xl overflow-hidden">
                   <DocViewer documents={[{ uri: `/api/files/${selectedFile.id}/proxy`, fileName: selectedFile.name }]} />
                 </div>
               )}
-              
+
               {/* CODE FILE PREVIEW */}
               {isCodeFile(selectedFile.name) && selectedFile.url && (
                 <CodePreview url={selectedFile.url} filename={selectedFile.name} />
               )}
-              
+
               {/* TEXT FILE PREVIEW */}
               {isTextFile(selectedFile.name) && selectedFile.url && (
                 <TextPreview url={selectedFile.url} />
               )}
-              
+
               {/* XLSX/SPREADSHEET PREVIEW */}
               {isSpreadsheetFile(selectedFile.name) && selectedFile.url && (
                 <XlsxPreview url={selectedFile.url} />
               )}
-              
+
               {/* NO URL AVAILABLE */}
               {!selectedFile.url && (
                 <div className="bg-gray-900 rounded-2xl p-8 shadow-2xl text-center">
@@ -2499,7 +2517,7 @@ const handleDelete = async (fileId: string) => {
               )}
             </div>
           </div>
-          
+
           {/* Zoom controls - Fixed position */}
           {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-gray-900/95 backdrop-blur px-4 py-2 rounded-full shadow-xl border border-gray-800">
@@ -2515,7 +2533,7 @@ const handleDelete = async (fileId: string) => {
               </button>
             </div>
           )}
-          
+
           {/* Desktop sidebar - Right Panel (hidden on mobile) */}
           <div className="hidden md:flex w-80 bg-gray-900 border-l border-gray-800 flex-col overflow-hidden">
             <div className="p-4 border-b border-gray-800">
@@ -2594,10 +2612,10 @@ const handleDelete = async (fileId: string) => {
           </div>
         </div>
       )}
-      
+
       {/* Mobile Details Panel - Fullscreen Bottom Sheet */}
       {showPreview && selectedFile && mobileDetailsOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-[60] flex flex-col"
           style={{ backgroundColor: 'rgba(0,0,0,0.98)' }}
         >
@@ -2608,7 +2626,7 @@ const handleDelete = async (fileId: string) => {
               <X className="w-6 h-6" />
             </button>
           </div>
-          
+
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
             {/* Preview */}
@@ -2798,7 +2816,7 @@ const handleDelete = async (fileId: string) => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setShowNewFolderModal(false); setNewFolderParentId(null); }}>
           <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold mb-4">Create New Folder</h2>
-            
+
             {/* Folder name input */}
             <input
               type="text"
@@ -2809,7 +2827,7 @@ const handleDelete = async (fileId: string) => {
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl mb-4 focus:outline-none focus:border-violet-500"
               autoFocus
             />
-            
+
             {/* Parent folder selector */}
             <div className="mb-4">
               <label className="text-sm text-gray-400 mb-2 block">Create in</label>
@@ -2826,7 +2844,7 @@ const handleDelete = async (fileId: string) => {
                 ))}
               </select>
             </div>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={() => { setShowNewFolderModal(false); setNewFolderParentId(null); }}

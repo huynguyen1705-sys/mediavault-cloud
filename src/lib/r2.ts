@@ -60,7 +60,7 @@ export async function uploadToR2(
 }
 
 // Generate presigned URL for download (expires in seconds)
-export async function getPresignedUrl(key: string, expiresIn = 3600): Promise<string> {
+export async function getPresignedUrl(key: string, expiresIn = 86400): Promise<string> {
   const client = getR2Client();
   const bucket = getBucket();
 
