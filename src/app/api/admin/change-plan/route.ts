@@ -56,7 +56,8 @@ export async function PATCH(request: NextRequest) {
       data: {
         userId: currentUser.id,
         action: "update_plan",
-        targetUserId,
+        resourceType: "user",
+        resourceId: targetUserId,
         details: JSON.stringify({
           oldPlan: targetUser.planId,
           newPlan: planId,
