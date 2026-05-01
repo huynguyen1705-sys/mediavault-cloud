@@ -1104,12 +1104,26 @@ const handleDelete = async (fileId: string) => {
       );
     }
     
+    // Get file type badge info
+    const getFileTypeBadge = () => {
+      if (isPdf) return { text: "PDF", color: "bg-red-500" };
+      if (isDocx) return { text: "DOCX", color: "bg-blue-500" };
+      if (isXlsx) return { text: "XLSX", color: "bg-green-500" };
+      if (isCode) return { text: ext.toUpperCase(), color: "bg-violet-500" };
+      if (file.mimeType?.startsWith("video/")) return { text: "VIDEO", color: "bg-blue-600" };
+      if (file.mimeType?.startsWith("audio/")) return { text: "AUDIO", color: "bg-pink-500" };
+      if (isText) return { text: "TEXT", color: "bg-gray-500" };
+      return null;
+    };
+    const badge = getFileTypeBadge();
+    
     // PDF Mini Preview
     if (isPdf) {
       return (
-        <div className="aspect-square rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity" onClick={onPreview}>
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity relative" onClick={onPreview}>
           <FileText className="w-10 h-10 text-white/90 mb-2" />
           <span className="text-[10px] text-white/70 font-medium">PDF</span>
+          <span className="absolute top-2 right-2 text-[8px] text-white/60 bg-black/30 px-1.5 py-0.5 rounded">{ext.toUpperCase()}</span>
         </div>
       );
     }
@@ -1117,9 +1131,10 @@ const handleDelete = async (fileId: string) => {
     // DOCX Mini Preview  
     if (isDocx) {
       return (
-        <div className="aspect-square rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity" onClick={onPreview}>
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity relative" onClick={onPreview}>
           <FileText className="w-10 h-10 text-white/90 mb-2" />
           <span className="text-[10px] text-white/70 font-medium">DOCX</span>
+          <span className="absolute top-2 right-2 text-[8px] text-white/60 bg-black/30 px-1.5 py-0.5 rounded">DOC</span>
         </div>
       );
     }
@@ -1127,9 +1142,10 @@ const handleDelete = async (fileId: string) => {
     // XLSX Mini Preview
     if (isXlsx) {
       return (
-        <div className="aspect-square rounded-lg bg-gradient-to-br from-green-500 to-green-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity" onClick={onPreview}>
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-green-500 to-green-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity relative" onClick={onPreview}>
           <FileSpreadsheet className="w-10 h-10 text-white/90 mb-2" />
-          <span className="text-[10px] text-white/70 font-medium">{ext.toUpperCase()}</span>
+          <span className="text-[10px] text-white/70 font-medium">XLSX</span>
+          <span className="absolute top-2 right-2 text-[8px] text-white/60 bg-black/30 px-1.5 py-0.5 rounded">{ext.toUpperCase()}</span>
         </div>
       );
     }
@@ -1137,7 +1153,7 @@ const handleDelete = async (fileId: string) => {
     // Code Mini Preview with syntax colors
     if (isCode) {
       return (
-        <div className="aspect-square rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 flex flex-col items-center justify-center p-2 cursor-pointer hover:opacity-90 transition-opacity overflow-hidden" onClick={onPreview}>
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 flex flex-col items-center justify-center p-2 cursor-pointer hover:opacity-90 transition-opacity overflow-hidden relative" onClick={onPreview}>
           <div className="grid grid-cols-3 gap-1 mb-1">
             <div className="w-3 h-3 rounded-sm bg-violet-500" />
             <div className="w-3 h-3 rounded-sm bg-emerald-500" />
@@ -1147,6 +1163,7 @@ const handleDelete = async (fileId: string) => {
             <div className="w-3 h-3 rounded-sm bg-red-500" />
           </div>
           <span className="text-[9px] text-gray-400 font-mono">{ext.toUpperCase()}</span>
+          <span className="absolute top-2 right-2 text-[8px] text-white/60 bg-black/30 px-1.5 py-0.5 rounded">CODE</span>
         </div>
       );
     }
@@ -1154,13 +1171,14 @@ const handleDelete = async (fileId: string) => {
     // Text Mini Preview
     if (isText) {
       return (
-        <div className="aspect-square rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity overflow-hidden" onClick={onPreview}>
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity overflow-hidden relative" onClick={onPreview}>
           <div className="space-y-1 mb-2">
             <div className="w-12 h-1.5 bg-gray-500 rounded" />
             <div className="w-10 h-1.5 bg-gray-600 rounded" />
             <div className="w-8 h-1.5 bg-gray-500 rounded" />
           </div>
           <span className="text-[9px] text-gray-400">TEXT</span>
+          <span className="absolute top-2 right-2 text-[8px] text-white/60 bg-black/30 px-1.5 py-0.5 rounded">TXT</span>
         </div>
       );
     }
@@ -1306,8 +1324,8 @@ const handleDelete = async (fileId: string) => {
 
       {/* RIGHT CONTENT */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-800">
+        {/* Header - Sticky */}
+        <div className="p-4 border-b border-gray-800 bg-gray-900 sticky top-0 z-10">
           <div className="flex items-center justify-between gap-4">
             {/* Breadcrumbs */}
             <div className="flex items-center gap-2 overflow-x-auto">
@@ -1685,10 +1703,53 @@ const handleDelete = async (fileId: string) => {
             </div>
           )}
 
-          {/* Loading */}
-          {loading && (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+          {/* Loading Skeletons - Grid View */}
+          {loading && viewMode === "grid" && (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-4 animate-pulse">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-6 h-6 bg-gray-800 rounded" />
+                    <div className="flex-1" />
+                  </div>
+                  <div className="aspect-square bg-gray-800 rounded-lg mb-3" />
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-800 rounded w-3/4 mb-2" />
+                      <div className="h-3 bg-gray-800 rounded w-1/2" />
+                    </div>
+                    <div className="w-6 h-6 bg-gray-800 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Loading Skeletons - List View */}
+          {loading && viewMode === "list" && (
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+              <div className="bg-gray-800 border-b border-gray-700 px-4 py-3">
+                <div className="flex gap-4">
+                  <div className="w-12" />
+                  <div className="flex-1 h-4 bg-gray-700 rounded" />
+                  <div className="w-32 h-4 bg-gray-700 rounded" />
+                  <div className="w-40 h-4 bg-gray-700 rounded" />
+                </div>
+              </div>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="px-4 py-3 border-b border-gray-800 flex gap-4 items-center animate-pulse">
+                  <div className="w-6 h-6 bg-gray-800 rounded" />
+                  <div className="flex-1 flex gap-3 items-center">
+                    <div className="w-10 h-10 bg-gray-800 rounded" />
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-800 rounded w-1/3 mb-1" />
+                      <div className="h-3 bg-gray-800 rounded w-1/4" />
+                    </div>
+                  </div>
+                  <div className="w-32 h-3 bg-gray-800 rounded" />
+                  <div className="w-40 h-3 bg-gray-800 rounded" />
+                </div>
+              ))}
             </div>
           )}
 
