@@ -398,6 +398,47 @@ export default function FilesPage() {
         setZoom(1);
         setDragPos({ x: 0, y: 0 });
       }
+      
+      // Keyboard shortcuts for file actions (when a file is selected)
+      if (selectedFile && !showPreview) {
+        if (key === "d") {
+          e.preventDefault();
+          // Download
+          if (selectedFile.url) {
+            window.open(selectedFile.url, '_blank');
+            showToastMessage('Downloading...');
+          }
+        }
+        if (key === "s") {
+          e.preventDefault();
+          setShowShareModal(true);
+        }
+        if (key === "delete" || key === "backspace") {
+          e.preventDefault();
+          handleDelete(selectedFile.id);
+        }
+        if (key === "enter") {
+          e.preventDefault();
+          setShowPreview(true);
+        }
+        if (key === "i") {
+          e.preventDefault();
+          setShowDetails(true);
+        }
+      }
+      
+      // Ctrl+A - Select all
+      if (key === "a" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setSelectMode(true);
+        setSelectedFiles(new Set(files.map(f => f.id)));
+      }
+      
+      // Escape - Exit select mode
+      if (key === "escape" && selectMode) {
+        setSelectMode(false);
+        setSelectedFiles(new Set());
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -895,6 +936,27 @@ const handleDelete = async (fileId: string) => {
     setTimeout(() => setShowToast(false), 3000);
   };
 
+  // Smart menu position - prevents menu from going off-screen
+  const getSmartMenuPosition = (x: number, y: number) => {
+    const menuWidth = 200;
+    const menuHeight = 350;
+    const padding = 10;
+    let left = x;
+    let top = y;
+    
+    if (typeof window !== 'undefined') {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      
+      if (x + menuWidth + padding > vw) left = vw - menuWidth - padding;
+      if (y + menuHeight + padding > vh) top = vh - menuHeight - padding;
+      left = Math.max(padding, left);
+      top = Math.max(padding, top);
+    }
+    
+    return { left, top };
+  };
+
   const downloadFolderAsZip = async (folderId: string, folderName: string) => {
     showToastMessage(`Preparing ${folderName}.zip...`);
     try {
@@ -1009,6 +1071,23 @@ const handleDelete = async (fileId: string) => {
         <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden relative group cursor-pointer" onClick={onPreview}>
           <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+          {/* Quick actions on hover */}
+          <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={(e) => { e.stopPropagation(); if (file.url) window.open(file.url, '_blank'); }}
+              className="p-1.5 bg-black/60 hover:bg-black/80 rounded text-white"
+              title="Download"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setSelectedFile(file); setShowShareModal(true); }}
+              className="p-1.5 bg-black/60 hover:bg-black/80 rounded text-white"
+              title="Share"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       );
     }
@@ -1776,9 +1855,8 @@ const handleDelete = async (fileId: string) => {
       {contextMenu && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
-          <div 
-            className="fixed z-50 bg-gray-900 border border-gray-800 rounded-xl shadow-xl py-2 min-w-[180px]"
-            style={{ left: contextMenu.x, top: contextMenu.y }}
+          <div className="fixed z-50 bg-gray-900 border border-gray-800 rounded-xl shadow-xl py-2 min-w-[180px]"
+            style={getSmartMenuPosition(contextMenu.x, contextMenu.y)}
           >
             <button
               onClick={() => { setSelectedFile(contextMenu.file); setShowPreview(true); setContextMenu(null); }}
@@ -1863,7 +1941,7 @@ const handleDelete = async (fileId: string) => {
           <div className="fixed inset-0 z-40" onClick={() => setFolderContextMenu(null)} />
           <div 
             className="fixed z-50 bg-gray-900 border border-gray-800 rounded-xl shadow-xl py-2 min-w-[180px]"
-            style={{ left: folderContextMenu.x, top: folderContextMenu.y }}
+            style={getSmartMenuPosition(folderContextMenu.x, folderContextMenu.y)}
           >
             <button
               onClick={() => {
