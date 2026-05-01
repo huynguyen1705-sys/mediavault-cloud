@@ -1654,45 +1654,73 @@ const handleDelete = async (fileId: string) => {
         {/* Upload Queue */}
         {uploadQueue.length > 0 && (
           <div className="border-b border-gray-800 bg-gray-900">
-            <div className="px-4 py-3 flex items-center justify-between bg-gray-900/80">
-              <div className="flex items-center gap-2">
-                <CloudUpload className="w-4 h-4 text-violet-400 animate-bounce" />
-                <span className="text-sm font-medium">Uploading {uploadQueue.length} files</span>
+            {/* Header with overall stats */}
+            <div className="px-4 py-3 flex items-center justify-between bg-gray-900/80 border-b border-gray-800">
+              <div className="flex items-center gap-3">
+                <CloudUpload className="w-5 h-5 text-violet-400" />
+                <div>
+                  <span className="text-sm font-medium">
+                    {uploadQueue.filter(f => f.status === "completed").length}/{uploadQueue.length} files uploaded
+                  </span>
+                  {uploadQueue.some(f => f.status === "uploading") && (
+                    <span className="ml-2 text-xs text-violet-400">
+                      ({uploadQueue.filter(f => f.status === "uploading").length} uploading)
+                    </span>
+                  )}
+                </div>
               </div>
-              <button
-                onClick={() => setUploadQueue([])}
-                className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800"
-              >
-                Clear All
-              </button>
+              {/* Overall progress bar */}
+              <div className="flex items-center gap-3">
+                <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all duration-300"
+                    style={{ width: `${(uploadQueue.filter(f => f.status === "completed").length / uploadQueue.length) * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs text-gray-400 w-10">
+                  {Math.round((uploadQueue.filter(f => f.status === "completed").length / uploadQueue.length) * 100)}%
+                </span>
+                <button
+                  onClick={() => setUploadQueue([])}
+                  className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
-            <div className="px-4 pb-3 space-y-2">
+            {/* File list */}
+            <div className="px-4 pb-3 space-y-2 max-h-60 overflow-y-auto">
               {uploadQueue.map((file, index) => (
-                <div key={file.id} className="flex items-center gap-3 bg-gray-800/50 rounded-lg px-3 py-2">
+                <div key={file.id} className="flex items-center gap-3 bg-gray-800/50 rounded-lg px-3 py-2.5">
                   {getStatusIcon(file.status)}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between mb-1.5">
                       <span className="text-sm truncate">{file.name}</span>
                       <span className="text-xs text-gray-500 ml-2 shrink-0">{formatBytes(file.size)}</span>
                     </div>
                     {file.status === "uploading" && (
-                      <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-                        <div 
-                          className="bg-gradient-to-r from-violet-500 to-purple-500 h-2 rounded-full animate-pulse"
-                          style={{ width: `${file.progress || 50}%` }}
-                        />
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
+                            style={{ width: `${file.progress || 0}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-violet-400 w-10 text-right font-mono">{file.progress || 0}%</span>
                       </div>
                     )}
                     {file.status === "error" && (
-                      <p className="text-xs text-red-400">{file.error || "Upload failed"}</p>
+                      <p className="text-xs text-red-400 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> {file.error || "Upload failed - tap to retry"}
+                      </p>
                     )}
                     {file.status === "completed" && (
                       <p className="text-xs text-emerald-400 flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" /> Done
+                        <CheckCircle className="w-3 h-3" /> Completed
                       </p>
                     )}
                     {file.status === "pending" && (
-                      <p className="text-xs text-gray-500">Waiting...</p>
+                      <p className="text-xs text-gray-500">Waiting in queue...</p>
                     )}
                   </div>
                 </div>
@@ -1703,10 +1731,33 @@ const handleDelete = async (fileId: string) => {
 
         {/* Content Area */}
         <div 
-          className="flex-1 overflow-auto p-4"
-          onDragOver={(e) => e.preventDefault()}
+          className={`flex-1 overflow-auto p-4 transition-colors ${
+            isDragging 
+              ? "bg-violet-500/10 ring-2 ring-violet-500 ring-dashed rounded-2xl" 
+              : ""
+          }`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (!isDragging) setIsDragging(true);
+          }}
+          onDragLeave={(e) => {
+            // Only set false if leaving the container
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+              setIsDragging(false);
+            }
+          }}
           onDrop={handleFileDrop}
         >
+          {/* Drag & Drop Overlay */}
+          {isDragging && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+              <div className="bg-gray-900/90 rounded-2xl p-8 text-center border-2 border-dashed border-violet-500">
+                <CloudUpload className="w-16 h-16 text-violet-400 mx-auto mb-4 animate-bounce" />
+                <p className="text-lg font-medium text-violet-300">Drop files to upload</p>
+                <p className="text-sm text-gray-400 mt-1">Files will be uploaded to current folder</p>
+              </div>
+            </div>
+          )}
           {/* Empty State - Beautiful illustration */}
           {!trashMode && files.length === 0 && !loading && (
             <div className="flex flex-col items-center justify-center h-full">
