@@ -95,7 +95,7 @@ export default function DashboardPage() {
 
         const formData = new FormData();
         formData.append("file", uploadFile.file);
-        if (uploadFile.folderId) formData.append("folderId", uploadFile.folderId);
+        // folderId not needed for dashboard upload
 
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
