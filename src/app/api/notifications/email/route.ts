@@ -52,6 +52,10 @@ export async function POST(request: NextRequest) {
           reason: data.reason,
           ownerName: data.ownerName || "User",
           supportEmail: data.supportEmail || "support@fii.one",
+        });
+        break;
+      }
+      case "accountBanned": {
         if (!data?.reason) {
           return NextResponse.json({ error: "Missing reason" }, { status: 400 });
         }
@@ -59,6 +63,10 @@ export async function POST(request: NextRequest) {
           reason: data.reason,
           ownerName: data.ownerName || "User",
           supportEmail: data.supportEmail || "support@fii.one",
+        });
+        break;
+      }
+      default:
         return NextResponse.json({ error: "Unknown email type" }, { status: 400 });
     }
 
