@@ -3,7 +3,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { uploadToR2, generateFileKey, getPresignedUrl } from "@/lib/r2";
 import prisma from "@/lib/db";
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,10 +47,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate file size in bytes
+    // Check storage limit BEFORE reading full file into memory
     const fileSizeBytes = BigInt(file.size);
-    
-    // Check storage limit
     const storageLimitBytes = BigInt(userProfile.plan.storageGb * 1024 * 1024 * 1024);
     const newStorageUsed = userProfile.storageUsedBytes + fileSizeBytes;
 
@@ -58,8 +56,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Storage limit exceeded. Please upgrade your plan." },
         { status: 403 }
-      );
-    }
+    );
 
     // Generate unique file key for R2
     const fileKey = generateFileKey(userId, file.name);

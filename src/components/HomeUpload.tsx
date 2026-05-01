@@ -37,8 +37,11 @@ export default function HomeUpload() {
 
     setUploadQueue((prev) => [...prev, ...newFiles]);
 
-    // Upload each file using direct POST
-    for (const uploadFile of newFiles) {
+    // Small delay for UI feedback before starting uploads
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Upload with concurrency limit of 3
+    const uploadChunk = async (uploadFile: UploadFile) => {
       try {
         setUploadQueue((prev) =>
           prev.map((f) =>
@@ -46,7 +49,6 @@ export default function HomeUpload() {
           )
         );
 
-        // Direct upload via POST (handles storage check, DB save, etc.)
         const formData = new FormData();
         formData.append("file", uploadFile.file);
 
@@ -60,21 +62,12 @@ export default function HomeUpload() {
           throw new Error(errorData.error || "Upload failed");
         }
 
-        const result = await uploadRes.json();
-        console.log("Upload success:", result);
-
         setUploadQueue((prev) =>
           prev.map((f) =>
             f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f
           )
         );
-
-        // Redirect to files page after successful upload
-        setTimeout(() => {
-          router.push("/files");
-        }, 1000);
       } catch (error: any) {
-        console.error("Upload error:", error);
         setUploadQueue((prev) =>
           prev.map((f) =>
             f.id === uploadFile.id
@@ -83,8 +76,17 @@ export default function HomeUpload() {
           )
         );
       }
+    };
+
+    // Run uploads in parallel, max 3 at a time
+    for (let i = 0; i < newFiles.length; i += 3) {
+      const chunk = newFiles.slice(i, i + 3);
+      await Promise.all(chunk.map(uploadChunk));
     }
-  }, [isSignedIn, router]);
+
+    // Clear completed after delay
+    setTimeout(() => setUploadQueue((prev) => prev.filter((f) => f.status !== "completed")), 5000);
+  }, [isSignedIn]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

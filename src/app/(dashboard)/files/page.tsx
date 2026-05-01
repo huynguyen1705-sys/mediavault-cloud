@@ -608,10 +608,13 @@ export default function FilesPage() {
 
     setUploadQueue((prev) => [...prev, ...newFiles]);
 
-    for (let i = 0; i < newFiles.length; i++) {
-      const uploadFile = newFiles[i];
+    // Small delay for UI feedback
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Upload function for a single file
+    const uploadOne = async (uploadFile: UploadFile) => {
       const actualFile = Array.from(fileList).find((f) => f.name === uploadFile.name);
-      if (!actualFile) continue;
+      if (!actualFile) return;
 
       setUploadQueue((prev) =>
         prev.map((f) => (f.id === uploadFile.id ? { ...f, status: "uploading" } : f))
@@ -659,6 +662,11 @@ export default function FilesPage() {
           )
         );
       }
+    };
+
+    // Run uploads in parallel, max 3 concurrent
+    for (let i = 0; i < newFiles.length; i += 3) {
+      await Promise.all(newFiles.slice(i, i + 3).map(uploadOne));
     }
 
     setTimeout(() => setUploadQueue((prev) => prev.filter((f) => f.status !== "completed")), 3000);
