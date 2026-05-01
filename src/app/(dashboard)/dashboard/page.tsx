@@ -85,17 +85,17 @@ export default function DashboardPage() {
 
     setUploadQueue((prev) => [...prev, ...newFiles]);
 
-    for (const uploadFile of newFiles) {
+
+    // Upload files in parallel (max 3 concurrent)
+    const uploadChunk = async (uploadFile: typeof newFiles[0]) => {
       try {
         setUploadQueue((prev) =>
           prev.map((f) =>
             f.id === uploadFile.id ? { ...f, status: "uploading" } : f
           )
         );
-
         const formData = new FormData();
         formData.append("file", uploadFile.file);
-
         const uploadRes = await fetch("/api/upload", {
           method: "POST",
           body: formData,
@@ -105,14 +105,11 @@ export default function DashboardPage() {
           const errorData = await uploadRes.json();
           throw new Error(errorData.error || "Upload failed");
         }
-
         setUploadQueue((prev) =>
           prev.map((f) =>
             f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f
           )
         );
-
-        setTimeout(() => router.push("/files"), 1000);
       } catch (error: any) {
         setUploadQueue((prev) =>
           prev.map((f) =>
@@ -120,6 +117,16 @@ export default function DashboardPage() {
           )
         );
       }
+    };
+    // Upload chunks in parallel, max 3 at a time
+    for (let i = 0; i < newFiles.length; i += 3) {
+      await Promise.all(newFiles.slice(i, i + 3).map(uploadChunk));
+    }
+    // Only redirect after ALL files complete
+    const allCompleted = uploadQueue.every(f => f.status === "completed");
+    if (allCompleted && newFiles.length > 0) {
+      setTimeout(() => router.push("/files"), 1000);
+    }
     }
   }, [router]);
 
