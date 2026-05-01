@@ -132,7 +132,7 @@ export default function HomeUpload() {
           ref={fileInputRef}
           type="file"
           multiple
-          accept="image/*,video/*,audio/*"
+          accept="*/*"
           className="hidden"
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
         />

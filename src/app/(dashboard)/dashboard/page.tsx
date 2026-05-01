@@ -184,7 +184,7 @@ export default function DashboardPage() {
             ref={fileInputRef}
             type="file"
             multiple
-            accept="image/*,video/*,audio/*"
+            accept="*/*"
             className="hidden"
             onChange={(e) => e.target.files && handleFiles(e.target.files)}
           />

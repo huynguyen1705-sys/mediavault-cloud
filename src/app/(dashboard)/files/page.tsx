@@ -1471,6 +1471,7 @@ const handleDelete = async (fileId: string) => {
               id="file-input"
               type="file"
               multiple
+              accept="*/*"
               className="hidden"
               onChange={(e) => handleUpload(e.target.files)}
             />
