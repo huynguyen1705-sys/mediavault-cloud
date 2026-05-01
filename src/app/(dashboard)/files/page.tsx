@@ -1408,31 +1408,42 @@ const handleDelete = async (fileId: string) => {
               </div>
             )}
             
-            {/* Bulk Action Bar - When files selected */}
+            {/* Bulk Action Bar - Sticky when files selected */}
             {selectedFiles.size > 0 && (
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-violet-300 font-medium">
-                  {selectedFiles.size} file{selectedFiles.size > 1 ? "s" : ""} selected
-                </span>
+              <div className="sticky top-0 z-20 flex items-center justify-between gap-4 bg-gray-900/95 backdrop-blur px-4 py-3 border-b border-gray-800 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <button onClick={clearSelection} className="p-1.5 hover:bg-gray-800 rounded-lg">
+                    <X className="w-5 h-5" />
+                  </button>
+                  <span className="text-sm text-violet-300 font-medium">
+                    {selectedFiles.size} file{selectedFiles.size > 1 ? "s" : ""} selected
+                  </span>
+                </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={selectAllFiles}
-                    className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-sm rounded-lg transition-colors"
+                    onClick={() => {
+                      // Select all files in current view
+                      sortedFiles.forEach(f => setSelectedFiles(prev => new Set([...prev, f.id])));
+                    }}
+                    className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-sm rounded-lg transition-colors flex items-center gap-1.5"
                   >
+                    <CheckSquare className="w-4 h-4" />
                     Select All
                   </button>
                   {trashMode ? (
                     <>
                       <button
                         onClick={handleBulkRestore}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-lg transition-colors"
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-lg transition-colors flex items-center gap-1.5"
                       >
+                        <RotateCcw className="w-4 h-4" />
                         Restore
                       </button>
                       <button
                         onClick={handleBulkDeletePermanent}
-                        className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors"
+                        className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors flex items-center gap-1.5"
                       >
+                        <XCircle className="w-4 h-4" />
                         Delete Forever
                       </button>
                     </>
@@ -1446,18 +1457,13 @@ const handleDelete = async (fileId: string) => {
                       </button>
                       <button
                         onClick={handleBulkDelete}
-                        className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors"
+                        className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors flex items-center gap-1.5"
                       >
+                        <Trash2 className="w-4 h-4" />
                         Delete
                       </button>
                     </>
                   )}
-                  <button
-                    onClick={clearSelection}
-                    className="px-3 py-1.5 hover:bg-gray-800 text-sm rounded-lg transition-colors"
-                  >
-                    Clear
-                  </button>
                 </div>
               </div>
             )}
