@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     // Generate ZIP filename
     const zipName = files.length === 1
       ? `${files[0].name.replace(/\.[^.]+$/, "")}.zip`
-      : `mediavault-download-${Date.now()}.zip`;
+      : `fii-one-download-${Date.now()}.zip`;
 
     // Return streaming response
     return new Response(archiveStream, {
