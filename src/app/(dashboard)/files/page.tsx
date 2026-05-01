@@ -153,6 +153,8 @@ export default function FilesPage() {
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileItem } | null>(null);
   const [recentActions, setRecentActions] = useState<{ action: string; fileId: string; fileName: string; timestamp: number }[]>([]);
+  const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
+  const [showMobileSheet, setShowMobileSheet] = useState(false);
   const [trashMode, setTrashMode] = useState(false);
   const [trashFiles, setTrashFiles] = useState<any[]>([]);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -1801,6 +1803,21 @@ const handleDelete = async (fileId: string) => {
                     e.preventDefault();
                     setContextMenu({ x: e.clientX, y: e.clientY, file });
                   }}
+                  onTouchStart={(e) => {
+                    setTouchStartPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                  }}
+                  onTouchEnd={(e) => {
+                    if (touchStartPos) {
+                      const diffX = Math.abs(e.changedTouches[0].clientX - touchStartPos.x);
+                      const diffY = Math.abs(e.changedTouches[0].clientY - touchStartPos.y);
+                      // If minimal movement = tap, show mobile sheet
+                      if (diffX < 10 && diffY < 10) {
+                        setSelectedFile(file);
+                        setShowMobileSheet(true);
+                      }
+                      setTouchStartPos(null);
+                    }
+                  }}
                 >
                   <div className="flex items-center gap-2 mb-3">
                     {selectMode && (
@@ -2044,6 +2061,83 @@ const handleDelete = async (fileId: string) => {
                 <Trash2 className="w-4 h-4" /> Move to Trash
               </button>
             )}
+          </div>
+        </>
+      )}
+
+      {/* Mobile Bottom Sheet Menu */}
+      {showMobileSheet && selectedFile && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-40" onClick={() => setShowMobileSheet(false)} />
+          <div className="fixed inset-x-0 bottom-0 z-50 bg-gray-900 rounded-t-2xl shadow-2xl border-t border-gray-800 animate-slideUp md:hidden">
+            {/* Handle bar */}
+            <div className="flex justify-center py-3">
+              <div className="w-10 h-1 bg-gray-600 rounded-full" />
+            </div>
+            {/* File info */}
+            <div className="px-4 pb-4 border-b border-gray-800 flex items-center gap-3">
+              {selectedFile.thumbnailUrl ? (
+                <img src={selectedFile.thumbnailUrl} alt={selectedFile.name} className="w-12 h-12 rounded-lg object-cover" />
+              ) : (
+                <div className="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center">
+                  {getFileIcon(selectedFile.mimeType, "sm")}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{selectedFile.name}</p>
+                <p className="text-sm text-gray-500">{formatBytes(Number(selectedFile.fileSize))}</p>
+              </div>
+              <button onClick={() => setShowMobileSheet(false)} className="p-2 hover:bg-gray-800 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {/* Actions grid */}
+            <div className="p-4 grid grid-cols-4 gap-4">
+              <button onClick={() => { setShowPreview(true); setShowMobileSheet(false); }} className="flex flex-col items-center gap-2 p-3 hover:bg-gray-800 rounded-xl transition-colors">
+                <div className="w-12 h-12 bg-violet-500/20 rounded-full flex items-center justify-center">
+                  <Eye className="w-5 h-5 text-violet-400" />
+                </div>
+                <span className="text-xs text-gray-400">View</span>
+              </button>
+              <button onClick={() => { setShowDetails(true); setShowMobileSheet(false); }} className="flex flex-col items-center gap-2 p-3 hover:bg-gray-800 rounded-xl transition-colors">
+                <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
+                  <Info className="w-5 h-5 text-blue-400" />
+                </div>
+                <span className="text-xs text-gray-400">Details</span>
+              </button>
+              <button onClick={() => { setShowShareModal(true); setShowMobileSheet(false); }} className="flex flex-col items-center gap-2 p-3 hover:bg-gray-800 rounded-xl transition-colors">
+                <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                  <Share2 className="w-5 h-5 text-emerald-400" />
+                </div>
+                <span className="text-xs text-gray-400">Share</span>
+              </button>
+              {selectedFile.url && (
+                <a href={selectedFile.url} download={selectedFile.name} onClick={() => setShowMobileSheet(false)} className="flex flex-col items-center gap-2 p-3 hover:bg-gray-800 rounded-xl transition-colors">
+                  <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center">
+                    <Download className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <span className="text-xs text-gray-400">Download</span>
+                </a>
+              )}
+              <button onClick={() => { setRenamingItem({ type: "file", item: selectedFile }); setNewName(selectedFile.name); setShowRenameModal(true); setShowMobileSheet(false); }} className="flex flex-col items-center gap-2 p-3 hover:bg-gray-800 rounded-xl transition-colors">
+                <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
+                  <Edit className="w-5 h-5 text-purple-400" />
+                </div>
+                <span className="text-xs text-gray-400">Rename</span>
+              </button>
+              <button onClick={() => { setMovingFile(selectedFile); setShowMoveModal(true); setShowMobileSheet(false); }} className="flex flex-col items-center gap-2 p-3 hover:bg-gray-800 rounded-xl transition-colors">
+                <div className="w-12 h-12 bg-cyan-500/20 rounded-full flex items-center justify-center">
+                  <FolderInput className="w-5 h-5 text-cyan-400" />
+                </div>
+                <span className="text-xs text-gray-400">Move</span>
+              </button>
+              <button onClick={() => { handleDelete(selectedFile.id); setShowMobileSheet(false); }} className="flex flex-col items-center gap-2 p-3 hover:bg-gray-800 rounded-xl transition-colors">
+                <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-red-400" />
+                </div>
+                <span className="text-xs text-gray-400">Delete</span>
+              </button>
+            </div>
           </div>
         </>
       )}
