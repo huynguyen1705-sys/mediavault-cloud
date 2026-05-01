@@ -2,8 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { uploadToR2, generateFileKey, getPresignedUrl } from "@/lib/r2";
 import prisma from "@/lib/db";
+import { exec } from "child_process";
+import { promisify } from "util";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
+
+const execAsync = promisify(exec);
 
 export async function POST(request: NextRequest) {
+  let tempFilePath: string | null = null;
+  let tempThumbnailPath: string | null = null;
+
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -63,20 +73,70 @@ export async function POST(request: NextRequest) {
     // Generate unique file key for R2
     const fileKey = generateFileKey(userId, file.name);
 
-    // Read file buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Create temp directory
+    const tempDir = os.tmpdir();
+    const fileExt = path.extname(file.name);
+    tempFilePath = path.join(tempDir, `upload_${Date.now()}${fileExt}`);
 
-    // Upload to R2
-    const { key, url } = await uploadToR2(buffer, fileKey, file.type);
+    // Write file to temp location
+    const buffer = Buffer.from(await file.arrayBuffer());
+    fs.writeFileSync(tempFilePath, buffer);
 
-    // Determine thumbnail status based on mime type
-    // Videos get "pending" → worker will process
-    // Non-videos get "not_applicable" immediately
+    // Generate thumbnail if needed
+    let thumbnailPath: string | null = null;
     let thumbnailStatus = "not_applicable";
+
     if (file.type.startsWith("video/")) {
       thumbnailStatus = "pending";
+      try {
+        // Create thumbnail from video
+        const thumbnailExt = ".jpg";
+        tempThumbnailPath = path.join(tempDir, `thumb_${Date.now()}${thumbnailExt}`);
+        const thumbnailKey = `${path.dirname(fileKey)}/thumbnails/${path.basename(fileKey)}${thumbnailExt}`;
+
+        // Extract thumbnail at 1 second mark
+        await execAsync(
+          `ffmpeg -i "${tempFilePath}" -ss 00:00:01 -vframes 1 -vf "scale=320:180" "${tempThumbnailPath}" -y 2>/dev/null`
+        );
+
+        // Upload thumbnail to R2
+        const thumbBuffer = fs.readFileSync(tempThumbnailPath);
+        const { key: thumbKey } = await uploadToR2(thumbBuffer, thumbnailKey, "image/jpeg");
+        thumbnailPath = thumbKey;
+
+        // Update thumbnail status to ready
+        thumbnailStatus = "ready";
+      } catch (thumbError) {
+        console.error("Thumbnail generation failed:", thumbError);
+        thumbnailStatus = "failed";
+      }
+    } else if (file.type.startsWith("image/")) {
+      thumbnailStatus = "pending";
+      try {
+        // Create thumbnail for images
+        const thumbnailExt = ".jpg";
+        tempThumbnailPath = path.join(tempDir, `thumb_${Date.now()}${thumbnailExt}`);
+        const thumbnailKey = `${path.dirname(fileKey)}/thumbnails/${path.basename(fileKey)}${thumbnailExt}`;
+
+        // Resize image to thumbnail
+        await execAsync(
+          `ffmpeg -i "${tempFilePath}" -vf "scale=320:180" "${tempThumbnailPath}" -y 2>/dev/null`
+        );
+
+        // Upload thumbnail to R2
+        const thumbBuffer = fs.readFileSync(tempThumbnailPath);
+        const { key: thumbKey } = await uploadToR2(thumbBuffer, thumbnailKey, "image/jpeg");
+        thumbnailPath = thumbKey;
+
+        thumbnailStatus = "ready";
+      } catch (thumbError) {
+        console.error("Image thumbnail failed:", thumbError);
+        thumbnailStatus = "failed";
+      }
     }
+
+    // Upload main file to R2
+    const { key, url } = await uploadToR2(buffer, fileKey, file.type);
 
     // Calculate expiration for free users
     const expiresAt = userProfile.plan.fileRetentionDays > 0
@@ -93,7 +153,7 @@ export async function POST(request: NextRequest) {
         mimeType: file.type,
         fileSize: fileSizeBytes,
         storagePath: key,
-        thumbnailPath: null,
+        thumbnailPath,
         thumbnailStatus,
         isPublic: false,
         downloadEnabled: true,
@@ -123,20 +183,55 @@ export async function POST(request: NextRequest) {
     // Generate presigned URL for download
     const presignedUrl = await getPresignedUrl(key);
 
-    return NextResponse.json({ success: true, file: {
+    return NextResponse.json({
+      success: true,
+      file: {
         id: newFile.id,
         name: newFile.name,
         mimeType: newFile.mimeType,
         fileSize: String(newFile.fileSize),
         url: presignedUrl,
+        thumbnailPath,
         thumbnailStatus,
         expiresAt: expiresAt?.toISOString() || null,
-      } });
+      }
+    });
   } catch (error) {
     console.error("Upload error:", error);
+
+    // Log failed upload
+    try {
+      const { userId } = await auth();
+      if (userId) {
+        const userProfile = await prisma.user.findUnique({
+          where: { clerkUserId: userId },
+        });
+        if (userProfile) {
+          await prisma.upload.create({
+            data: {
+              userId: userProfile.id,
+              fileName: "unknown",
+              fileSize: BigInt(0),
+              status: "failed",
+            },
+          });
+        }
+      }
+    } catch (logError) {
+      console.error("Failed to log error:", logError);
+    }
+
     return NextResponse.json(
       { error: "Upload failed" },
       { status: 500 }
     );
+  } finally {
+    // Clean up temp files
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+    }
+    if (tempThumbnailPath && fs.existsSync(tempThumbnailPath)) {
+      fs.unlinkSync(tempThumbnailPath);
+    }
   }
 }

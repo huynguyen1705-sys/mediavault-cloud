@@ -84,8 +84,7 @@ export default function DashboardPage() {
     }));
 
     setUploadQueue((prev) => [...prev, ...newFiles]);
-
-    // Upload function using presigned URL (fast, direct to R2)
+    // Upload via server: server generates thumbnail -> uploads to R2 -> returns link
     const uploadOne = async (uploadFile: typeof newFiles[0]) => {
       try {
         setUploadQueue((prev) =>
@@ -93,17 +92,11 @@ export default function DashboardPage() {
             f.id === uploadFile.id ? { ...f, status: "uploading" } : f
           )
         );
-        const params = new URLSearchParams({
-          fileName: uploadFile.file.name,
-          contentType: uploadFile.file.type,
-          fileSize: String(uploadFile.file.size),
-        });
-        const urlRes = await fetch(`/api/upload-url?${params.toString()}`);
-        if (!urlRes.ok) {
-          const err = await urlRes.json();
-          throw new Error(err.error || "Failed to get upload URL");
-        }
-        const { uploadUrl, fileKey } = await urlRes.json();
+
+        const formData = new FormData();
+        formData.append("file", uploadFile.file);
+        if (uploadFile.folderId) formData.append("folderId", uploadFile.folderId);
+
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           xhr.upload.onprogress = (e) => {
@@ -117,24 +110,22 @@ export default function DashboardPage() {
             }
           };
           xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) { resolve(); } else { reject(new Error("Upload failed")); }
+            if (xhr.status >= 200 && xhr.status < 300) {
+              setUploadQueue((prev) =>
+                prev.map((f) =>
+                  f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f
+                )
+              );
+              resolve();
+            } else {
+              try { reject(new Error(JSON.parse(xhr.responseText).error || "Upload failed")); }
+              catch { reject(new Error("Upload failed")); }
+            }
           };
           xhr.onerror = () => reject(new Error("Upload failed"));
-          xhr.open("PUT", uploadUrl);
-          xhr.setRequestHeader("Content-Type", uploadFile.file.type);
-          xhr.send(uploadFile.file);
+          xhr.open("POST", "/api/upload");
+          xhr.send(formData);
         });
-        const confirmRes = await fetch("/api/upload/confirm", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileKey, fileName: uploadFile.file.name, mimeType: uploadFile.file.type, fileSize: uploadFile.file.size }),
-        });
-        if (!confirmRes.ok) throw new Error("Failed to confirm");
-        setUploadQueue((prev) =>
-          prev.map((f) =>
-            f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f
-          )
-        );
       } catch (error: any) {
         setUploadQueue((prev) =>
           prev.map((f) =>
