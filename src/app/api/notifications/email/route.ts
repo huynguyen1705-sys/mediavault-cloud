@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         emailData = templates.fileExpiringSoon({
           fileName: data.fileName,
           daysLeft: data.daysLeft,
-          downloadUrl: data.downloadUrl || "https://mediavault.cloud/files",
+          downloadUrl: data.downloadUrl || "https://fii.one/files",
           ownerName: data.ownerName || "User",
         });
         break;
@@ -51,22 +51,14 @@ export async function POST(request: NextRequest) {
         emailData = templates.accountSuspended({
           reason: data.reason,
           ownerName: data.ownerName || "User",
-          supportEmail: data.supportEmail || "support@mediavault.cloud",
-        });
-        break;
-      }
-      case "accountBanned": {
+          supportEmail: data.supportEmail || "support@fii.one",
         if (!data?.reason) {
           return NextResponse.json({ error: "Missing reason" }, { status: 400 });
         }
         emailData = templates.accountBanned({
           reason: data.reason,
           ownerName: data.ownerName || "User",
-          supportEmail: data.supportEmail || "support@mediavault.cloud",
-        });
-        break;
-      }
-      default:
+          supportEmail: data.supportEmail || "support@fii.one",
         return NextResponse.json({ error: "Unknown email type" }, { status: 400 });
     }
 
@@ -92,7 +84,7 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "MediaVault <noreply@mediavault.cloud>",
+        from: "MediaVault <noreply@fii.one>",
         to,
         subject: emailData.subject,
         html: emailData.html,

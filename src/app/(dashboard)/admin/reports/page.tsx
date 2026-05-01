@@ -106,7 +106,7 @@ export default function AdminReportsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `mediavault-report-${dateRange}.csv`;
+    a.download = `fii-one-report-${dateRange}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
