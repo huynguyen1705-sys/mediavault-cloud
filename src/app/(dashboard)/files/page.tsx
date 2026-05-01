@@ -1701,16 +1701,23 @@ const handleDelete = async (fileId: string) => {
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleFileDrop}
         >
-          {/* Empty State */}
+          {/* Empty State - Beautiful illustration */}
           {!trashMode && files.length === 0 && !loading && (
             <div className="flex flex-col items-center justify-center h-full">
-              <FolderOpen className="w-16 h-16 text-gray-600 mb-4" />
-              <h3 className="text-lg font-medium mb-2">No files here</h3>
-              <p className="text-gray-400 mb-4">Drag and drop files or click Upload</p>
+              {/* Cloud illustration */}
+              <div className="relative mb-6">
+                <Cloud className="w-24 h-24 text-gray-700" />
+                <Upload className="w-10 h-10 text-violet-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-200">Your files are empty</h3>
+              <p className="text-gray-500 mb-6 text-center max-w-sm">
+                Drag and drop files here or click the button below to upload your first files
+              </p>
               <button 
                 onClick={() => document.getElementById("file-input")?.click()}
-                className="px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-colors"
+                className="px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-colors flex items-center gap-2"
               >
+                <Upload className="w-5 h-5" />
                 Upload Files
               </button>
             </div>
@@ -1766,12 +1773,17 @@ const handleDelete = async (fileId: string) => {
             </div>
           )}
 
-          {/* Trash Empty State */}
+          {/* Trash Empty State - Beautiful illustration */}
           {trashMode && trashFiles.length === 0 && !loading && (
             <div className="flex flex-col items-center justify-center h-full">
-              <Trash2 className="w-16 h-16 text-gray-600 mb-4" />
-              <h3 className="text-lg font-medium mb-2">Trash is empty</h3>
-              <p className="text-gray-400">Deleted files appear here</p>
+              <div className="relative mb-6">
+                <Trash2 className="w-20 h-20 text-gray-700" />
+                <CheckCircle className="w-8 h-8 text-emerald-500 absolute bottom-0 right-0" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-200">Trash is clean</h3>
+              <p className="text-gray-500 text-center max-w-sm">
+                Deleted files will appear here. Nothing to clean up!
+              </p>
             </div>
           )}
 
@@ -1910,6 +1922,20 @@ const handleDelete = async (fileId: string) => {
                         }
                       }}
                       onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, file }); }}
+                      onTouchStart={(e) => {
+                        setTouchStartPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                      }}
+                      onTouchEnd={(e) => {
+                        if (touchStartPos) {
+                          const diffX = Math.abs(e.changedTouches[0].clientX - touchStartPos.x);
+                          const diffY = Math.abs(e.changedTouches[0].clientY - touchStartPos.y);
+                          if (diffX < 10 && diffY < 10) {
+                            setSelectedFile(file);
+                            setShowMobileSheet(true);
+                          }
+                          setTouchStartPos(null);
+                        }
+                      }}
                     >
                       <td className="px-4 py-3">
                         {selectMode && (
