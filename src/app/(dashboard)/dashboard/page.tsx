@@ -96,20 +96,46 @@ export default function DashboardPage() {
         );
         const formData = new FormData();
         formData.append("file", uploadFile.file);
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
+        if (uploadFile.folderId) formData.append("folderId", uploadFile.folderId);
 
-        if (!uploadRes.ok) {
-          const errorData = await uploadRes.json();
-          throw new Error(errorData.error || "Upload failed");
-        }
-        setUploadQueue((prev) =>
-          prev.map((f) =>
-            f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f
-          )
-        );
+        // Use XMLHttpRequest for progress tracking
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const percent = Math.round((e.loaded / e.total) * 100);
+              setUploadQueue((prev) =>
+                prev.map((f) =>
+                  f.id === uploadFile.id ? { ...f, progress: percent } : f
+                )
+              );
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              setUploadQueue((prev) =>
+                prev.map((f) =>
+                  f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f
+                )
+              );
+              resolve();
+            } else {
+              try {
+                const errorData = JSON.parse(xhr.responseText);
+                reject(new Error(errorData.error || "Upload failed"));
+              } catch {
+                reject(new Error("Upload failed"));
+              }
+            }
+          };
+
+
+          xhr.onerror = () => reject(new Error("Upload failed"));
+          xhr.open("POST", "/api/upload");
+          xhr.send(formData);
+        });
       } catch (error: any) {
         setUploadQueue((prev) =>
           prev.map((f) =>
