@@ -20,8 +20,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem("mv-theme") as Theme | null;
-    if (saved) {
+    // Priority: cookie > localStorage
+    const cookieTheme = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("mv-theme="))
+      ?.split("=")[1] as Theme | undefined;
+    const localTheme = localStorage.getItem("mv-theme") as Theme | null;
+    const saved = cookieTheme || localTheme;
+    if (saved && (saved === "dark" || saved === "light")) {
       setTheme(saved);
       document.documentElement.classList.remove("light", "dark");
       document.documentElement.classList.add(saved);
@@ -33,7 +39,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
+    // Save to both localStorage AND cookie (cookie survives hard refresh)
     localStorage.setItem("mv-theme", newTheme);
+    document.cookie = `mv-theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`;
     document.documentElement.classList.remove("dark", "light");
     document.documentElement.classList.add(newTheme);
   };

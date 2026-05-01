@@ -194,3 +194,85 @@ html.light [class*="border-b"][class*="hover:bg-gray-800"] {
 html.light [class*="border-b"][class*="hover:bg-gray-800"]:hover {
   background-color: #f8fafc !important;
 }
+
+/* ===== LIST VIEW HEADER - Violet background + white text ===== */
+html.light .bg-gray-800\/80 {
+  background-color: #7c3aed !important;
+}
+html.light .bg-gray-800\/80 * {
+  color: #ffffff !important;
+}
+html.light .bg-gray-800\/80 button {
+  background-color: transparent !important;
+  color: #ffffff !important;
+}
+html.light .bg-gray-800\/80 button:hover {
+  background-color: rgba(255,255,255,0.15) !important;
+  color: #ffffff !important;
+}
+html.light .bg-gray-800\/80 .text-violet-400 {
+  color: #e9d5ff !important;
+}
+html.light .bg-gray-800\/80 .opacity-20 {
+  opacity: 0.4 !important;
+}
+
+/* List row hover in light mode */
+html.light .border-l-transparent.hover\:bg-gray-800\/50:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Dividers in list */
+html.light .divide-gray-800\/40 > * + * {
+  border-color: #e2e8f0 !important;
+}
+
+/* ===== CONTEXT MENU - Dark always (không bị light override) ===== */
+html.light .fixed.z-50[style*="menu-bg"],
+html.light .fixed.z-50.bg-gray-900.rounded-xl {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+html.light .fixed.z-50.bg-gray-900.rounded-xl button,
+html.light .fixed.z-50.bg-gray-900.rounded-xl a {
+  background-color: transparent !important;
+  color: #e2e8f0 !important;
+}
+html.light .fixed.z-50.bg-gray-900.rounded-xl button:hover,
+html.light .fixed.z-50.bg-gray-900.rounded-xl a:hover {
+  background-color: rgba(255,255,255,0.08) !important;
+  color: #ffffff !important;
+}
+html.light .fixed.z-50.bg-gray-900.rounded-xl .text-gray-400 {
+  color: #94a3b8 !important;
+}
+html.light .fixed.z-50.bg-gray-900.rounded-xl .text-red-400 {
+  color: #f87171 !important;
+}
+html.light .fixed.z-50.bg-gray-900.rounded-xl .text-emerald-400 {
+  color: #34d399 !important;
+}
+html.light .fixed.z-50.bg-gray-900.rounded-xl .text-violet-400 {
+  color: #a78bfa !important;
+}
+html.light .fixed.z-50.bg-gray-900.rounded-xl .text-blue-400 {
+  color: #60a5fa !important;
+}
+html.light .fixed.z-50.bg-gray-900.rounded-xl hr {
+  border-color: #334155 !important;
+}
+html.light .fixed.z-50.bg-gray-900.rounded-xl .text-gray-500 {
+  color: #64748b !important;
+}
+
+/* Recent actions in context menu */
+html.light .fixed.z-50.bg-gray-900.rounded-xl .text-violet-400 {
+  color: #a78bfa !important;
+}
+
+/* ===== CSS VARIABLE for context menu ===== */
+html.light {
+  --menu-bg: #1e293b;
+  --menu-border: #334155;
+}

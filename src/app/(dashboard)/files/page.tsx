@@ -1106,7 +1106,7 @@ const handleDelete = async (fileId: string) => {
       return (
         <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden relative group cursor-pointer" onClick={onPreview}>
           <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+          {/* No overlay - removed to avoid darkening in light mode */}
           {/* Quick actions on hover */}
           <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
@@ -2145,9 +2145,10 @@ const handleDelete = async (fileId: string) => {
       {/* Context Menu */}
       {contextMenu && (
         <>
+          {/* Invisible click-away layer - no background overlay */}
           <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
-          <div className="fixed z-50 bg-gray-900 border border-gray-800 rounded-xl shadow-xl py-2 min-w-[180px]"
-            style={getSmartMenuPosition(contextMenu.x, contextMenu.y)}
+          <div className="fixed z-50 bg-gray-900 dark:bg-gray-900 light:bg-white border border-gray-800 rounded-xl shadow-2xl py-2 min-w-[200px]"
+            style={{ ...getSmartMenuPosition(contextMenu.x, contextMenu.y), backgroundColor: 'var(--menu-bg, #111827)', borderColor: 'var(--menu-border, #1f2937)' }}
           >
             {/* Recent Actions - Show last 3 actions */}
             {recentActions.length > 0 && (
@@ -2180,33 +2181,33 @@ const handleDelete = async (fileId: string) => {
             )}
             <button
               onClick={() => { setSelectedFile(contextMenu.file); setShowPreview(true); setContextMenu(null); }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
             >
-              <Eye className="w-4 h-4" /> View
+              <Eye className="w-4 h-4 text-gray-400" /> View
             </button>
             <button
               onClick={() => { setSelectedFile(contextMenu.file); setShowDetails(true); setContextMenu(null); }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
             >
-              <Info className="w-4 h-4" /> Details
+              <Info className="w-4 h-4 text-gray-400" /> Details
             </button>
             <button
               onClick={() => { setSelectedFile(contextMenu.file); setShowShareModal(true); setContextMenu(null); }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
             >
-              <Share2 className="w-4 h-4" /> Share
+              <Share2 className="w-4 h-4 text-violet-400" /> Share
             </button>
             <button
               onClick={() => { setMovingFile(contextMenu.file); setShowMoveModal(true); setContextMenu(null); }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
             >
-              <FolderInput className="w-4 h-4" /> Move to...
+              <FolderInput className="w-4 h-4 text-gray-400" /> Move to...
             </button>
             <button
               onClick={() => { setRenamingItem({ type: "file", item: contextMenu.file }); setNewName(contextMenu.file.name); setShowRenameModal(true); setContextMenu(null); }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
             >
-              <Edit className="w-4 h-4" /> Rename
+              <Edit className="w-4 h-4 text-gray-400" /> Rename
             </button>
             <button
               onClick={() => {
@@ -2214,31 +2215,32 @@ const handleDelete = async (fileId: string) => {
                 showToastMessage("Link copied!");
                 setContextMenu(null);
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+              className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
             >
-              <Copy className="w-4 h-4" /> Copy Link
+              <Copy className="w-4 h-4 text-gray-400" /> Copy Link
             </button>
             {contextMenu.file.url && (
               <a
                 href={contextMenu.file.url}
                 download={contextMenu.file.name}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
+                className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800/80 hover:text-white flex items-center gap-3 transition-colors"
+                onClick={() => setContextMenu(null)}
               >
-                <Download className="w-4 h-4" /> Download
+                <Download className="w-4 h-4 text-blue-400" /> Download
               </a>
             )}
-            <hr className="my-2 border-gray-800" />
+            <hr className="my-1.5 border-gray-700/60" />
             {trashMode ? (
               <>
                 <button
                   onClick={() => handleRestore(contextMenu.file.id)}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3 text-emerald-400"
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-emerald-500/10 flex items-center gap-3 text-emerald-400 transition-colors"
                 >
                   <RotateCcw className="w-4 h-4" /> Restore
                 </button>
                 <button
                   onClick={() => handlePermanentDelete(contextMenu.file.id)}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3 text-red-400"
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-red-500/10 flex items-center gap-3 text-red-400 transition-colors"
                 >
                   <XCircle className="w-4 h-4" /> Delete Forever
                 </button>
@@ -2246,7 +2248,7 @@ const handleDelete = async (fileId: string) => {
             ) : (
               <button
                 onClick={() => handleDelete(contextMenu.file.id)}
-                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3 text-red-400"
+                className="w-full px-4 py-2 text-left text-sm hover:bg-red-500/10 flex items-center gap-3 text-red-400 transition-colors"
               >
                 <Trash2 className="w-4 h-4" /> Move to Trash
               </button>
