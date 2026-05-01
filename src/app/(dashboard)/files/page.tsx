@@ -1732,7 +1732,7 @@ const handleDelete = async (fileId: string) => {
 
         {/* Content Area */}
         <div 
-          className={`flex-1 overflow-auto p-4 transition-colors ${
+          className={`flex-1 overflow-auto p-4 transition-colors relative ${
             isDragging 
               ? "bg-violet-500/10 ring-2 ring-violet-500 ring-dashed rounded-2xl" 
               : ""
@@ -1752,10 +1752,10 @@ const handleDelete = async (fileId: string) => {
           {/* Drag & Drop Overlay */}
           {isDragging && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-              <div className="bg-gray-900/90 rounded-2xl p-8 text-center border-2 border-dashed border-violet-500">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 text-center border-2 border-dashed border-violet-500 dark:border-violet-500 shadow-xl">
                 <CloudUpload className="w-16 h-16 text-violet-400 mx-auto mb-4 animate-bounce" />
-                <p className="text-lg font-medium text-violet-300">Drop files to upload</p>
-                <p className="text-sm text-gray-400 mt-1">Files will be uploaded to current folder</p>
+                <p className="text-lg font-medium text-gray-900 dark:text-violet-300">Drop files to upload</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Files will be uploaded to current folder</p>
               </div>
             </div>
           )}

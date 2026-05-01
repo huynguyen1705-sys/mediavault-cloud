@@ -121,3 +121,36 @@
 .light [class*="rounded-lg"][class*="bg-gradient-to-br"] {
   filter: brightness(0.95);
 }
+
+/* Keep overlays dark in light mode */
+.light [class*="bg-black/"] {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Keep fixed/modals dark in light mode */
+.light .fixed,
+.light .sticky {
+  background-color: inherit;
+}
+
+/* Fix bg-gray-900 containers in light mode */
+.light .bg-gray-900,
+.light .bg-gray-950 {
+  background-color: #f8fafc !important;
+}
+
+/* Light mode specific overrides for components */
+.light [class*="bg-gray-900/95"],
+.light [class*="bg-gray-900/80"] {
+  background-color: rgba(248, 250, 252, 0.95) !important;
+}
+
+/* Fix mobile bottom sheet in light mode */
+.light .rounded-t-2xl {
+  background-color: #ffffff !important;
+}
+
+/* Fix context menu in light mode */
+.light .min-w-\[180px\] {
+  background-color: #ffffff !important;
+}
