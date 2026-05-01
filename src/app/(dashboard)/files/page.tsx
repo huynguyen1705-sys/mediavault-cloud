@@ -152,6 +152,7 @@ export default function FilesPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileItem } | null>(null);
+  const [recentActions, setRecentActions] = useState<{ action: string; fileId: string; fileName: string; timestamp: number }[]>([]);
   const [trashMode, setTrashMode] = useState(false);
   const [trashFiles, setTrashFiles] = useState<any[]>([]);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
@@ -758,6 +759,16 @@ const handleDelete = async (fileId: string) => {
         fetchFiles();
         if (trashMode) fetchTrashFiles();
         showToastMessage("File moved to trash");
+        // Track recent action
+        const file = files.find(f => f.id === fileId);
+        if (file) {
+          setRecentActions(prev => [{
+            action: "Deleted",
+            fileId: file.id,
+            fileName: file.name,
+            timestamp: Date.now()
+          }, ...prev.slice(0, 2)]);
+        }
       }
     } catch (error) {
       console.error("Delete error:", error);
@@ -1931,6 +1942,35 @@ const handleDelete = async (fileId: string) => {
           <div className="fixed z-50 bg-gray-900 border border-gray-800 rounded-xl shadow-xl py-2 min-w-[180px]"
             style={getSmartMenuPosition(contextMenu.x, contextMenu.y)}
           >
+            {/* Recent Actions - Show last 3 actions */}
+            {recentActions.length > 0 && (
+              <>
+                <div className="px-4 py-1.5 text-xs text-gray-500 uppercase tracking-wider">Recent</div>
+                {recentActions.slice(0, 3).map((action, index) => (
+                  <button
+                    key={`${action.fileId}-${action.timestamp}`}
+                    onClick={() => {
+                      const file = files.find(f => f.id === action.fileId);
+                      if (file) {
+                        setSelectedFile(file);
+                        if (action.action === "Shared") setShowShareModal(true);
+                        else if (action.action === "Deleted") { handleDelete(action.fileId); }
+                        else setShowPreview(true);
+                      }
+                      setContextMenu(null);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3 text-violet-400"
+                  >
+                    {action.action === "Shared" && <Share2 className="w-4 h-4" />}
+                    {action.action === "Deleted" && <Trash2 className="w-4 h-4" />}
+                    {action.action === "Downloaded" && <Download className="w-4 h-4" />}
+                    <span className="truncate flex-1">{action.fileName}</span>
+                    <span className="text-[10px] text-gray-500">{action.action}</span>
+                  </button>
+                ))}
+                <hr className="my-2 border-gray-800" />
+              </>
+            )}
             <button
               onClick={() => { setSelectedFile(contextMenu.file); setShowPreview(true); setContextMenu(null); }}
               className="w-full px-4 py-2 text-left text-sm hover:bg-gray-800 flex items-center gap-3"
@@ -2619,6 +2659,15 @@ const handleDelete = async (fileId: string) => {
         if (res.ok) {
           const data = await res.json();
           setShareTokenLocal(data.share?.url);
+          // Track recent action
+          if (selectedFile) {
+            setRecentActions(prev => [{
+              action: "Shared",
+              fileId: selectedFile.id,
+              fileName: selectedFile.name,
+              timestamp: Date.now()
+            }, ...prev.slice(0, 2)]);
+          }
         }
       } catch (error) {
         console.error("Share error:", error);
