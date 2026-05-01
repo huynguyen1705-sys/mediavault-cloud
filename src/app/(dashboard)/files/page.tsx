@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo, memo } from "react";
 import dynamic from "next/dynamic";
 import { AudioPreview, PdfPreview, CodePreview, TextPreview, XlsxPreview } from "@/components/PreviewComponents";
 import DocViewer from "@cyntler/react-doc-viewer";
@@ -784,14 +784,14 @@ const handleBulkMove = async (targetFolderId: string | null) => {
   };
 
 const handleDelete = async (fileId: string) => {
+    const file = files.find(f => f.id === fileId);
+    // Optimistic update - remove immediately from state, no reload
+    setFiles(prev => prev.filter(f => f.id !== fileId));
+    setContextMenu(null);
     try {
       const res = await fetch(`/api/files/${fileId}`, { method: "DELETE" });
       if (res.ok) {
-        fetchFiles();
-        if (trashMode) fetchTrashFiles();
         showToastMessage("File moved to trash");
-        // Track recent action
-        const file = files.find(f => f.id === fileId);
         if (file) {
           setRecentActions(prev => [{
             action: "Deleted",
@@ -800,11 +800,18 @@ const handleDelete = async (fileId: string) => {
             timestamp: Date.now()
           }, ...prev.slice(0, 2)]);
         }
+        if (trashMode) fetchTrashFiles();
+        // Update storage count silently
+        fetchStorage();
+      } else {
+        // Rollback on failure
+        if (file) setFiles(prev => [...prev, file]);
+        showToastMessage("Delete failed");
       }
     } catch (error) {
       console.error("Delete error:", error);
+      if (file) setFiles(prev => [...prev, file]);
     }
-    setContextMenu(null);
   };
 
   const handlePermanentDelete = async (fileId: string) => {
@@ -1123,7 +1130,7 @@ const handleDelete = async (fileId: string) => {
     if (file.thumbnailUrl) {
       return (
         <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center overflow-hidden relative group cursor-pointer" onClick={onPreview}>
-          <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" />
+          <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
           {/* No overlay - removed to avoid darkening in light mode */}
           {/* Quick actions on hover */}
           <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -2076,7 +2083,7 @@ const handleDelete = async (fileId: string) => {
                       ) : (
                         <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-gray-800/60">
                           {file.thumbnailUrl ? (
-                            <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" />
+                            <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                           ) : (
                             <div className="flex items-center justify-center w-full h-full">
                               {getFileIcon(file.mimeType, "sm")}
@@ -2091,7 +2098,7 @@ const handleDelete = async (fileId: string) => {
                       {selectMode && (
                         <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-gray-800/60">
                           {file.thumbnailUrl ? (
-                            <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" />
+                            <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                           ) : (
                             <div className="flex items-center justify-center w-full h-full">
                               {getFileIcon(file.mimeType, "sm")}
@@ -2165,8 +2172,14 @@ const handleDelete = async (fileId: string) => {
         <>
           {/* Invisible click-away layer - no background overlay */}
           <div className="fixed inset-0 z-40" onClick={() => setContextMenu(null)} />
-          <div className="fixed z-50 bg-gray-900 dark:bg-gray-900 light:bg-white border border-gray-800 rounded-xl shadow-2xl py-2 min-w-[200px]"
-            style={{ ...getSmartMenuPosition(contextMenu.x, contextMenu.y), backgroundColor: 'var(--menu-bg, #111827)', borderColor: 'var(--menu-border, #1f2937)' }}
+          <div className="fixed z-50 rounded-xl py-1 min-w-[190px]"
+            style={{ 
+              ...getSmartMenuPosition(contextMenu.x, contextMenu.y),
+              backgroundColor: '#111827',
+              border: '1px solid #1f2937',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+              willChange: 'transform'
+            }}
           >
             {/* Recent Actions - Show last 3 actions */}
             {recentActions.length > 0 && (
