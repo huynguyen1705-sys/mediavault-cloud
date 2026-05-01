@@ -109,7 +109,18 @@ interface UploadFile {
 
 export default function FilesPage() {
   const { user, isLoaded } = useUser();
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('mv-view-mode') as 'grid' | 'list') || 'grid';
+    }
+    return 'grid';
+  });
+  
+  // Save view mode to localStorage
+  const handleSetViewMode = (mode: 'grid' | 'list') => {
+    setViewMode(mode);
+    localStorage.setItem('mv-view-mode', mode);
+  };
   const [sortBy, setSortBy] = useState<"name" | "date" | "size" | "type">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [searchQuery, setSearchQuery] = useState("");
@@ -1603,13 +1614,13 @@ const handleDelete = async (fileId: string) => {
               </select>
               <div className="flex items-center border border-gray-800 rounded-lg overflow-hidden">
                 <button
-                  onClick={() => setViewMode("grid")}
+                  onClick={() => handleSetViewMode("grid")}
                   className={`p-2 ${viewMode === "grid" ? "bg-gray-800 text-white" : "text-gray-500 hover:text-white"}`}
                 >
                   <Grid className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setViewMode("list")}
+                  onClick={() => handleSetViewMode("list")}
                   className={`p-2 ${viewMode === "list" ? "bg-gray-800 text-white" : "text-gray-500 hover:text-white"}`}
                 >
                   <List className="w-4 h-4" />
