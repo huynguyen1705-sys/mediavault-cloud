@@ -164,11 +164,6 @@ interface FileItem {
     setTimeout(() => setUploadQueue((prev) => prev.filter((f) => f.status !== "completed")), 3000);
     fetchFiles();
   };
-    }
-
-    setTimeout(() => setUploadQueue((prev) => prev.filter((f) => f.status !== "completed")), 3000);
-    fetchFiles();
-  };
 
   // Handle drag and drop
   const handleDragStart = (e: React.DragEvent, file: FileItem) => {
