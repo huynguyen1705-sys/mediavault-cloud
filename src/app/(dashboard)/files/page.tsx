@@ -1936,112 +1936,130 @@ const handleDelete = async (fileId: string) => {
             </div>
           )}
 
-          {/* Files List - Google Drive Style */}
+          {/* Files List - Professional Table Style */}
           {!loading && files.length > 0 && viewMode === "list" && (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-800 border-b border-gray-700">
-                  <tr className="text-left text-sm text-gray-400">
-                    <th className="px-4 py-3 font-medium w-12">
+            <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm">
+              {/* Table Header */}
+              <div className="grid grid-cols-[auto_1fr_100px_140px_50px] gap-0 bg-gray-800/80 px-4 py-3 border-b border-gray-700/50 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <div className="flex items-center w-12">
+                  {selectMode && (
+                    <div 
+                      onClick={selectAllFiles}
+                      className="w-5 h-5 rounded border border-gray-600 hover:border-violet-400 cursor-pointer flex items-center justify-center transition-colors"
+                    >
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 cursor-pointer hover:text-gray-200 transition-colors">
+                  <span>Name</span>
+                  <ChevronDown className="w-3 h-3 opacity-50" />
+                </div>
+                <div className="flex items-center gap-2 cursor-pointer hover:text-gray-200 transition-colors">
+                  <span>Size</span>
+                  <ChevronDown className="w-3 h-3 opacity-50" />
+                </div>
+                <div className="flex items-center gap-2 cursor-pointer hover:text-gray-200 transition-colors">
+                  <span>Modified</span>
+                  <ChevronDown className="w-3 h-3 opacity-50" />
+                </div>
+                <div className="w-12"></div>
+              </div>
+              
+              {/* Table Rows */}
+              <div className="divide-y divide-gray-800/50">
+                {sortedFiles.map((file) => (
+                  <div
+                    key={file.id}
+                    className={`grid grid-cols-[auto_1fr_100px_140px_50px] gap-0 px-4 py-3 cursor-pointer group transition-all duration-150 ${
+                      selectedFiles.has(file.id) 
+                        ? "bg-violet-500/15 border-l-2 border-l-violet-500" 
+                        : "hover:bg-gray-800/40 border-l-2 border-l-transparent"
+                    } ${
+                      draggingFileId === file.id ? "opacity-50" : ""
+                    }`}
+                    draggable={true}
+                    onDragStart={(e) => handleDragStart(e, file)}
+                    onDragEnd={handleDragEnd}
+                    onClick={() => {
+                      if (selectMode) {
+                        toggleFileSelection(file.id);
+                      } else {
+                        setSelectedFile(file);
+                        setShowPreview(true);
+                      }
+                    }}
+                    onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, file }); }}
+                    onTouchStart={(e) => {
+                      setTouchStartPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                    }}
+                    onTouchEnd={(e) => {
+                      if (touchStartPos) {
+                        const diffX = Math.abs(e.changedTouches[0].clientX - touchStartPos.x);
+                        const diffY = Math.abs(e.changedTouches[0].clientY - touchStartPos.y);
+                        if (diffX < 10 && diffY < 10) {
+                          setSelectedFile(file);
+                          setShowMobileSheet(true);
+                        }
+                        setTouchStartPos(null);
+                      }
+                    }}
+                  >
+                    {/* Checkbox column */}
+                    <div className="flex items-center w-12 pr-3">
                       {selectMode && (
                         <div 
-                          onClick={selectAllFiles}
-                          className="w-6 h-6 rounded border-2 border-gray-600 hover:border-violet-400 cursor-pointer flex items-center justify-center"
+                          onClick={(e) => { e.stopPropagation(); toggleFileSelection(file.id); }}
+                          className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-all duration-150 ${
+                            selectedFiles.has(file.id) 
+                              ? "bg-violet-500 border-violet-500" 
+                              : "border-gray-600 hover:border-violet-400 hover:bg-violet-500/10"
+                          }`}
                         >
+                          {selectedFiles.has(file.id) && <CheckCircle className="w-3.5 h-3.5 text-white" />}
                         </div>
                       )}
-                    </th>
-                    <th className="px-4 py-3 font-medium min-w-[200px]">
-                      <div className="flex items-center gap-2 cursor-pointer hover:text-white">
-                        Name
-                        <ChevronDown className="w-4 h-4 opacity-50" />
-                      </div>
-                    </th>
-                    <th className="px-4 py-3 font-medium w-32">
-                      <div className="flex items-center gap-2 cursor-pointer hover:text-white">
-                        Size
-                        <ChevronDown className="w-4 h-4 opacity-50" />
-                      </div>
-                    </th>
-                    <th className="px-4 py-3 font-medium w-40">
-                      <div className="flex items-center gap-2 cursor-pointer hover:text-white">
-                        Modified
-                        <ChevronDown className="w-4 h-4 opacity-50" />
-                      </div>
-                    </th>
-                    <th className="px-4 py-3 font-medium w-12"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {sortedFiles.map((file) => (
-                    <tr 
-                      key={file.id}
-                      className={`hover:bg-gray-800/50 cursor-pointer ${draggingFileId === file.id ? "opacity-50" : ""} ${
-                        selectedFiles.has(file.id) ? "bg-violet-500/10" : ""
-                      }`}
-                      draggable={true}
-                      onDragStart={(e) => handleDragStart(e, file)}
-                      onDragEnd={handleDragEnd}
-                      onClick={() => {
-                        if (selectMode) {
-                          toggleFileSelection(file.id);
-                        } else {
-                          setSelectedFile(file);
-                          setShowPreview(true);
-                        }
-                      }}
-                      onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, file }); }}
-                      onTouchStart={(e) => {
-                        setTouchStartPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-                      }}
-                      onTouchEnd={(e) => {
-                        if (touchStartPos) {
-                          const diffX = Math.abs(e.changedTouches[0].clientX - touchStartPos.x);
-                          const diffY = Math.abs(e.changedTouches[0].clientY - touchStartPos.y);
-                          if (diffX < 10 && diffY < 10) {
-                            setSelectedFile(file);
-                            setShowMobileSheet(true);
-                          }
-                          setTouchStartPos(null);
-                        }
-                      }}
-                    >
-                      <td className="px-4 py-3">
-                        {selectMode && (
-                          <div 
-                            onClick={(e) => { e.stopPropagation(); toggleFileSelection(file.id); }}
-                            className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
-                              selectedFiles.has(file.id) 
-                                ? "bg-violet-500 border-violet-500" 
-                                : "border-gray-600 hover:border-violet-400"
-                            }`}
-                          >
-                            {selectedFiles.has(file.id) && <CheckCircle className="w-4 h-4 text-white" />}
-                          </div>
+                    </div>
+                    
+                    {/* File name column */}
+                    <div className="flex items-center gap-3 min-w-0 pr-4">
+                      {/* File icon/preview */}
+                      <div className="w-10 h-10 rounded-lg bg-gray-800/50 flex items-center justify-center shrink-0 overflow-hidden">
+                        {file.thumbnailUrl ? (
+                          <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" />
+                        ) : (
+                          getFileIcon(file.mimeType, "sm")
                         )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          {file.thumbnailUrl ? (
-                            <img src={file.thumbnailUrl} alt={file.name} className="w-8 h-8 rounded object-cover shrink-0" />
-                          ) : getFileIcon(file.mimeType, "sm")}
-                          <span className="font-medium truncate">{file.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{formatBytes(Number(file.fileSize))}</td>
-                      <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{formatDate(file.updatedAt || file.createdAt)}</td>
-                      <td className="px-4 py-3">
-                        <button 
-                          className="p-1 hover:bg-gray-700 rounded"
-                          onClick={(e) => { e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, file }); }}
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                      
+                      {/* File info */}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-100 truncate group-hover:text-violet-300 transition-colors">{file.name}</p>
+                        <p className="text-xs text-gray-500 truncate">{file.mimeType?.split('/')[1]?.toUpperCase() || 'FILE'}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Size column */}
+                    <div className="flex items-center text-sm text-gray-400 font-medium">
+                      {formatBytes(Number(file.fileSize))}
+                    </div>
+                    
+                    {/* Modified column */}
+                    <div className="flex items-center text-sm text-gray-500">
+                      {formatDate(file.updatedAt || file.createdAt)}
+                    </div>
+                    
+                    {/* Actions column */}
+                    <div className="flex items-center justify-end w-12">
+                      <button 
+                        className="p-1.5 rounded-lg hover:bg-gray-700/50 text-gray-500 hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-all duration-150"
+                        onClick={(e) => { e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, file }); }}
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

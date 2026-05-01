@@ -154,3 +154,62 @@
 .light .min-w-\[180px\] {
   background-color: #ffffff !important;
 }
+
+/* List view light mode overrides */
+.light .divide-gray-800,
+.light .divide-gray-800\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+
+.light .bg-gray-900\/50 {
+  background-color: #ffffff !important;
+}
+
+.light .bg-gray-800\/40 {
+  background-color: #f1f5f9 !important;
+}
+
+.light .bg-gray-800\/80 {
+  background-color: #f8fafc !important;
+}
+
+.light .bg-gray-800\/50 {
+  background-color: #f1f5f9 !important;
+}
+
+.light .border-gray-700\/50 {
+  border-color: #e2e8f0 !important;
+}
+
+/* List view file icon container */
+.light .bg-gray-800\/50 {
+  background-color: #f1f5f9 !important;
+}
+
+/* List view text colors */
+.light .text-gray-100 {
+  color: #0f172a !important;
+}
+
+.light .text-gray-200 {
+  color: #1e293b !important;
+}
+
+.light .text-gray-300 {
+  color: #475569 !important;
+}
+
+/* List view hover states */
+.light .group:hover .group-hover\\:text-violet-300 {
+  color: #7c3aed !important;
+}
+
+/* List view selected row */
+.light .bg-violet-500\/15 {
+  background-color: rgba(139, 92, 246, 0.08) !important;
+}
+
+.light .border-l-violet-500 {
+  border-left-color: #7c3aed !important;
+}
