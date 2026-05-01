@@ -939,7 +939,7 @@ const handleDelete = async (fileId: string) => {
   // Smart menu position - prevents menu from going off-screen
   const getSmartMenuPosition = (x: number, y: number) => {
     const menuWidth = 200;
-    const menuHeight = 350;
+    const menuHeight = 400;
     const padding = 10;
     let left = x;
     let top = y;
@@ -948,8 +948,20 @@ const handleDelete = async (fileId: string) => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       
-      if (x + menuWidth + padding > vw) left = vw - menuWidth - padding;
-      if (y + menuHeight + padding > vh) top = vh - menuHeight - padding;
+      // Prefer left side - flip to left if too close to right edge
+      if (x + menuWidth + padding > vw) {
+        left = x - menuWidth - 10;
+        // If still off screen, clamp to left
+        if (left < padding) left = padding;
+      }
+      
+      // For bottom edge - flip menu ABOVE the click point
+      if (y + menuHeight + padding > vh) {
+        top = y - menuHeight - 10;
+        if (top < padding) top = padding;
+      }
+      
+      // Ensure minimum positions
       left = Math.max(padding, left);
       top = Math.max(padding, top);
     }
