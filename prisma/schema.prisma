@@ -41,6 +41,8 @@ model User {
   filesCount        Int      @map("files_count") @default(0)
   isSuspended       Boolean  @map("is_suspended") @default(false)
   isAdmin           Boolean  @map("is_admin") @default(false)
+  planExpiresAt     DateTime? @map("plan_expires_at")
+  adminNotes        String?  @map("admin_notes") @db.Text
   createdAt         DateTime @map("created_at") @default(now())
   updatedAt         DateTime @updatedAt @map("updated_at")
 

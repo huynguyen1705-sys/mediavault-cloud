@@ -17,6 +17,7 @@ import {
   X,
   ToggleLeft,
   ToggleRight,
+  ArrowUpCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { formatBytes, formatDate } from "@/lib/utils";
@@ -26,12 +27,15 @@ interface UserData {
   email: string | null;
   displayName: string | null;
   planName: string;
+  planId: string;
   storageGb: number;
   storageUsedBytes: number;
   filesCount: number;
   bandwidthUsedBytes: number;
   isAdmin: boolean;
   isSuspended: boolean;
+  planExpiresAt: string | null;
+  adminNotes: string | null;
   createdAt: string;
   lastLoginAt: string | null;
 }
@@ -72,6 +76,12 @@ export default function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingPlan, setEditingPlan] = useState<EditPlanData | null>(null);
   const [saving, setSaving] = useState(false);
+  const [upgradingUser, setUpgradingUser] = useState<UserData | null>(null);
+  const [upgradeForm, setUpgradeForm] = useState({
+    planId: "",
+    expiresAt: "",
+    notes: "",
+  });
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -178,6 +188,34 @@ export default function AdminUsersPage() {
     } catch (error) {
       console.error("Failed to toggle plan:", error);
     }
+  };
+
+  const handleUpgradeUser = async () => {
+    if (!upgradingUser || !upgradeForm.planId) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/change-plan`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetUserId: upgradingUser.id,
+          planId: upgradeForm.planId,
+          planExpiresAt: upgradeForm.expiresAt || null,
+          adminNotes: upgradeForm.notes || null,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(users.map(u =>
+          u.id === upgradingUser.id ? { ...u, planId: data.user.planId, planName: data.user.planName, planExpiresAt: data.user.planExpiresAt, adminNotes: data.user.adminNotes } : u
+        ));
+        setUpgradingUser(null);
+        setUpgradeForm({ planId: "", expiresAt: "", notes: "" });
+      }
+    } catch (error) {
+      console.error("Failed to upgrade user:", error);
+    }
+    setSaving(false);
   };
 
   const filteredUsers = users.filter(u => {
@@ -332,6 +370,16 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            setUpgradingUser(u);
+                            setUpgradeForm({ planId: u.planId, expiresAt: "", notes: u.adminNotes || "" });
+                          }}
+                          className="p-1.5 rounded-lg transition-colors bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400"
+                          title="Change Plan"
+                        >
+                          <ArrowUpCircle className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => handleToggleSuspend(u.id, u.isSuspended)}
                           className={`p-1.5 rounded-lg transition-colors ${
@@ -561,6 +609,91 @@ export default function AdminUsersPage() {
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upgrade User Modal */}
+      {upgradingUser && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-gray-800">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">Change Plan</h3>
+              <button
+                onClick={() => setUpgradingUser(null)}
+                className="p-1 hover:bg-gray-800 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">User</label>
+                <div className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white">
+                  {upgradingUser.displayName || upgradingUser.email}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Current Plan</label>
+                <div className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-400">
+                  {upgradingUser.planName}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">New Plan</label>
+                <select
+                  value={upgradeForm.planId}
+                  onChange={(e) => setUpgradeForm({ ...upgradeForm, planId: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="">Select plan...</option>
+                  {plans.filter(p => p.isActive).map(plan => (
+                    <option key={plan.id} value={plan.id}>{plan.displayName}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Expiration Date (optional)</label>
+                <input
+                  type="date"
+                  value={upgradeForm.expiresAt}
+                  onChange={(e) => setUpgradeForm({ ...upgradeForm, expiresAt: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Admin Notes (optional)</label>
+                <textarea
+                  value={upgradeForm.notes}
+                  onChange={(e) => setUpgradeForm({ ...upgradeForm, notes: e.target.value })}
+                  rows={3}
+                  placeholder="Reason for upgrade, special conditions, etc."
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setUpgradingUser(null)}
+                className="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpgradeUser}
+                disabled={saving || !upgradeForm.planId}
+                className="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUpCircle className="w-4 h-4" />}
+                Change Plan
               </button>
             </div>
           </div>

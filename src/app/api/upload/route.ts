@@ -29,13 +29,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Account suspended" }, { status: 403 });
     }
 
-    // Determine max file size by plan type
-    const planLimits: Record<string, number> = {
-      free: 10 * 1024 * 1024,      // 10MB
-      pro: 2000 * 1024 * 1024,     // 2000MB
-      trial: 10 * 1024 * 1024,     // 10MB for trial
-    };
-    const maxFileSize = planLimits[userProfile.plan.name.toLowerCase()] ?? 10 * 1024 * 1024;
+    // Determine max file size from plan
+    const maxFileSize = userProfile.plan.maxFileSizeMb * 1024 * 1024;
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
@@ -48,7 +43,7 @@ export async function POST(request: NextRequest) {
     // Check file size against plan limit
     if (file.size > maxFileSize) {
       return NextResponse.json(
-        { error: `File too large. Maximum size for your plan (${userProfile.plan.name}) is ${Math.round(maxFileSize / 1024 / 1024)}MB. Please upgrade your plan.` },
+        { error: `File too large. Maximum size for your plan (${userProfile.plan.displayName}) is ${userProfile.plan.maxFileSizeMb}MB. Please upgrade your plan.` },
         { status: 400 }
       );
     }
