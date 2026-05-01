@@ -127,7 +127,6 @@ export default function DashboardPage() {
     if (allCompleted && newFiles.length > 0) {
       setTimeout(() => router.push("/files"), 1000);
     }
-    }
   }, [router]);
 
   if (!isLoaded || loading) {
