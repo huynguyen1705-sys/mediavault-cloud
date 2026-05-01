@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '500mb',
     },
   },
+  // Increase body size limit for API routes (file uploads)
+  middlewareClientMaxBodySize: '500mb',
   // Use images domains for R2
   images: {
     remotePatterns: [
