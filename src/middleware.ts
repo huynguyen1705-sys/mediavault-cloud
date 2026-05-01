@@ -14,6 +14,9 @@ const isProtectedRoute = createRouteMatcher([
 const isPublicApiRoute = createRouteMatcher([
   "/api/files/:path*/proxy",
   "/api/share/:path*",
+  "/api/upload",
+  "/api/upload-url",
+  "/api/upload/confirm",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
