@@ -1,14 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Increase body size limit for large file uploads
-  serverBodySizeLimit: '500mb',
   experimental: {
     serverActions: {
       bodySizeLimit: '500mb',
     },
   },
-  // Use images domains for R2
   images: {
     remotePatterns: [
       {
