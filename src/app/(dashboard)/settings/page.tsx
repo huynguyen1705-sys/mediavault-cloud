@@ -15,12 +15,9 @@ import {
   CheckCircle,
   ExternalLink,
   Copy,
-  Sun,
-  Moon,
 } from "lucide-react";
 import Link from "next/link";
 import { formatBytes } from "@/lib/utils";
-import { useTheme } from "@/components/providers/ThemeProvider";
 
 interface UserData {
   user: {
@@ -50,7 +47,6 @@ interface EmbedDomain {
 
 export default function SettingsPage() {
   const { user, isLoaded } = useUser();
-  const { theme, toggleTheme } = useTheme();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [embedDomains, setEmbedDomains] = useState<EmbedDomain[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,28 +143,7 @@ export default function SettingsPage() {
         <p className="text-gray-400">Manage your account and preferences</p>
       </div>
 
-      {/* Theme Toggle */}
-      <div className="mb-6 p-4 bg-gray-900/80 border border-gray-800 rounded-xl flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {theme === "dark" ? <Moon className="w-5 h-5 text-violet-400" /> : <Sun className="w-5 h-5 text-amber-400" />}
-          <div>
-            <div className="font-medium text-white">Theme</div>
-            <div className="text-sm text-gray-400">{theme === "dark" ? "Dark mode" : "Light mode"}</div>
-          </div>
-        </div>
-        <button
-          onClick={toggleTheme}
-          className={`relative w-14 h-8 rounded-full transition-colors ${
-            theme === "dark" ? "bg-violet-600" : "bg-gray-600"
-          }`}
-        >
-          <div
-            className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-              theme === "dark" ? "left-1" : "left-7"
-            }`}
-          />
-        </button>
-      </div>
+      {/* Theme Toggle moved to header navbar — single source of truth */}
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b border-gray-800 pb-4 overflow-x-auto">

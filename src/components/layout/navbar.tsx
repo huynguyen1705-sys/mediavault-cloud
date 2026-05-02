@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
-import { Cloud, Menu, X, Moon, Sun, LayoutDashboard, FolderOpen, BarChart3, Settings, ScrollText, Home, Sparkles, CreditCard, Shield } from "lucide-react";
+import { Cloud, Menu, X, LayoutDashboard, FolderOpen, BarChart3, Settings, ScrollText, Home, Sparkles, CreditCard, Shield } from "lucide-react";
+import { useTheme } from "@/components/providers/ThemeProvider";
 import { useState, useEffect } from "react";
 
 export default function Navbar() {
@@ -12,7 +13,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isDark, setIsDark] = useState(true);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     if (isSignedIn && user) {
@@ -29,21 +30,7 @@ export default function Navbar() {
     }
   }, [isSignedIn, user]);
 
-  // Track theme changes
-  useEffect(() => {
-    const updateTheme = () => {
-      setIsDark(!document.documentElement.classList.contains("light"));
-    };
-    updateTheme();
-    window.addEventListener('storage', updateTheme);
-    // Watch for class changes
-    const observer = new MutationObserver(updateTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => {
-      window.removeEventListener('storage', updateTheme);
-      observer.disconnect();
-    };
-  }, []);
+  // Theme is managed by ThemeProvider — no local tracking needed
 
   const isActive = (path: string) => pathname === path;
 
@@ -157,19 +144,19 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-3">
-                {/* Theme Toggle Button */}
+                {/* Theme Toggle Button - uses useTheme() like Settings page */}
                 <button
-                  onClick={() => {
-                    const next = isDark ? "light" : "dark";
-                    document.documentElement.classList.remove("light", "dark");
-                    document.documentElement.classList.add(next);
-                    localStorage.setItem("mv-theme", next);
-                    setIsDark(!isDark);
-                  }}
-                  className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
-                  title="Toggle theme"
+                  onClick={toggleTheme}
+                  className={`relative w-11 h-7 rounded-full transition-colors ${
+                    theme === "dark" ? "bg-violet-600" : "bg-gray-400"
+                  }`}
+                  title={theme === "dark" ? "Switch to Light mode" : "Switch to Dark mode"}
                 >
-                  {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  <div
+                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      theme === "dark" ? "left-0.5" : "left-5"
+                    }`}
+                  />
                 </button>
                 <UserButton />
               </div>
