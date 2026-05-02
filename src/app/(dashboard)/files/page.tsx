@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo, memo } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { AudioPreview, PdfPreview, CodePreview, TextPreview, XlsxPreview } from "@/components/PreviewComponents";
 import DocViewer from "@cyntler/react-doc-viewer";
 import { useUser } from "@clerk/nextjs";
@@ -188,7 +189,7 @@ const GridFileCard = memo(function GridFileCard({
         isDragging ? "opacity-50" : ""
       } ${
         isSelected ? "border-violet-500 bg-violet-500/10" :
-        isHighlighted ? "border-emerald-500/60 bg-emerald-500/5 ring-1 ring-emerald-500/30" :
+        isHighlighted ? "border-emerald-500/60 bg-emerald-500/5 ring-1 ring-emerald-500/30 animate-pulse" :
         "border-gray-800"
       }`}
       draggable={true}
@@ -1652,11 +1653,22 @@ const handleDelete = async (fileId: string) => {
   return (
     <div className="h-[calc(100vh-4rem)] flex">
       {/* Toast */}
-      {showToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-emerald-500 text-white rounded-lg shadow-lg">
-          {toastMessage}
-        </div>
-      )}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: -20, x: "-50%" }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            className="fixed top-20 left-1/2 z-50 px-4 py-2.5 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 backdrop-blur-sm font-medium text-sm"
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              {toastMessage}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* LEFT SIDEBAR - Folder Tree */}
       <div className={`${sidebarOpen ? "w-full md:w-64" : "w-0"} transition-all duration-200 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden fixed md:relative inset-0 z-20 md:z-auto`}>
@@ -2163,12 +2175,21 @@ const handleDelete = async (fileId: string) => {
           )}
           {/* Empty State - Beautiful illustration */}
           {!trashMode && files.length === 0 && !loading && (
-            <div className="flex flex-col items-center justify-center h-full">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="flex flex-col items-center justify-center h-full"
+            >
               {/* Cloud illustration */}
-              <div className="relative mb-6">
+              <motion.div
+                className="relative mb-6"
+                animate={{ y: [0, -6, 0] }}
+                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+              >
                 <Cloud className="w-24 h-24 text-gray-700" />
                 <Upload className="w-10 h-10 text-violet-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-              </div>
+              </motion.div>
               <h3 className="text-xl font-semibold mb-2 text-gray-200">Your files are empty</h3>
               <p className="text-gray-500 mb-6 text-center max-w-sm">
                 Drag and drop files here or click the button below to upload your first files
@@ -2180,25 +2201,20 @@ const handleDelete = async (fileId: string) => {
                 <Upload className="w-5 h-5" />
                 Upload Files
               </button>
-            </div>
+            </motion.div>
           )}
 
           {/* Loading Skeletons - Grid View */}
           {loading && viewMode === "grid" && (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-4 animate-pulse">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 bg-gray-800 rounded" />
-                    <div className="flex-1" />
-                  </div>
-                  <div className="aspect-square bg-gray-800 rounded-lg mb-3" />
+                <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                  <div className="aspect-square bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 rounded-lg mb-3 animate-shimmer bg-[length:200%_100%]" />
                   <div className="flex items-start gap-2">
                     <div className="flex-1">
-                      <div className="h-4 bg-gray-800 rounded w-3/4 mb-2" />
-                      <div className="h-3 bg-gray-800 rounded w-1/2" />
+                      <div className="h-4 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 rounded w-3/4 mb-2 animate-shimmer bg-[length:200%_100%]" style={{ animationDelay: `${i * 50}ms` }} />
+                      <div className="h-3 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 rounded w-1/2 animate-shimmer bg-[length:200%_100%]" style={{ animationDelay: `${i * 50 + 25}ms` }} />
                     </div>
-                    <div className="w-6 h-6 bg-gray-800 rounded" />
                   </div>
                 </div>
               ))}
@@ -2249,33 +2265,39 @@ const handleDelete = async (fileId: string) => {
 
           {/* Files Grid - Each card manages its own menu (no shared state re-render) */}
           {!loading && files.length > 0 && viewMode === "grid" && (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <motion.div
+              className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+              initial="hidden"
+              animate="visible"
+              variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.03 } } }}
+            >
               {sortedFiles.map((file) => (
-                <GridFileCard
-                  key={file.id}
-                  file={file}
-                  isSelected={selectedFiles.has(file.id)}
-                  isHighlighted={highlightedFiles.has(file.id)}
-                  selectMode={selectMode}
-                  isDragging={draggingFileId === file.id}
-                  onSelect={() => toggleFileSelection(file.id)}
-                  onClick={() => { if (selectMode) { toggleFileSelection(file.id); } else { setSelectedFile(file); setShowPreview(true); } }}
-                  onDragStart={(e) => handleDragStart(e, file)}
-                  onDragEnd={handleDragEnd}
-                  onMobileSheet={() => { setSelectedFile(file); setShowMobileSheet(true); }}
-                  onShare={() => { setSelectedFile(file); setShowShareModal(true); }}
-                  onView={() => { setSelectedFile(file); setShowPreview(true); }}
-                  onDetails={() => { setSelectedFile(file); setShowDetails(true); }}
-                  onMove={() => { setMovingFile(file); setShowMoveModal(true); }}
-                  onRename={() => { setRenamingItem({ type: "file", item: file }); setNewName(file.name); setShowRenameModal(true); }}
-                  onCopyLink={() => { navigator.clipboard.writeText(window.location.origin + "/api/files/" + file.id); showToastMessage("Link copied!"); }}
-                  onDelete={() => handleDelete(file.id)}
-                  trashMode={trashMode}
-                  onRestore={() => handleRestore(file.id)}
-                  onPermanentDelete={() => handlePermanentDelete(file.id)}
-                />
+                <motion.div key={file.id} variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}>
+                  <GridFileCard
+                    file={file}
+                    isSelected={selectedFiles.has(file.id)}
+                    isHighlighted={highlightedFiles.has(file.id)}
+                    selectMode={selectMode}
+                    isDragging={draggingFileId === file.id}
+                    onSelect={() => toggleFileSelection(file.id)}
+                    onClick={() => { if (selectMode) { toggleFileSelection(file.id); } else { setSelectedFile(file); setShowPreview(true); } }}
+                    onDragStart={(e) => handleDragStart(e, file)}
+                    onDragEnd={handleDragEnd}
+                    onMobileSheet={() => { setSelectedFile(file); setShowMobileSheet(true); }}
+                    onShare={() => { setSelectedFile(file); setShowShareModal(true); }}
+                    onView={() => { setSelectedFile(file); setShowPreview(true); }}
+                    onDetails={() => { setSelectedFile(file); setShowDetails(true); }}
+                    onMove={() => { setMovingFile(file); setShowMoveModal(true); }}
+                    onRename={() => { setRenamingItem({ type: "file", item: file }); setNewName(file.name); setShowRenameModal(true); }}
+                    onCopyLink={() => { navigator.clipboard.writeText(window.location.origin + "/api/files/" + file.id); showToastMessage("Link copied!"); }}
+                    onDelete={() => handleDelete(file.id)}
+                    trashMode={trashMode}
+                    onRestore={() => handleRestore(file.id)}
+                    onPermanentDelete={() => handlePermanentDelete(file.id)}
+                  />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
 
           {/* Files List - Professional Table Style */}

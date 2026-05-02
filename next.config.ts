@@ -2,10 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  compress: true,
+  poweredByHeader: false,
   experimental: {
     serverActions: {
       bodySizeLimit: '500mb',
     },
+    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts'],
   },
   serverExternalPackages: ['@prisma/client'],
   images: {

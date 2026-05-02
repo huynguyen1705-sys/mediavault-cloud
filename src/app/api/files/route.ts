@@ -81,14 +81,27 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch files with pagination (NO presigned URLs in list - generate on demand)
+    // Fetch files with pagination - select ONLY needed fields (faster query)
     const [files, totalCount] = await Promise.all([
       prisma.file.findMany({
         where,
         orderBy: { [sortBy]: sortOrder },
         skip: offset,
         take: limit,
-        include: {
+        select: {
+          id: true,
+          name: true,
+          mimeType: true,
+          fileSize: true,
+          storagePath: true,
+          thumbnailPath: true,
+          thumbnailStatus: true,
+          folderId: true,
+          isPublic: true,
+          downloadEnabled: true,
+          expiresAt: true,
+          createdAt: true,
+          updatedAt: true,
           folder: { select: { id: true, name: true } },
         },
       }),
@@ -127,7 +140,7 @@ export async function GET(request: NextRequest) {
           orderBy: { name: "asc" },
         });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       files: filesData,
       folders,
       pagination: {
@@ -137,6 +150,9 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(totalCount / limit),
       },
     });
+    // Allow client-side caching for 10s, revalidate in background
+    response.headers.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30');
+    return response;
   } catch (error) {
     console.error("List files error:", error);
     return NextResponse.json({ error: "Failed to list files" }, { status: 500 });
