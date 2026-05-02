@@ -146,7 +146,7 @@ export default function Navbar() {
               <div className="flex items-center gap-3">
                 {/* Theme Toggle Button */}
                 <button
-                  onClick={toggleTheme}
+                  onClick={() => { toggleTheme(); window.location.reload(); }}
                   className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
                   title={theme === "dark" ? "Light mode" : "Dark mode"}
                 >
