@@ -21,6 +21,7 @@ const isPublicRoute = createRouteMatcher([
   "/public/:path*",
   "/api/files/:path*/proxy",
   "/api/share/:path*",
+  "/api/settings/theme",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

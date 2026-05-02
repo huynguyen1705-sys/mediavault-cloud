@@ -18,33 +18,39 @@ export async function GET() {
   }
 }
 
-// POST - save user theme
+// POST - save theme
+// Auth optional: always set cookie, save to DB if logged in
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const body = await req.json().catch(() => ({}));
+  const { theme } = body;
 
-  const { theme } = await req.json();
   if (theme !== "dark" && theme !== "light") {
     return NextResponse.json({ error: "Invalid theme" }, { status: 400 });
   }
 
-  try {
-    await prisma.user.update({
-      where: { clerkUserId: userId },
-      data: { theme },
-    });
+  // Always set cookie from server-side (most reliable for SSR)
+  const res = NextResponse.json({ ok: true, theme });
+  res.cookies.set("mv-theme", theme, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365, // 1 year
+    sameSite: "lax",
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+  });
 
-    // Set cookie from SERVER side — guaranteed to be sent on next SSR request
-    const res = NextResponse.json({ ok: true, theme });
-    res.cookies.set("mv-theme", theme, {
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365, // 1 year
-      sameSite: "lax",
-      httpOnly: false, // ThemeProvider needs to read it client-side too
-    });
-    return res;
+  // Also save to DB if logged in
+  try {
+    const { userId } = await auth();
+    if (userId) {
+      await prisma.user.update({
+        where: { clerkUserId: userId },
+        data: { theme },
+      });
+    }
   } catch (e: any) {
-    console.error("Theme save error:", e?.message);
-    return NextResponse.json({ error: "Failed to save theme" }, { status: 500 });
+    // Non-fatal: cookie already set, just log
+    console.error("[Theme] DB save error:", e?.message);
   }
+
+  return res;
 }
