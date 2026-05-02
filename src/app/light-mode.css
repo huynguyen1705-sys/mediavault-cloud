@@ -1,5 +1,25 @@
 /* Light mode styles - targeted overrides only */
 
+/* Elements with this class are always dark regardless of theme */
+html.light .theme-always-dark,
+html.light .theme-always-dark * {
+  /* Reset all light overrides for this subtree */
+}
+html.light .theme-always-dark { background-color: #0f0f0f !important; }
+html.light .theme-always-dark .text-gray-300 { color: #d1d5db !important; }
+html.light .theme-always-dark .text-gray-400 { color: #9ca3af !important; }
+html.light .theme-always-dark .text-white { color: #ffffff !important; }
+html.light .theme-always-dark .text-amber-400 { color: #fbbf24 !important; }
+html.light .theme-always-dark .text-blue-400 { color: #60a5fa !important; }
+html.light .theme-always-dark .text-emerald-400 { color: #34d399 !important; }
+html.light .theme-always-dark .text-violet-400 { color: #a78bfa !important; }
+html.light .theme-always-dark .text-red-400 { color: #f87171 !important; }
+html.light .theme-always-dark .hover\:bg-white\/5:hover { background-color: rgba(255,255,255,0.05) !important; }
+html.light .theme-always-dark .bg-violet-500\/10 { background-color: rgba(139,92,246,0.1) !important; }
+html.light .theme-always-dark a { color: inherit !important; }
+html.light .theme-always-dark button { background-color: transparent !important; color: inherit !important; }
+
+
 html.light,
 html.light body {
   background-color: #ffffff !important;
@@ -36,21 +56,31 @@ html.light .text-gray-300 { color: #334155 !important; }
 html.light .text-gray-400 { color: #64748b !important; }
 html.light .text-gray-500 { color: #64748b !important; }
 
-/* Keep colored text as-is */
-html.light .text-violet-400 { color: #7c3aed !important; }
-html.light .text-violet-300 { color: #8b5cf6 !important; }
-html.light .text-emerald-400 { color: #059669 !important; }
-html.light .text-red-400 { color: #dc2626 !important; }
-html.light .text-blue-400 { color: #2563eb !important; }
-html.light .text-pink-400 { color: #db2777 !important; }
-html.light .text-amber-400 { color: #d97706 !important; }
+/* Keep colored text as-is - high specificity */
+html.light .text-violet-400, html.light [class*="text-violet-400"] { color: #7c3aed !important; }
+html.light .text-violet-300, html.light [class*="text-violet-300"] { color: #8b5cf6 !important; }
+html.light .text-emerald-400, html.light [class*="text-emerald-400"] { color: #059669 !important; }
+html.light .text-red-400, html.light [class*="text-red-400"] { color: #dc2626 !important; }
+html.light .text-blue-400, html.light [class*="text-blue-400"] { color: #2563eb !important; }
+html.light .text-pink-400, html.light [class*="text-pink-400"] { color: #db2777 !important; }
+html.light .text-amber-400, html.light [class*="text-amber-400"] { color: #d97706 !important; }
+html.light .text-green-400, html.light [class*="text-green-400"] { color: #16a34a !important; }
+html.light .text-orange-400, html.light [class*="text-orange-400"] { color: #ea580c !important; }
 
-/* ===== NAVBAR ===== */
-html.light nav {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(12px);
-  border-color: #e2e8f0 !important;
+/* ===== NAVBAR - always dark ===== */
+html.light nav.theme-always-dark {
+  background-color: rgba(15, 15, 15, 0.95) !important;
+  border-color: rgba(255,255,255,0.08) !important;
 }
+html.light nav.theme-always-dark .text-gray-400 { color: #9ca3af !important; }
+html.light nav.theme-always-dark .text-white { color: #ffffff !important; }
+html.light nav.theme-always-dark .text-amber-400 { color: #fbbf24 !important; }
+html.light nav.theme-always-dark .text-blue-400 { color: #60a5fa !important; }
+html.light nav.theme-always-dark .text-emerald-400 { color: #34d399 !important; }
+html.light nav.theme-always-dark .text-violet-400 { color: #a78bfa !important; }
+html.light nav.theme-always-dark .text-red-400 { color: #f87171 !important; }
+html.light nav.theme-always-dark a { color: inherit !important; }
+html.light nav.theme-always-dark button { background-color: transparent !important; color: inherit !important; }
 
 /* ===== BUTTONS ===== */
 /* Only gray buttons get light treatment */
