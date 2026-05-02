@@ -40,8 +40,8 @@ export default function HomeUpload() {
     // Small delay for UI feedback before starting uploads
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    const MULTIPART_THRESHOLD = 200 * 1024 * 1024; // 200MB - only very large (CORS ETag issue for smaller)
-    const PART_SIZE = 10 * 1024 * 1024; // 10MB chunks
+    const MULTIPART_THRESHOLD = 200 * 1024 * 1024; // 200MB - single PUT for most files
+    const PART_SIZE = 5 * 1024 * 1024; // 5MB chunks
     const CONCURRENT_PARTS = 4;
 
     const uploadOne = async (uploadFile: UploadFile) => {
@@ -180,9 +180,7 @@ export default function HomeUpload() {
       setShowRegisterModal(true);
       return;
     }
-    // On mobile, label htmlFor handles click natively
-    // This is fallback for drag-drop area click on desktop
-    document.getElementById('home-file-input')?.click();
+    fileInputRef.current?.click();
   };
 
   if (!isLoaded) return null;
@@ -196,7 +194,7 @@ export default function HomeUpload() {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         className={`
-          relative mt-10 p-10 border-2 border-dashed rounded-2xl cursor-pointer
+          mt-10 p-10 border-2 border-dashed rounded-2xl cursor-pointer
           transition-all duration-300 text-center
           ${isDragOver
             ? "border-violet-500 bg-violet-500/10"
@@ -205,22 +203,13 @@ export default function HomeUpload() {
         `}
       >
         <input
-          id="home-file-input"
           ref={fileInputRef}
           type="file"
           multiple
           accept="*/*"
-          style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden', pointerEvents: 'none' }}
-          onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ''; }}
+          className="hidden"
+          onChange={(e) => e.target.files && handleFiles(e.target.files)}
         />
-        {/* Native label for mobile - always triggers file picker */}
-        {isSignedIn && (
-          <label
-            htmlFor="home-file-input"
-            className="absolute inset-0 cursor-pointer z-10"
-            aria-label="Upload files"
-          />
-        )}
 
         <div className="flex flex-col items-center gap-4">
           {isDragOver ? (
