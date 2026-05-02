@@ -3325,23 +3325,27 @@ const handleDelete = async (fileId: string) => {
     const [sharePassword, setSharePasswordLocal] = useState("");
     const [shareExpireHours, setShareExpireHoursLocal] = useState<number>(0);
     const [shareAllowDownload, setShareAllowDownloadLocal] = useState(true);
+    const [shareError, setShareError] = useState<string | null>(null);
+    const [shareLoading, setShareLoading] = useState(false);
 
     const handleShare = async () => {
+      if (!selectedFile) return;
+      setShareError(null);
+      setShareLoading(true);
       try {
         const res = await fetch("/api/share", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            fileId: selectedFile?.id,
+            fileId: selectedFile.id,
             password: sharePassword || undefined,
             expiresIn: shareExpireHours > 0 ? shareExpireHours : undefined,
             allowDownload: shareAllowDownload
           }),
         });
+        const data = await res.json();
         if (res.ok) {
-          const data = await res.json();
           setShareTokenLocal(data.share?.url);
-          // Track recent action
           if (selectedFile) {
             setRecentActions(prev => [{
               action: "Shared",
@@ -3350,9 +3354,14 @@ const handleDelete = async (fileId: string) => {
               timestamp: Date.now()
             }, ...prev.slice(0, 2)]);
           }
+        } else {
+          setShareError(data.error || "Failed to create share link");
         }
       } catch (error) {
         console.error("Share error:", error);
+        setShareError("Network error. Please try again.");
+      } finally {
+        setShareLoading(false);
       }
     };
 
@@ -3402,10 +3411,16 @@ const handleDelete = async (fileId: string) => {
               </label>
               <button
                 onClick={handleShare}
-                className="w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-medium transition-colors"
+                disabled={shareLoading}
+                className="w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-60 disabled:cursor-not-allowed rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
               >
-                Create Share Link
+                {shareLoading ? (
+                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Creating...</>
+                ) : "Create Share Link"}
               </button>
+              {shareError && (
+                <p className="text-red-400 text-sm text-center mt-2">{shareError}</p>
+              )}
             </>
           ) : (
             <>

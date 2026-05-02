@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
-import { v4 as uuidv4 } from "uuid";
 import crypto from "crypto";
 
-// Generate share token
+// Generate short share token (6 chars, base62)
+const BASE62 = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 function generateShareToken(): string {
-  return uuidv4().replace(/-/g, "") + uuidv4().replace(/-/g, "").slice(0, 32);
+  let result = '';
+  const bytes = crypto.randomBytes(6);
+  for (let i = 0; i < 6; i++) {
+    result += BASE62[bytes[i] % 62];
+  }
+  return result;
 }
 
 // Hash password
@@ -67,21 +72,32 @@ export async function POST(request: NextRequest) {
       expiresAt = new Date(Date.now() + expiresIn * 60 * 60 * 1000); // hours to ms
     }
 
-    // Create share
-    const shareToken = generateShareToken();
-    const share = await prisma.share.create({
-      data: {
-        fileId: fileId || null,
-        folderId: folderId || null,
-        userId: userProfile.id,
-        shareToken,
-        passwordHash: password ? hashPassword(password) : null,
-        allowDownload: allowDownload ?? true,
-        expiresAt,
-      },
-    });
+    // Create share (retry if token collision)
+    let shareToken = '';
+    let share;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      shareToken = generateShareToken();
+      try {
+        share = await prisma.share.create({
+          data: {
+            fileId: fileId || null,
+            folderId: folderId || null,
+            userId: userProfile.id,
+            shareToken,
+            passwordHash: password ? hashPassword(password) : null,
+            allowDownload: allowDownload ?? true,
+            expiresAt,
+          },
+        });
+        break;
+      } catch (e: any) {
+        if (e.code === 'P2002') continue; // unique constraint - retry
+        throw e;
+      }
+    }
+    if (!share) throw new Error('Failed to generate unique share token');
 
-    const shareUrl = `/share/${share.shareToken}`;
+    const shareUrl = `/s/${shareToken}`;
 
     return NextResponse.json({
       success: true,
@@ -133,7 +149,7 @@ export async function GET(request: NextRequest) {
       shares: shares.map((share) => ({
         id: share.id,
         token: share.shareToken,
-        url: `/share/${share.shareToken}`,
+        url: `/s/${share.shareToken}`,
         passwordProtected: !!share.passwordHash,
         allowDownload: share.allowDownload,
         expiresAt: share.expiresAt?.toISOString() || null,

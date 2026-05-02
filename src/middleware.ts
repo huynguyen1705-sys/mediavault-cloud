@@ -19,6 +19,7 @@ const isPublicRoute = createRouteMatcher([
   "/pricing",
   "/features",
   "/public/:path*",
+  "/s/:path*",
   "/api/files/:path*/proxy",
   "/api/share/:path*",
   "/api/settings/theme",
