@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
-import { Cloud, Menu, X, Moon, Sun } from "lucide-react";
+import { Cloud, Menu, X, Moon, Sun, LayoutDashboard, FolderOpen, BarChart3, Settings, ScrollText, Home, Sparkles, CreditCard, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function Navbar() {
@@ -49,18 +49,18 @@ export default function Navbar() {
 
   // Guest links
   const guestLinks = [
-    { href: "/", label: "Home" },
-    { href: "/features", label: "Features" },
-    { href: "/pricing", label: "Pricing" },
+    { href: "/", label: "Home", icon: Home, color: "text-blue-400" },
+    { href: "/features", label: "Features", icon: Sparkles, color: "text-amber-400" },
+    { href: "/pricing", label: "Pricing", icon: CreditCard, color: "text-emerald-400" },
   ];
 
-  // Logged in links (hide Home/Features/Pricing, show dashboard pages)
+  // Logged in links
   const dashboardLinks = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/files", label: "Files" },
-    { href: "/analytics", label: "Analytics" },
-    { href: "/settings", label: "Settings" },
-    { href: "/logs", label: "Logs" },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, color: "text-blue-400" },
+    { href: "/files", label: "Files", icon: FolderOpen, color: "text-amber-400" },
+    { href: "/analytics", label: "Analytics", icon: BarChart3, color: "text-emerald-400" },
+    { href: "/settings", label: "Settings", icon: Settings, color: "text-gray-400" },
+    { href: "/logs", label: "Logs", icon: ScrollText, color: "text-violet-400" },
   ];
 
   return (
@@ -86,45 +86,53 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Nav - hidden on mobile */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-6">
             {!isSignedIn ? (
-              guestLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`text-sm font-medium transition-colors ${
-                    isActive(link.href)
-                      ? "text-violet-400"
-                      : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))
+              guestLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                      isActive(link.href)
+                        ? "text-violet-400"
+                        : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${isActive(link.href) ? "text-violet-400" : link.color}`} />
+                    {link.label}
+                  </Link>
+                );
+              })
             ) : (
-              dashboardLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith(link.href)
-                      ? "text-violet-400"
-                      : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))
+              dashboardLinks.map((link) => {
+                const Icon = link.icon;
+                const active = pathname.startsWith(link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                      active ? "text-violet-400" : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${active ? "text-violet-400" : link.color}`} />
+                    {link.label}
+                  </Link>
+                );
+              })
             )}
             {isSignedIn && !loading && isAdmin && (
               <Link
                 href="/admin"
-                className={`text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
                   pathname.startsWith("/admin")
                     ? "text-violet-400"
                     : "text-gray-400 hover:text-white"
                 }`}
               >
+                <Shield className={`w-4 h-4 ${pathname.startsWith("/admin") ? "text-violet-400" : "text-red-400"}`} />
                 Admin
               </Link>
             )}
@@ -173,42 +181,52 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden bg-[#0f0f0f] border-b border-gray-800">
-          <div className="px-4 py-4 space-y-3">
+          <div className="px-4 py-3 space-y-1">
             {!isSignedIn ? (
-              guestLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`block text-sm font-medium ${
-                    isActive(link.href) ? "text-violet-400" : "text-gray-400"
-                  }`}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))
-            ) : (
-              <>
-                {dashboardLinks.map((link) => (
+              guestLinks.map((link) => {
+                const Icon = link.icon;
+                return (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`block text-sm font-medium ${
-                      pathname.startsWith(link.href) ? "text-violet-400" : "text-gray-400"
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                      isActive(link.href) ? "bg-violet-500/10 text-white" : "text-gray-300 hover:bg-white/5"
                     }`}
                     onClick={() => setMobileOpen(false)}
                   >
+                    <Icon className={`w-5 h-5 ${isActive(link.href) ? "text-violet-400" : link.color}`} />
                     {link.label}
                   </Link>
-                ))}
+                );
+              })
+            ) : (
+              <>
+                {dashboardLinks.map((link) => {
+                  const Icon = link.icon;
+                  const active = pathname.startsWith(link.href);
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                        active ? "bg-violet-500/10 text-white" : "text-gray-300 hover:bg-white/5"
+                      }`}
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <Icon className={`w-5 h-5 ${active ? "text-violet-400" : link.color}`} />
+                      {link.label}
+                    </Link>
+                  );
+                })}
                 {isAdmin && (
                   <Link
                     href="/admin"
-                    className={`block text-sm font-medium ${
-                      pathname.startsWith("/admin") ? "text-violet-400" : "text-gray-400"
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                      pathname.startsWith("/admin") ? "bg-violet-500/10 text-white" : "text-gray-300 hover:bg-white/5"
                     }`}
                     onClick={() => setMobileOpen(false)}
                   >
+                    <Shield className={`w-5 h-5 ${pathname.startsWith("/admin") ? "text-violet-400" : "text-red-400"}`} />
                     Admin
                   </Link>
                 )}
