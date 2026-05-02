@@ -43,6 +43,7 @@ model User {
   isAdmin           Boolean  @map("is_admin") @default(false)
   planExpiresAt     DateTime? @map("plan_expires_at")
   adminNotes        String?  @map("admin_notes") @db.Text
+  theme             String   @map("theme") @default("dark") @db.VarChar(10)
   createdAt         DateTime @map("created_at") @default(now())
   updatedAt         DateTime @updatedAt @map("updated_at")
 
