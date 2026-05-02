@@ -85,9 +85,7 @@ export default function DashboardPage() {
 
     setUploadQueue((prev) => [...prev, ...newFiles]);
 
-    const DIRECT_UPLOAD_THRESHOLD = 50 * 1024 * 1024; // 50MB
-
-    // Upload via server (with thumbnail) for small files, presigned URL for large files
+    // All uploads: presigned URL → R2 direct → confirm (fastest, no body size limit)
     const uploadOne = async (uploadFile: typeof newFiles[0]) => {
       try {
         setUploadQueue((prev) =>
@@ -104,68 +102,53 @@ export default function DashboardPage() {
           );
         };
 
-        if (uploadFile.file.size > DIRECT_UPLOAD_THRESHOLD) {
-          // LARGE FILE: presigned URL → R2 direct → confirm
-          // Step 1: Get presigned URL
-          const urlRes = await fetch(
-            `/api/upload-url?fileName=${encodeURIComponent(uploadFile.file.name)}&contentType=${encodeURIComponent(uploadFile.file.type)}&fileSize=${uploadFile.file.size}`
-          );
-          if (!urlRes.ok) {
-            const err = await urlRes.json();
-            throw new Error(err.error || "Failed to get upload URL");
-          }
-          const { uploadUrl, fileKey } = await urlRes.json();
+        // Step 1: Get presigned URL from server
+        const urlRes = await fetch(
+          `/api/upload-url?fileName=${encodeURIComponent(uploadFile.file.name)}&contentType=${encodeURIComponent(uploadFile.file.type || "application/octet-stream")}&fileSize=${uploadFile.file.size}`
+        );
+        if (!urlRes.ok) {
+          const err = await urlRes.json().catch(() => ({ error: "Server error" }));
+          throw new Error(err.error || "Failed to get upload URL");
+        }
+        const { uploadUrl, fileKey } = await urlRes.json();
 
-          // Step 2: Upload to R2 with progress
-          await new Promise<void>((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.upload.onprogress = (e) => {
-              if (e.lengthComputable) updateProgress(Math.round((e.loaded / e.total) * 95));
-            };
-            xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error("R2 upload failed"));
-            xhr.onerror = () => reject(new Error("Network error during upload"));
-            xhr.open("PUT", uploadUrl);
-            xhr.setRequestHeader("Content-Type", uploadFile.file.type);
-            xhr.send(uploadFile.file);
-          });
+        // Step 2: Upload directly to R2 with XHR progress
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              updateProgress(Math.round((e.loaded / e.total) * 90));
+            }
+          };
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error(`Upload failed (${xhr.status})`));
+          };
+          xhr.onerror = () => reject(new Error("Network error"));
+          xhr.open("PUT", uploadUrl);
+          xhr.setRequestHeader("Content-Type", uploadFile.file.type || "application/octet-stream");
+          xhr.send(uploadFile.file);
+        });
 
-          // Step 3: Confirm upload
-          const confirmRes = await fetch("/api/upload/confirm", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              fileKey,
-              fileName: uploadFile.file.name,
-              mimeType: uploadFile.file.type,
-              fileSize: uploadFile.file.size,
-            }),
-          });
-          if (!confirmRes.ok) throw new Error("Upload confirm failed");
-          updateProgress(100);
+        updateProgress(95);
 
-        } else {
-          // SMALL FILE: server-side upload with thumbnail generation
-          const formData = new FormData();
-          formData.append("file", uploadFile.file);
-
-          await new Promise<void>((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.upload.onprogress = (e) => {
-              if (e.lengthComputable) updateProgress(Math.round((e.loaded / e.total) * 100));
-            };
-            xhr.onload = () => {
-              if (xhr.status >= 200 && xhr.status < 300) resolve();
-              else {
-                try { reject(new Error(JSON.parse(xhr.responseText).error || "Upload failed")); }
-                catch { reject(new Error("Upload failed")); }
-              }
-            };
-            xhr.onerror = () => reject(new Error("Network error"));
-            xhr.open("POST", "/api/upload");
-            xhr.send(formData);
-          });
+        // Step 3: Confirm upload (saves metadata + triggers thumbnail)
+        const confirmRes = await fetch("/api/upload/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileKey,
+            fileName: uploadFile.file.name,
+            mimeType: uploadFile.file.type || "application/octet-stream",
+            fileSize: uploadFile.file.size,
+          }),
+        });
+        if (!confirmRes.ok) {
+          const err = await confirmRes.json().catch(() => ({ error: "Confirm failed" }));
+          throw new Error(err.error || "Upload confirmation failed");
         }
 
+        updateProgress(100);
         setUploadQueue((prev) =>
           prev.map((f) =>
             f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f
