@@ -1288,7 +1288,8 @@ const handleDelete = async (fileId: string) => {
   };
 
   // Mini Content Preview for grid view
-  const MiniPreview = ({ file, onPreview }: { file: FileItem; onPreview: () => void }) => {
+  // Memoized MiniPreview to prevent thumbnail reload on parent re-render
+  const MiniPreview = memo(function MiniPreview({ file, onPreview }: { file: FileItem; onPreview: () => void }) {
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
     const isPdf = file.mimeType?.includes('pdf') || ext === 'pdf';
     const isDocx = file.mimeType?.includes('wordprocessingml') || ['docx', 'doc'].includes(ext);
@@ -1433,7 +1434,7 @@ const handleDelete = async (fileId: string) => {
         <File className="w-10 h-10 text-gray-500" />
       </div>
     );
-  };
+  }, (prev, next) => prev.file.id === next.file.id && prev.file.thumbnailUrl === next.file.thumbnailUrl && prev.file.url === next.file.url);
 
   // Status icon
   const getStatusIcon = (status: UploadFile["status"]) => {

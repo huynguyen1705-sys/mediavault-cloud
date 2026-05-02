@@ -168,11 +168,16 @@ export default function DashboardPage() {
       await Promise.all(newFiles.slice(i, i + 3).map(uploadOne));
     }
 
-    // Redirect after all complete
+    // Check results and redirect if any succeeded
+    // At this point, ALL batches have completed (for loop is sequential)
     setTimeout(() => {
       setUploadQueue((prev) => {
-        const allDone = prev.every(f => f.status === "completed");
-        if (allDone && prev.length > 0) router.push("/files");
+        const hasCompleted = prev.some(f => f.status === "completed");
+        const hasUploading = prev.some(f => f.status === "uploading" || f.status === "pending");
+        // Only redirect when nothing is still uploading and at least one succeeded
+        if (hasCompleted && !hasUploading) {
+          router.push("/files");
+        }
         return prev;
       });
     }, 1500);

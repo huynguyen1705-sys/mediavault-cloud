@@ -117,9 +117,20 @@ export default function HomeUpload() {
       await Promise.all(chunk.map(uploadOne));
     }
 
-    // Clear completed after delay
-    setTimeout(() => setUploadQueue((prev) => prev.filter((f) => f.status !== "completed")), 5000);
-  }, [isSignedIn]);
+    // After all uploads in this batch finish, check if any succeeded → redirect
+    const hasSuccess = newFiles.some(f => {
+      // Check current state
+      return true; // If we reached here after Promise.all, uploads are done
+    });
+    // Wait a moment then redirect (all batches done at this point)
+    setTimeout(() => {
+      setUploadQueue(prev => {
+        const anyCompleted = prev.some(f => f.status === "completed");
+        if (anyCompleted) router.push("/files");
+        return prev;
+      });
+    }, 1500);
+  }, [isSignedIn, router]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
