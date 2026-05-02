@@ -8,11 +8,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install dependencies
+# Install ALL dependencies (including dev for build)
 FROM base AS deps
 COPY package.json package-lock.json ./
+RUN npm ci
+
+# Generate Prisma client
 COPY prisma ./prisma/
-RUN npm ci --omit=dev && npx prisma generate
+RUN npx prisma generate
 
 # Build application
 FROM base AS builder
@@ -21,7 +24,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-# Production image
+# Production image (slim - only runtime deps)
 FROM base AS runner
 WORKDIR /app
 
@@ -33,13 +36,15 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy built application
-COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/prisma ./prisma
 
-# Create tmp directory for uploads with proper permissions
+# Create tmp directory for thumbnail generation
 RUN mkdir -p /tmp/uploads && chown nextjs:nodejs /tmp/uploads
 
 USER nextjs
