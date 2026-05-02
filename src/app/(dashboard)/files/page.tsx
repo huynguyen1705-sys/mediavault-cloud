@@ -2377,7 +2377,7 @@ const handleDelete = async (fileId: string) => {
           {!loading && files.length > 0 && viewMode === "list" && (
             <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm">
               {/* Table Header */}
-              <div className="grid grid-cols-[40px_1fr_80px_110px_130px_80px] gap-0 bg-gray-800/80 px-4 h-10 border-b border-gray-700/50 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <div className="grid grid-cols-[36px_1fr_60px_40px] md:grid-cols-[40px_1fr_80px_110px_130px_80px] gap-0 bg-gray-800/80 px-3 md:px-4 h-10 border-b border-gray-700/50 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 {/* Checkbox/icon col */}
                 <div className="flex items-center">
                   {selectMode ? (
@@ -2390,29 +2390,29 @@ const handleDelete = async (fileId: string) => {
                 {/* Name col */}
                 <button
                   onClick={() => { if (sortBy === "name") setSortOrder(sortOrder === "asc" ? "desc" : "asc"); else { setSortBy("name"); setSortOrder("asc"); } }}
-                  className="flex items-center gap-1.5 text-left hover:text-gray-200 transition-colors"
+                  className="flex items-center gap-1 text-left hover:text-gray-200 transition-colors"
                 >
                   Name
                   {sortBy === "name" ? (
                     sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-violet-400" /> : <ArrowDown className="w-3 h-3 text-violet-400" />
                   ) : <ArrowUp className="w-3 h-3 opacity-20" />}
                 </button>
-                {/* Type col */}
-                <div className="flex items-center">Type</div>
+                {/* Type col - hidden on mobile */}
+                <div className="hidden md:flex items-center">Type</div>
                 {/* Size col */}
                 <button
                   onClick={() => { if (sortBy === "size") setSortOrder(sortOrder === "asc" ? "desc" : "asc"); else { setSortBy("size"); setSortOrder("desc"); } }}
-                  className="flex items-center gap-1.5 hover:text-gray-200 transition-colors"
+                  className="flex items-center gap-1 hover:text-gray-200 transition-colors text-[10px] md:text-xs"
                 >
                   Size
                   {sortBy === "size" ? (
                     sortOrder === "asc" ? <ArrowUp className="w-3 h-3 text-violet-400" /> : <ArrowDown className="w-3 h-3 text-violet-400" />
                   ) : <ArrowUp className="w-3 h-3 opacity-20" />}
                 </button>
-                {/* Modified col */}
+                {/* Modified col - hidden on mobile */}
                 <button
                   onClick={() => { if (sortBy === "date") setSortOrder(sortOrder === "asc" ? "desc" : "asc"); else { setSortBy("date"); setSortOrder("desc"); } }}
-                  className="flex items-center gap-1.5 hover:text-gray-200 transition-colors"
+                  className="hidden md:flex items-center gap-1.5 hover:text-gray-200 transition-colors"
                 >
                   Modified
                   {sortBy === "date" ? (
@@ -2420,7 +2420,7 @@ const handleDelete = async (fileId: string) => {
                   ) : <ArrowUp className="w-3 h-3 opacity-20" />}
                 </button>
                 {/* Actions col */}
-                <div className="flex items-center justify-end pr-1">Actions</div>
+                <div className="flex items-center justify-end">  </div>
               </div>
 
               {/* Table Rows */}
@@ -2445,7 +2445,7 @@ const handleDelete = async (fileId: string) => {
                   return (
                   <div
                     key={file.id}
-                    className={`grid grid-cols-[40px_1fr_80px_110px_130px_80px] gap-0 px-4 h-14 cursor-pointer group transition-all duration-150 ${
+                    className={`grid grid-cols-[36px_1fr_60px_40px] md:grid-cols-[40px_1fr_80px_110px_130px_80px] gap-0 px-3 md:px-4 h-14 cursor-pointer group transition-all duration-150 ${
                       selectedFiles.has(file.id)
                         ? "bg-violet-500/10 border-l-2 border-l-violet-500"
                         : "hover:bg-gray-800/50 border-l-2 border-l-transparent"
@@ -2520,30 +2520,33 @@ const handleDelete = async (fileId: string) => {
                       )}
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-100 truncate group-hover:text-violet-300 transition-colors leading-tight">{file.name}</p>
-                        <p className="text-xs text-gray-500 truncate mt-0.5">
-                          {file.mimeType?.split('/')[0] === 'image' ? 'Image' :
-                           file.mimeType?.split('/')[0] === 'video' ? 'Video' :
-                           file.mimeType?.split('/')[0] === 'audio' ? 'Audio' :
-                           file.mimeType?.includes('pdf') ? 'Document' :
-                           file.mimeType?.includes('zip') ? 'Archive' : 'File'}
+                        <p className="text-[11px] text-gray-500 truncate mt-0.5">
+                          <span className="md:hidden">{formatDate(file.updatedAt || file.createdAt)}</span>
+                          <span className="hidden md:inline">
+                            {file.mimeType?.split('/')[0] === 'image' ? 'Image' :
+                             file.mimeType?.split('/')[0] === 'video' ? 'Video' :
+                             file.mimeType?.split('/')[0] === 'audio' ? 'Audio' :
+                             file.mimeType?.includes('pdf') ? 'Document' :
+                             file.mimeType?.includes('zip') ? 'Archive' : 'File'}
+                          </span>
                         </p>
                       </div>
                     </div>
 
-                    {/* Type badge column */}
-                    <div className="flex items-center">
+                    {/* Type badge column - hidden on mobile */}
+                    <div className="hidden md:flex items-center">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide ${typeInfo.color}`}>
                         {typeInfo.label.slice(0, 4)}
                       </span>
                     </div>
 
                     {/* Size column */}
-                    <div className="flex items-center text-sm text-gray-400 tabular-nums">
+                    <div className="flex items-center text-[11px] md:text-sm text-gray-400 tabular-nums">
                       {formatBytes(Number(file.fileSize))}
                     </div>
 
-                    {/* Modified column */}
-                    <div className="flex items-center text-sm text-gray-500 tabular-nums">
+                    {/* Modified column - hidden on mobile */}
+                    <div className="hidden md:flex items-center text-sm text-gray-500 tabular-nums">
                       {formatDate(file.updatedAt || file.createdAt)}
                     </div>
 
@@ -2551,21 +2554,21 @@ const handleDelete = async (fileId: string) => {
                     <div className="flex items-center justify-end gap-0.5">
                       <button
                         title="Download"
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-700/60 opacity-0 group-hover:opacity-100 transition-all duration-150"
+                        className="hidden md:block p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-700/60 opacity-0 group-hover:opacity-100 transition-all duration-150"
                         onClick={(e) => { e.stopPropagation(); if (file.url) { const a = document.createElement('a'); a.href = file.url; a.download = file.name; a.click(); } }}
                       >
                         <Download className="w-3.5 h-3.5" />
                       </button>
                       <button
                         title="Share"
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-violet-400 hover:bg-violet-500/10 opacity-0 group-hover:opacity-100 transition-all duration-150"
+                        className="hidden md:block p-1.5 rounded-lg text-gray-500 hover:text-violet-400 hover:bg-violet-500/10 opacity-0 group-hover:opacity-100 transition-all duration-150"
                         onClick={(e) => { e.stopPropagation(); setSelectedFile(file); setShowShareModal(true); }}
                       >
                         <Share2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         title="More"
-                        className="p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-700/60 opacity-0 group-hover:opacity-100 transition-all duration-150"
+                        className="p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-700/60 md:opacity-0 md:group-hover:opacity-100 transition-all duration-150"
                         onClick={(e) => { e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, file }); }}
                       >
                         <MoreVertical className="w-3.5 h-3.5" />
