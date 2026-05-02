@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
-import { Cloud, Menu, X, LayoutDashboard, FolderOpen, BarChart3, Settings, ScrollText, Home, Sparkles, CreditCard, Shield } from "lucide-react";
+import { Cloud, Menu, X, Sun, Moon, LayoutDashboard, FolderOpen, BarChart3, Settings, ScrollText, Home, Sparkles, CreditCard, Shield } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useState, useEffect } from "react";
 
@@ -144,19 +144,17 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-3">
-                {/* Theme Toggle Button - uses useTheme() like Settings page */}
+                {/* Theme Toggle Button */}
                 <button
                   onClick={toggleTheme}
-                  className={`relative w-11 h-7 rounded-full transition-colors ${
-                    theme === "dark" ? "bg-violet-600" : "bg-gray-400"
-                  }`}
-                  title={theme === "dark" ? "Switch to Light mode" : "Switch to Dark mode"}
+                  className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                  title={theme === "dark" ? "Light mode" : "Dark mode"}
                 >
-                  <div
-                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                      theme === "dark" ? "left-0.5" : "left-5"
-                    }`}
-                  />
+                  {theme === "dark" ? (
+                    <Sun className="w-5 h-5" />
+                  ) : (
+                    <Moon className="w-5 h-5" />
+                  )}
                 </button>
                 <UserButton />
               </div>
