@@ -40,8 +40,8 @@ export default function HomeUpload() {
     // Small delay for UI feedback before starting uploads
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    const MULTIPART_THRESHOLD = 50 * 1024 * 1024; // 50MB
-    const PART_SIZE = 10 * 1024 * 1024;
+    const MULTIPART_THRESHOLD = 10 * 1024 * 1024; // 10MB
+    const PART_SIZE = 5 * 1024 * 1024; // 5MB chunks
     const CONCURRENT_PARTS = 4;
 
     const uploadOne = async (uploadFile: UploadFile) => {
@@ -118,9 +118,9 @@ export default function HomeUpload() {
       }
     };
 
-    // Upload 5 files concurrently
-    for (let i = 0; i < newFiles.length; i += 5) {
-      await Promise.all(newFiles.slice(i, i + 5).map(uploadOne));
+    // Upload 10 files concurrently
+    for (let i = 0; i < newFiles.length; i += 10) {
+      await Promise.all(newFiles.slice(i, i + 10).map(uploadOne));
     }
 
     // Redirect after all complete

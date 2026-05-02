@@ -85,8 +85,8 @@ export default function DashboardPage() {
 
     setUploadQueue((prev) => [...prev, ...newFiles]);
 
-    const MULTIPART_THRESHOLD = 50 * 1024 * 1024; // 50MB
-    const PART_SIZE = 10 * 1024 * 1024; // 10MB chunks
+    const MULTIPART_THRESHOLD = 10 * 1024 * 1024; // 10MB - chunk anything above this
+    const PART_SIZE = 5 * 1024 * 1024; // 5MB chunks (smaller = more parallelism)
     const CONCURRENT_PARTS = 4; // Upload 4 parts simultaneously
 
     // Upload single file (small files < 50MB)
@@ -215,8 +215,8 @@ export default function DashboardPage() {
       }
     };
 
-    // Upload 5 files concurrently (balanced for multi-user)
-    const CONCURRENT_FILES = 5;
+    // Upload 10 files concurrently (R2 handles unlimited connections)
+    const CONCURRENT_FILES = 10;
     for (let i = 0; i < newFiles.length; i += CONCURRENT_FILES) {
       await Promise.all(newFiles.slice(i, i + CONCURRENT_FILES).map(uploadOne));
     }
