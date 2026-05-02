@@ -166,10 +166,7 @@ html.light .hover\:bg-gray-800\/50:hover { background-color: #f1f5f9 !important;
 html.light .hover\:bg-gray-800\/30:hover { background-color: #f8fafc !important; }
 
 /* Selected row */
-html.light .bg-violet-500\/10 { background-color: rgba(109,40,217,0.04) !important; border-left: 3px solid #7c3aed !important; }
-html.light .bg-violet-500\/20 { background-color: rgba(109,40,217,0.06) !important; }
-html.light .bg-violet-500\/30 { background-color: rgba(109,40,217,0.08) !important; }
-html.light [class*="bg-violet-500\/"]{background-color:rgba(109,40,217,0.04)!important}
+html.light .bg-violet-500\/10 { background-color: rgba(109,40,217,0.06) !important; }
 
 /* ===== PROGRESS BARS ===== */
 html.light .bg-gray-800.rounded-full,
@@ -231,7 +228,7 @@ html.light .hidden\.md\:flex .text-amber-400 { color: #b45309 !important; }
 
 /* ===== BADGES ===== */
 html.light [class*="bg-violet-500\/20"] { background-color: rgba(109,40,217,0.08) !important; }
-html.light [class*="bg-violet-500\/10"] { background-color: rgba(109,40,217,0.04) !important; }
+html.light [class*="bg-violet-500\/10"] { background-color: rgba(109,40,217,0.05) !important; }
 html.light [class*="bg-emerald-400\/10"] { background-color: rgba(5,150,105,0.08) !important; }
 html.light [class*="bg-blue-400\/10"] { background-color: rgba(37,99,235,0.08) !important; }
 html.light [class*="bg-red-400\/10"] { background-color: rgba(220,38,38,0.08) !important; }
@@ -279,7 +276,7 @@ html.light .sticky\.top-0 { position: sticky; top: 0; z-index: 10; }
 /* ===== UPLOAD ZONE ===== */
 html.light .border-dashed.border-violet-500 { border-color: #7c3aed !important; }
 html.light .border-dashed:hover { background-color: rgba(109,40,217,0.02) !important; }
-html.light .bg-violet-500\/10 { background-color: rgba(109,40,217,0.04) !important; }
+html.light .bg-violet-500\/10 { background-color: rgba(109,40,217,0.05) !important; }
 
 /* ===== GRADIENT BACKGROUNDS (file type cards) ===== */
 /* Keep gradient backgrounds intact */
