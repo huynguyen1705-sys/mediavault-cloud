@@ -3327,9 +3327,13 @@ const handleDelete = async (fileId: string) => {
     const [shareAllowDownload, setShareAllowDownloadLocal] = useState(true);
     const [shareError, setShareError] = useState<string | null>(null);
     const [shareLoading, setShareLoading] = useState(false);
+    // Use ref to keep selectedFile stable across re-renders
+    const fileRef = useRef(selectedFile);
+    useEffect(() => { fileRef.current = selectedFile; }, []);
 
     const handleShare = async () => {
-      if (!selectedFile) return;
+      const file = fileRef.current;
+      if (!file) return;
       setShareError(null);
       setShareLoading(true);
       try {
@@ -3337,7 +3341,7 @@ const handleDelete = async (fileId: string) => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            fileId: selectedFile.id,
+            fileId: file.id,
             password: sharePassword || undefined,
             expiresIn: shareExpireHours > 0 ? shareExpireHours : undefined,
             allowDownload: shareAllowDownload
@@ -3346,14 +3350,12 @@ const handleDelete = async (fileId: string) => {
         const data = await res.json();
         if (res.ok) {
           setShareTokenLocal(data.share?.url);
-          if (selectedFile) {
-            setRecentActions(prev => [{
-              action: "Shared",
-              fileId: selectedFile.id,
-              fileName: selectedFile.name,
-              timestamp: Date.now()
-            }, ...prev.slice(0, 2)]);
-          }
+          setRecentActions(prev => [{
+            action: "Shared",
+            fileId: file.id,
+            fileName: file.name,
+            timestamp: Date.now()
+          }, ...prev.slice(0, 2)]);
         } else {
           setShareError(data.error || "Failed to create share link");
         }
