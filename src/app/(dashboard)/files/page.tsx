@@ -1715,7 +1715,7 @@ const handleDelete = async (fileId: string) => {
 
       {/* LEFT SIDEBAR - Folder Tree */}
       {/* DESKTOP SIDEBAR */}
-      <div className="hidden md:flex w-64 bg-gray-900 border-r border-gray-800 flex-col">
+      <div className="hidden md:flex w-64 bg-[#0f0f0f] border-r border-gray-800 flex-col">
         <div className="p-3 border-b border-gray-800 flex items-center justify-between">
           <span className="text-sm font-medium text-gray-400">Folders</span>
         </div>
@@ -1766,7 +1766,7 @@ const handleDelete = async (fileId: string) => {
       {/* MOBILE BOTTOM SHEET */}
       <div className={`md:hidden fixed inset-0 z-50 transition-all duration-300 ${sidebarOpen ? "pointer-events-auto" : "pointer-events-none"}`}>
         <div className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${sidebarOpen ? "opacity-100" : "opacity-0"}`} onClick={() => setSidebarOpen(false)} />
-        <div className={`absolute bottom-0 left-0 right-0 bg-gray-900 rounded-t-2xl border-t border-gray-700 transition-transform duration-300 ease-out max-h-[75vh] flex flex-col ${sidebarOpen ? "translate-y-0" : "translate-y-full"}`}>
+        <div className={`absolute bottom-0 left-0 right-0 bg-[#0f0f0f] rounded-t-2xl border-t border-gray-700 transition-transform duration-300 ease-out max-h-[75vh] flex flex-col ${sidebarOpen ? "translate-y-0" : "translate-y-full"}`}>
           <div className="flex justify-center pt-3 pb-2"><div className="w-10 h-1 bg-gray-600 rounded-full" /></div>
           <div className="px-4 pb-3 flex items-center justify-between border-b border-gray-800">
             <h3 className="text-base font-semibold text-white">Folders</h3>
