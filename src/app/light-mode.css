@@ -254,8 +254,7 @@ html.light input[type="text"].bg-\[\#111111\] {
 html.light .group.bg-\[\#111111\] button .text-gray-400 { color: #6b7280 !important; }
 
 /* ===== CONTEXT MENU / DROPDOWNS ===== */
-html.light [class*="bg-\[#0f1623\]"],
-html.light .bg-\[#0f1623\] {
+html.light [class*="bg-\[#0f1623\]"] {
   background-color: #ffffff !important;
   border-color: #e5e7eb !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12) !important;
