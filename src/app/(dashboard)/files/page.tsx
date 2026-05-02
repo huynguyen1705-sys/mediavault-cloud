@@ -191,7 +191,19 @@ const GridFileCard = memo(function GridFileCard({
     return <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center"><File className="w-10 h-10 text-gray-500" /></div>;
   };
 
-  const isLight = typeof document !== 'undefined' && document.documentElement.classList.contains('light');
+  const [isLight, setIsLight] = useState(false);
+
+  // Listen for theme changes
+  useEffect(() => {
+    const updateTheme = () => {
+      setIsLight(document.documentElement.classList.contains('light'));
+    };
+    updateTheme();
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
   const itemCls = isLight
     ? "w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 flex items-center gap-2.5 transition-colors duration-100"
     : "w-full px-3 py-1.5 text-left text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2.5 transition-colors duration-100";
@@ -319,6 +331,19 @@ const ContextMenuPortal = memo(function ContextMenuPortal({
   onDelete: () => void; onRestore: () => void; onPermanentDelete: () => void;
   getMenuPosition: (x: number, y: number) => React.CSSProperties;
 }) {
+  const [isLight, setIsLight] = useState(false);
+
+  // Listen for theme changes
+  useEffect(() => {
+    const updateTheme = () => {
+      setIsLight(document.documentElement.classList.contains('light'));
+    };
+    updateTheme();
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
   // Close on outside click without blocking the page
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -329,8 +354,6 @@ const ContextMenuPortal = memo(function ContextMenuPortal({
     const t = setTimeout(() => document.addEventListener('mousedown', handler), 10);
     return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
   }, [onClose]);
-
-  const isLight = typeof document !== 'undefined' && document.documentElement.classList.contains('light');
 
   const menuStyle: React.CSSProperties = {
     ...getMenuPosition(x, y),
