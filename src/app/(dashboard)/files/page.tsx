@@ -471,17 +471,16 @@ export default function FilesPage() {
   // Highlighted files (recently uploaded) - reads from sessionStorage, auto-clears
   const [highlightedFiles, setHighlightedFiles] = useState<Set<string>>(new Set());
   useEffect(() => {
-    const stored = sessionStorage.getItem('mv-highlight-files');
-    if (stored) {
-      try {
+    try {
+      const stored = sessionStorage.getItem('mv-highlight-files');
+      if (stored) {
         const ids: string[] = JSON.parse(stored);
         setHighlightedFiles(new Set(ids));
         sessionStorage.removeItem('mv-highlight-files');
-        // Auto-clear highlight after 5 seconds
         const t = setTimeout(() => setHighlightedFiles(new Set()), 5000);
         return () => clearTimeout(t);
-      } catch { /* ignore */ }
-    }
+      }
+    } catch { /* Safari Private mode blocks sessionStorage */ }
   }, []);
 
   // Resolve URLs from cache into files (only recomputes when urlVersion or files change)
@@ -856,7 +855,10 @@ export default function FilesPage() {
   const handleUpload = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
 
-    const newFiles: UploadFile[] = Array.from(fileList).map((file) => ({
+    // Store File objects immediately (before FileList gets invalidated)
+    const files = Array.from(fileList);
+
+    const newFiles: UploadFile[] = files.map((file) => ({
       id: Math.random().toString(36).substring(7),
       name: file.name,
       size: file.size,
@@ -874,8 +876,8 @@ export default function FilesPage() {
     const CONCURRENT_PARTS = 4;
     const CONCURRENT_FILES = 10;
 
-    const uploadOne = async (uploadFile: UploadFile) => {
-      const actualFile = Array.from(fileList).find((f) => f.name === uploadFile.name);
+    const uploadOne = async (uploadFile: UploadFile & { _file: File }) => {
+      const actualFile = uploadFile._file;
       if (!actualFile) return;
 
       setUploadQueue((prev) => prev.map((f) => (f.id === uploadFile.id ? { ...f, status: "uploading" } : f)));
@@ -968,7 +970,8 @@ export default function FilesPage() {
     };
 
     // Sort: largest files first → start heavy uploads early
-    const sorted = [...newFiles].sort((a, b) => b.size - a.size);
+    const withFiles = newFiles.map((f, i) => ({ ...f, _file: files[i] }));
+    const sorted = [...withFiles].sort((a, b) => b.size - a.size);
 
     // Upload 10 files concurrently
     for (let i = 0; i < sorted.length; i += CONCURRENT_FILES) {

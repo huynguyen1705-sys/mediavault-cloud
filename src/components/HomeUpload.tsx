@@ -132,9 +132,11 @@ export default function HomeUpload() {
         if (!confirmRes.ok) throw new Error("Confirm failed");
         const confirmData = await confirmRes.json().catch(() => null);
         if (confirmData?.file?.id) {
-          const existing = JSON.parse(sessionStorage.getItem('mv-highlight-files') || '[]');
-          existing.push(confirmData.file.id);
-          sessionStorage.setItem('mv-highlight-files', JSON.stringify(existing));
+          try {
+            const existing = JSON.parse(sessionStorage.getItem('mv-highlight-files') || '[]');
+            existing.push(confirmData.file.id);
+            sessionStorage.setItem('mv-highlight-files', JSON.stringify(existing));
+          } catch { /* Safari Private */ }
         }
         setUploadQueue((prev) => prev.map((f) => f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f));
       } catch (error: any) {
