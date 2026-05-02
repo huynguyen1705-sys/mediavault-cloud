@@ -19,29 +19,29 @@ function applyTheme(t: Theme) {
   document.documentElement.classList.add(t);
 }
 
-function saveLocalOnly(t: Theme) {
-  // Client-side cookie - best effort
+function saveTheme(t: Theme) {
+  // localStorage — primary persistence
+  try { localStorage.setItem("mv-theme", t); } catch {}
+
+  // Cookie — backup for SSR (non-critical)
   try {
     document.cookie = `mv-theme=${t}; path=/; max-age=31536000; SameSite=Lax`;
   } catch {}
-  try { localStorage.setItem("mv-theme", t); } catch {}
+
+  // DB — source of truth for logged-in users across devices
+  fetch("/api/settings/theme", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ theme: t }),
+  }).catch(() => {});
 }
 
-function readLocal(): Theme | null {
-  try {
-    const cookieTheme = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("mv-theme="))
-      ?.split("=")[1];
-    if (cookieTheme === "light" || cookieTheme === "dark") return cookieTheme;
-  } catch {}
-
-  try {
-    const local = localStorage.getItem("mv-theme");
-    if (local === "light" || local === "dark") return local;
-  } catch {}
-
-  return null;
+function readCurrentTheme(): Theme {
+  // Check what's already on <html> element (set by inline script before hydration)
+  const html = document.documentElement;
+  if (html.classList.contains("light")) return "light";
+  if (html.classList.contains("dark")) return "dark";
+  return "dark";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -51,47 +51,39 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMounted(true);
 
-    const local = readLocal();
-    if (local) {
-      setTheme(local);
-      applyTheme(local);
-    } else {
-      // No local — fetch from DB
-      fetch("/api/settings/theme")
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          const t: Theme = (data?.theme === "light" || data?.theme === "dark") ? data.theme : "dark";
-          setTheme(t);
-          applyTheme(t);
-          saveLocalOnly(t);
-        })
-        .catch(() => applyTheme("dark"));
+    // Step 1: Read what's currently on the DOM (set by inline script)
+    // This is the most reliable — matches what user actually sees
+    const current = readCurrentTheme();
+    setTheme(current);
+
+    // Step 2: Sync localStorage with DOM state (in case of mismatch)
+    const stored = localStorage.getItem("mv-theme");
+    if (stored !== current) {
+      try { localStorage.setItem("mv-theme", current); } catch {}
     }
+
+    // Step 3: Optionally sync from DB if logged in (background, non-blocking)
+    // DB is source of truth for cross-device sync
+    fetch("/api/settings/theme")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.theme && (data.theme === "light" || data.theme === "dark")) {
+          if (data.theme !== current) {
+            // DB says different — update DOM + localStorage
+            setTheme(data.theme);
+            applyTheme(data.theme);
+            try { localStorage.setItem("mv-theme", data.theme); } catch {}
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  const toggleTheme = async () => {
+  const toggleTheme = () => {
     const newTheme: Theme = theme === "dark" ? "light" : "dark";
-
-    // 1. Apply + save locally FIRST (instant)
     setTheme(newTheme);
     applyTheme(newTheme);
-    saveLocalOnly(newTheme);
-
-    // 2. Save to DB + get server-set cookie back
-    try {
-      const res = await fetch("/api/settings/theme", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ theme: newTheme }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        console.warn("[Theme] DB save failed:", err);
-      }
-      // Server response sets cookie via Set-Cookie header automatically
-    } catch (e) {
-      console.warn("[Theme] Network error saving theme:", e);
-    }
+    saveTheme(newTheme);
   };
 
   if (!mounted) {

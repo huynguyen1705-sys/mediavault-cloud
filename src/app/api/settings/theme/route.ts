@@ -1,25 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { auth } from "@clerk/nextjs/server";
 
-// GET - fetch user theme
-export async function GET() {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ theme: "dark" });
-
-  try {
-    const user = await prisma.user.findUnique({
-      where: { clerkUserId: userId },
-      select: { theme: true },
-    });
-    return NextResponse.json({ theme: user?.theme || "dark" });
-  } catch {
-    return NextResponse.json({ theme: "dark" });
-  }
-}
-
-// POST - save theme
-// Auth optional: always set cookie, save to DB if logged in
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { theme } = body;
@@ -28,15 +10,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid theme" }, { status: 400 });
   }
 
-  // Always set cookie from server-side (most reliable for SSR)
-  const res = NextResponse.json({ ok: true, theme });
-  res.cookies.set("mv-theme", theme, {
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365, // 1 year
-    sameSite: "lax",
-    httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
-  });
+  // Build Set-Cookie header manually for maximum compatibility
+  const cookieStr = [
+    `mv-theme=${theme}`,
+    "Path=/",
+    "Max-Age=31536000",
+    "Expires=Mon, 01 Jan 2027 00:00:00 GMT",
+    "HttpOnly=false",
+    "SameSite=Lax",
+    process.env.NODE_ENV === "production" ? "Secure" : "",
+  ].filter(Boolean).join("; ");
 
   // Also save to DB if logged in
   try {
@@ -45,12 +28,35 @@ export async function POST(req: NextRequest) {
       await prisma.user.update({
         where: { clerkUserId: userId },
         data: { theme },
-      });
+      }).catch(() => {}); // Non-fatal
     }
-  } catch (e: any) {
-    // Non-fatal: cookie already set, just log
-    console.error("[Theme] DB save error:", e?.message);
-  }
+  } catch {}
 
-  return res;
+  // Return JSON with cookie header
+  return NextResponse.json(
+    { ok: true, theme },
+    {
+      status: 200,
+      headers: {
+        "Set-Cookie": cookieStr,
+      },
+    }
+  );
+}
+
+// GET - fetch theme
+export async function GET() {
+  try {
+    const { userId } = await auth();
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { clerkUserId: userId },
+        select: { theme: true },
+      });
+      if (user?.theme) {
+        return NextResponse.json({ theme: user.theme });
+      }
+    }
+  } catch {}
+  return NextResponse.json({ theme: "dark" });
 }
