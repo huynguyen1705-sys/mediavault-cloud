@@ -1,12 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   experimental: {
     serverActions: {
       bodySizeLimit: '500mb',
     },
   },
-  // Increase body size limit for API routes (upload)
   serverExternalPackages: ['@prisma/client'],
   images: {
     remotePatterns: [
