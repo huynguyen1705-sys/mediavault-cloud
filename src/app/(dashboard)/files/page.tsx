@@ -284,6 +284,10 @@ export default function FilesPage() {
   // Build tree from flat list
 
   // Sort files
+  // Track URL fetch version to trigger single re-render after all batches complete
+  const [urlVersion, setUrlVersion] = useState(0);
+  const urlFetchInProgress = useRef(false);
+
   // Resolve URLs from cache into files (only recomputes when urlVersion or files change)
   const filesWithUrls = useMemo(() => {
     return files.map(f => {
@@ -376,10 +380,6 @@ export default function FilesPage() {
   }, [isLoaded, user]);
 
   // Fetch files
-  // Track URL fetch version to trigger single re-render after all batches complete
-  const [urlVersion, setUrlVersion] = useState(0);
-  const urlFetchInProgress = useRef(false);
-
   // Batch fetch presigned URLs for visible files (updates cache only, single re-render at end)
   const fetchUrlsForFiles = useCallback(async (fileList: FileItem[]) => {
     if (urlFetchInProgress.current) return; // Prevent duplicate fetches
