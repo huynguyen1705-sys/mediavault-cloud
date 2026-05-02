@@ -1,4 +1,4 @@
-/* Light mode styles - must use !important to override Tailwind */
+/* Light mode styles - targeted overrides only */
 
 html.light,
 html.light body {
@@ -6,196 +6,103 @@ html.light body {
   color: #0f172a !important;
 }
 
-/* Override ALL dark backgrounds with !important */
-html.light [class*="bg-gray-950"],
-html.light [class*="bg-gray-900"],
-html.light [class*="bg-gray-800"],
-html.light [class*="bg-gray-700"],
-html.light [class*="bg-gray-600"],
-html.light [style*="0a0a0a"],
-html.light [style*="rgb(10, 10, 10)"] {
-  background-color: #ffffff !important;
-}
-
-/* Specific backgrounds */
+/* ===== BACKGROUNDS ===== */
 html.light .bg-gray-950 { background-color: #ffffff !important; }
 html.light .bg-\[\#0a0a0a\] { background-color: #ffffff !important; }
 html.light .bg-gray-900 { background-color: #f8fafc !important; }
-html.light .bg-gray-900\/80 { background-color: #f8fafc !important; }
-html.light .bg-gray-900\/50 { background-color: #f8fafc !important; }
-html.light .bg-gray-900\/30 { background-color: #f8fafc !important; }
-html.light .bg-gray-900\/20 { background-color: #ffffff !important; }
-html.light .bg-gray-900\/10 { background-color: #ffffff !important; }
-html.light .bg-gray-900\/5 { background-color: #ffffff !important; }
-html.light .bg-gray-800\/50 { background-color: #f1f5f9 !important; }
-html.light .bg-gray-800\/30 { background-color: #f8fafc !important; }
-html.light .bg-gray-800\/20 { background-color: #f8fafc !important; }
-html.light .bg-gray-800 { background-color: #e2e8f0 !important; }
-html.light .bg-gray-700 { background-color: #cbd5e1 !important; }
-html.light .bg-gray-700\/50 { background-color: #e2e8f0 !important; }
+html.light .bg-gray-900\/80 { background-color: rgba(248, 250, 252, 0.9) !important; }
+html.light .bg-gray-900\/50 { background-color: rgba(248, 250, 252, 0.8) !important; }
+html.light .bg-gray-800 { background-color: #f1f5f9 !important; }
+html.light .bg-gray-800\/50 { background-color: rgba(241, 245, 249, 0.7) !important; }
+html.light .bg-gray-800\/30 { background-color: rgba(241, 245, 249, 0.5) !important; }
+html.light .bg-gray-800\/60 { background-color: rgba(241, 245, 249, 0.8) !important; }
+html.light .bg-gray-700 { background-color: #e2e8f0 !important; }
+html.light .bg-gray-700\/50 { background-color: rgba(226, 232, 240, 0.7) !important; }
 
-/* Cards and containers */
-html.light .rounded-xl,
-html.light .rounded-2xl,
-html.light .rounded-lg,
-html.light .rounded-md {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-}
+/* ===== BORDERS ===== */
+html.light .border-gray-800 { border-color: #e2e8f0 !important; }
+html.light .border-gray-700 { border-color: #e2e8f0 !important; }
+html.light .border-gray-700\/50 { border-color: rgba(226, 232, 240, 0.7) !important; }
+html.light .border-gray-800\/40 { border-color: rgba(226, 232, 240, 0.6) !important; }
+html.light .divide-gray-800\/40 > * + * { border-color: #e2e8f0 !important; }
+html.light .divide-gray-800\/50 > * + * { border-color: #e2e8f0 !important; }
+html.light .border-r.border-gray-800 { border-color: #e2e8f0 !important; }
 
-/* Borders */
-html.light [class*="border-gray-800"],
-html.light [class*="border-gray-700"],
-html.light [class*="border-gray-900"],
-html.light .border-gray-800 {
-  border-color: #e2e8f0 !important;
-}
-
-/* Text - white/gray to dark */
+/* ===== TEXT ===== */
 html.light .text-white { color: #0f172a !important; }
 html.light .text-gray-100 { color: #0f172a !important; }
-html.light .text-gray-300 { color: #0f172a !important; }
+html.light .text-gray-200 { color: #1e293b !important; }
+html.light .text-gray-300 { color: #334155 !important; }
 html.light .text-gray-400 { color: #64748b !important; }
-html.light .text-gray-500 { color: #475569 !important; }
-html.light .text-gray-600 { color: #475569 !important; }
+html.light .text-gray-500 { color: #64748b !important; }
 
-/* Gradient text - keep violet */
-html.light .bg-clip-text,
-html.light [class*="bg-gradient-to-r"] {
-  -webkit-text-fill-color: initial;
-  color: #6366f1 !important;
-  filter: brightness(0.8) saturate(1.2);
-}
+/* Keep colored text as-is */
+html.light .text-violet-400 { color: #7c3aed !important; }
+html.light .text-violet-300 { color: #8b5cf6 !important; }
+html.light .text-emerald-400 { color: #059669 !important; }
+html.light .text-red-400 { color: #dc2626 !important; }
+html.light .text-blue-400 { color: #2563eb !important; }
+html.light .text-pink-400 { color: #db2777 !important; }
+html.light .text-amber-400 { color: #d97706 !important; }
 
-/* Navbar */
-html.light nav,
-html.light nav.fixed,
-html.light nav[class*="fixed"] {
+/* ===== NAVBAR ===== */
+html.light nav {
   background-color: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(12px);
   border-color: #e2e8f0 !important;
 }
 
-/* Sidebar */
-html.light [class*="border-r"],
-html.light .border-r {
-  border-color: #e2e8f0 !important;
-}
-
-/* Buttons - neutral gray to light */
-html.light button,
+/* ===== BUTTONS ===== */
+/* Only gray buttons get light treatment */
 html.light button.bg-gray-800,
-html.light button.bg-gray-900,
-html.light button[class*="bg-gray-800"],
-html.light button[class*="bg-gray-900"] {
+html.light button[class*="bg-gray-800"] {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+}
+html.light button.bg-gray-800:hover,
+html.light button[class*="bg-gray-800"]:hover {
   background-color: #e2e8f0 !important;
-  color: #0f172a !important;
 }
 
-html.light button:hover {
-  background-color: #cbd5e1 !important;
-}
-
-/* Primary buttons - keep violet */
-html.light .bg-violet-600,
-html.light .bg-violet-500 {
-  background-color: #6366f1 !important;
+/* Keep violet/purple buttons untouched */
+html.light .bg-violet-600 { background-color: #7c3aed !important; color: #ffffff !important; }
+html.light .bg-violet-500 { background-color: #8b5cf6 !important; color: #ffffff !important; }
+html.light .bg-violet-600:hover { background-color: #6d28d9 !important; }
+html.light label.bg-violet-600,
+html.light button.bg-violet-600,
+html.light label[class*="bg-violet-600"],
+html.light button[class*="bg-violet-600"] {
+  background-color: #7c3aed !important;
   color: #ffffff !important;
 }
 
-/* Inputs */
-html.light input,
+/* ===== INPUTS ===== */
+html.light input[type="text"],
+html.light input[type="search"],
+html.light input[type="email"],
+html.light input[type="password"],
 html.light select,
 html.light textarea {
-  background-color: #f8fafc !important;
+  background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
   color: #0f172a !important;
 }
+html.light input::placeholder { color: #94a3b8 !important; }
 
-html.light input::placeholder {
-  color: #94a3b8 !important;
+/* ===== THUMBNAILS - NO OVERRIDE ===== */
+/* Do NOT override backgrounds on image containers, gradient cards, or preview areas */
+html.light .aspect-square img { opacity: 1 !important; }
+html.light .aspect-square { border-color: #e2e8f0 !important; }
+
+/* Only override bg-gray-800 on non-thumbnail containers */
+html.light .aspect-square.bg-gray-800 { background-color: #f1f5f9 !important; }
+
+/* Keep gradient backgrounds on file type cards */
+html.light [class*="bg-gradient-to-br"] {
+  /* Do not override gradients */
 }
 
-/* Tables */
-html.light thead {
-  background-color: #f8fafc !important;
-}
-
-html.light tbody tr:hover {
-  background-color: #f8fafc !important;
-}
-
-html.light td,
-html.light th {
-  border-color: #e2e8f0 !important;
-  color: #0f172a !important;
-}
-
-/* Progress bars */
-html.light [class*="bg-gray-800"].h-2,
-html.light [class*="bg-gray-800"].h-3,
-html.light .h-2,
-html.light .h-3 {
-  background-color: #e2e8f0 !important;
-}
-
-/* Scrollbar */
-html.light ::-webkit-scrollbar {
-  background-color: #f1f5f9;
-}
-
-html.light ::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-}
-
-/* Modals and overlays */
-html.light [class*="fixed inset-0"],
-html.light [class*="bg-black"],
-html.light [class*="bg-black/"] {
-  background-color: rgba(0, 0, 0, 0.5) !important;
-}
-
-/* Badges */
-html.light [class*="bg-violet-500/20"],
-html.light [class*="text-violet-400"] {
-  background-color: rgba(99, 102, 241, 0.1) !important;
-  color: #6366f1 !important;
-}
-
-/* Dropdown menus */
-html.light [class*="bg-gray-900"][class*="rounded"] {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-/* Loading spinner */
-html.light [class*="border-violet-500"][class*="border-t-transparent"] {
-  border-color: #6366f1 !important;
-  border-top-color: transparent !important;
-}
-
-/* Mobile sidebar */
-html.light [class*="fixed inset-0"][class*="z-20"] {
-  background-color: #ffffff !important;
-}
-
-/* Shadows */
-html.light [class*="shadow-xl"],
-html.light [class*="shadow-lg"] {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-/* File list items */
-html.light [class*="border-b"][class*="hover:bg-gray-800"] {
-  background-color: transparent !important;
-}
-
-html.light [class*="border-b"][class*="hover:bg-gray-800"]:hover {
-  background-color: #f8fafc !important;
-}
-
-/* ===== LIST VIEW HEADER - Violet background + white text ===== */
+/* ===== LIST VIEW HEADER ===== */
 html.light .bg-gray-800\/80 {
   background-color: #7c3aed !important;
 }
@@ -207,72 +114,71 @@ html.light .bg-gray-800\/80 button {
   color: #ffffff !important;
 }
 html.light .bg-gray-800\/80 button:hover {
-  background-color: rgba(255,255,255,0.15) !important;
-  color: #ffffff !important;
-}
-html.light .bg-gray-800\/80 .text-violet-400 {
-  color: #e9d5ff !important;
-}
-html.light .bg-gray-800\/80 .opacity-20 {
-  opacity: 0.4 !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
 }
 
-/* List row hover in light mode */
-html.light .border-l-transparent.hover\:bg-gray-800\/50:hover {
-  background-color: #f1f5f9 !important;
+/* ===== LIST ROWS ===== */
+html.light .hover\:bg-gray-800\/50:hover { background-color: #f8fafc !important; }
+html.light .hover\:bg-gray-800\/30:hover { background-color: #f8fafc !important; }
+
+/* ===== PROGRESS BARS ===== */
+html.light .bg-gray-800.rounded-full,
+html.light .bg-gray-700.rounded-full {
+  background-color: #e2e8f0 !important;
 }
 
-/* Dividers in list */
-html.light .divide-gray-800\/40 > * + * {
+/* ===== MODALS & OVERLAYS - Keep dark backdrop ===== */
+html.light .bg-black\/60 { background-color: rgba(0, 0, 0, 0.5) !important; }
+html.light .bg-black\/50 { background-color: rgba(0, 0, 0, 0.4) !important; }
+
+/* Modal content */
+html.light [class*="fixed"][class*="z-50"][class*="bg-gray-900"] {
+  background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
 }
 
-/* ===== CONTEXT MENU - Dark always (không bị light override) ===== */
-html.light .fixed.z-50[style*="menu-bg"],
-html.light .fixed.z-50.bg-gray-900.rounded-xl {
-  background-color: #1e293b !important;
-  border-color: #334155 !important;
-  color: #f1f5f9 !important;
-}
-html.light .fixed.z-50.bg-gray-900.rounded-xl button,
-html.light .fixed.z-50.bg-gray-900.rounded-xl a {
-  background-color: transparent !important;
-  color: #e2e8f0 !important;
-}
-html.light .fixed.z-50.bg-gray-900.rounded-xl button:hover,
-html.light .fixed.z-50.bg-gray-900.rounded-xl a:hover {
-  background-color: rgba(255,255,255,0.08) !important;
-  color: #ffffff !important;
-}
-html.light .fixed.z-50.bg-gray-900.rounded-xl .text-gray-400 {
-  color: #94a3b8 !important;
-}
-html.light .fixed.z-50.bg-gray-900.rounded-xl .text-red-400 {
-  color: #f87171 !important;
-}
-html.light .fixed.z-50.bg-gray-900.rounded-xl .text-emerald-400 {
-  color: #34d399 !important;
-}
-html.light .fixed.z-50.bg-gray-900.rounded-xl .text-violet-400 {
-  color: #a78bfa !important;
-}
-html.light .fixed.z-50.bg-gray-900.rounded-xl .text-blue-400 {
-  color: #60a5fa !important;
-}
-html.light .fixed.z-50.bg-gray-900.rounded-xl hr {
-  border-color: #334155 !important;
-}
-html.light .fixed.z-50.bg-gray-900.rounded-xl .text-gray-500 {
-  color: #64748b !important;
+/* ===== BOTTOM SHEET ===== */
+html.light .rounded-t-2xl.border-t.border-gray-700 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
 }
 
-/* Recent actions in context menu */
-html.light .fixed.z-50.bg-gray-900.rounded-xl .text-violet-400 {
-  color: #a78bfa !important;
+/* ===== DROPDOWNS & CONTEXT MENUS ===== */
+html.light [class*="bg-\[#0f1623\]"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
 }
+html.light [class*="bg-\[#0f1623\]"] button { color: #334155 !important; background-color: transparent !important; }
+html.light [class*="bg-\[#0f1623\]"] button:hover { background-color: #f1f5f9 !important; }
 
-/* ===== CSS VARIABLE for context menu ===== */
-html.light {
-  --menu-bg: #1e293b;
-  --menu-border: #334155;
-}
+/* ===== SCROLLBAR ===== */
+html.light ::-webkit-scrollbar { background-color: #f8fafc; }
+html.light ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+
+/* ===== FLOATING BUTTONS on mobile ===== */
+html.light .shadow-lg.shadow-black\/30 { box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+html.light .shadow-lg.shadow-violet-500\/30 { box-shadow: 0 4px 12px rgba(124,58,237,0.3) !important; }
+
+/* ===== UPLOAD PANEL ===== */
+html.light .bg-violet-500\/20 { background-color: rgba(124, 58, 237, 0.08) !important; }
+
+/* ===== SIDEBAR (desktop) ===== */
+html.light .hidden.md\:flex.w-64.bg-gray-900 { background-color: #f8fafc !important; }
+
+/* ===== EMPTY STATE ===== */
+html.light .text-gray-500.text-sm { color: #64748b !important; }
+
+/* ===== BADGES - keep colored ===== */
+html.light [class*="bg-emerald-400\/10"] { background-color: rgba(5, 150, 105, 0.08) !important; }
+html.light [class*="bg-blue-400\/10"] { background-color: rgba(37, 99, 235, 0.08) !important; }
+html.light [class*="bg-pink-400\/10"] { background-color: rgba(219, 39, 119, 0.08) !important; }
+html.light [class*="bg-red-400\/10"] { background-color: rgba(220, 38, 38, 0.08) !important; }
+html.light [class*="bg-violet-400\/10"] { background-color: rgba(124, 58, 237, 0.08) !important; }
+html.light [class*="bg-gray-700\/50"] { background-color: rgba(226, 232, 240, 0.5) !important; }
+
+/* ===== GRID CARDS - just lighten the bg, not images ===== */
+html.light .group.cursor-pointer > .aspect-square.bg-gray-800 { background-color: #f1f5f9 !important; }
+
+/* ===== SHIMMER in light mode ===== */
+html.light .animate-shimmer { background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%) !important; }
