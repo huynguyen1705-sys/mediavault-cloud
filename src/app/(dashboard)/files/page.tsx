@@ -140,6 +140,7 @@ const GridFileCard = memo(function GridFileCard({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
 
   // Close menu on outside click
@@ -195,9 +196,19 @@ const GridFileCard = memo(function GridFileCard({
       onDragEnd={onDragEnd}
       onClick={onClick}
       onContextMenu={(e) => { e.preventDefault(); setMenuOpen(true); }}
+      onTouchStart={(e) => {
+        touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }}
       onTouchEnd={(e) => {
-        // Simple tap detection for mobile
-        onMobileSheet();
+        if (touchStartRef.current) {
+          const diffX = Math.abs(e.changedTouches[0].clientX - touchStartRef.current.x);
+          const diffY = Math.abs(e.changedTouches[0].clientY - touchStartRef.current.y);
+          // Only open mobile sheet if it's a tap (minimal movement)
+          if (diffX < 10 && diffY < 10) {
+            onMobileSheet();
+          }
+          touchStartRef.current = null;
+        }
       }}
     >
       {selectMode && (
