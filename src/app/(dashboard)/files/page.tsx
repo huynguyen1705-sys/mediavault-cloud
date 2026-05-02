@@ -175,7 +175,17 @@ const GridFileCard = memo(function GridFileCard({
         </div>
       );
     }
-    if (isVideo) return <div className="aspect-square rounded-lg bg-gradient-to-br from-blue-600 to-purple-700 flex flex-col items-center justify-center"><Film className="w-10 h-10 text-white/90 mb-2" /><Play className="w-6 h-6 text-white/70" /></div>;
+    if (isVideo) return (
+      <div className="aspect-square rounded-lg bg-gradient-to-br from-blue-600 to-purple-700 flex flex-col items-center justify-center relative">
+        <Film className="w-10 h-10 text-white/90 mb-2" />
+        <Play className="w-6 h-6 text-white/70" />
+        {/* Thumbnail generating indicator */}
+        <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-black/60 backdrop-blur-sm rounded-b-lg flex items-center gap-1.5">
+          <Loader2 className="w-3 h-3 text-violet-300 animate-spin" />
+          <span className="text-[10px] text-white/80">Creating thumbnail...</span>
+        </div>
+      </div>
+    );
     if (isAudio) return <div className="aspect-square rounded-lg bg-gradient-to-br from-pink-500 to-pink-700 flex flex-col items-center justify-center"><Headphones className="w-10 h-10 text-white/90" /></div>;
     if (file.mimeType?.includes('pdf')) return <div className="aspect-square rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex flex-col items-center justify-center"><FileText className="w-10 h-10 text-white/90" /><span className="text-[10px] text-white/70 mt-1">PDF</span></div>;
     return <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center"><File className="w-10 h-10 text-gray-500" /></div>;
@@ -1646,9 +1656,13 @@ const handleDelete = async (fileId: string) => {
     // Video Mini Preview (without thumbnail)
     if (file.mimeType?.startsWith('video/')) {
       return (
-        <div className="aspect-square rounded-lg bg-gradient-to-br from-blue-600 to-purple-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity" onClick={onPreview}>
+        <div className="aspect-square rounded-lg bg-gradient-to-br from-blue-600 to-purple-700 flex flex-col items-center justify-center p-3 cursor-pointer hover:opacity-90 transition-opacity relative" onClick={onPreview}>
           <Film className="w-10 h-10 text-white/90 mb-2" />
           <Play className="w-6 h-6 text-white/70" />
+          <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-black/60 backdrop-blur-sm rounded-b-lg flex items-center gap-1.5">
+            <Loader2 className="w-3 h-3 text-violet-300 animate-spin" />
+            <span className="text-[10px] text-white/80">Creating thumbnail...</span>
+          </div>
         </div>
       );
     }
@@ -1796,6 +1810,13 @@ const handleDelete = async (fileId: string) => {
           <button onClick={() => setSidebarOpen(true)} className="pointer-events-auto flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-full border border-gray-700 shadow-lg shadow-black/30">
             <Folder className="w-4 h-4 text-violet-400" />
             <span className="text-sm text-gray-300 font-medium">Folders</span>
+          </button>
+          <button
+            onClick={() => document.getElementById('file-input')?.click()}
+            className="pointer-events-auto flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 rounded-full shadow-lg shadow-violet-500/30"
+          >
+            <Upload className="w-4 h-4 text-white" />
+            <span className="text-sm text-white font-medium">Upload</span>
           </button>
         </div>
       )}
@@ -2119,33 +2140,33 @@ const handleDelete = async (fileId: string) => {
 
         {/* Upload Queue */}
         {uploadQueue.length > 0 && (
-          <div className="border-b border-gray-800 bg-gray-900">
-            {/* Header with overall stats */}
-            <div className="px-4 py-3 flex items-center justify-between bg-gray-900/80 border-b border-gray-800">
+          <div className="border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm">
+            {/* Summary Header */}
+            <div className="px-5 py-3 bg-gray-800/50 border-b border-gray-700/50 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <CloudUpload className="w-5 h-5 text-violet-400" />
+                <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                  <Upload className="w-4 h-4 text-violet-400" />
+                </div>
                 <div>
-                  <span className="text-sm font-medium">
-                    {uploadQueue.filter(f => f.status === "completed").length}/{uploadQueue.length} files uploaded
-                  </span>
-                  {uploadQueue.some(f => f.status === "uploading") && (
-                    <span className="ml-2 text-xs text-violet-400">
-                      ({uploadQueue.filter(f => f.status === "uploading").length} uploading)
-                    </span>
-                  )}
+                  <p className="text-sm font-medium text-gray-200">
+                    {uploadQueue.filter(f => f.status === "uploading").length > 0
+                      ? `Uploading ${uploadQueue.filter(f => f.status === "uploading").length} of ${uploadQueue.length}`
+                      : uploadQueue.every(f => f.status === "completed")
+                        ? "All uploads complete"
+                        : `${uploadQueue.length} file${uploadQueue.length > 1 ? "s" : ""} queued`
+                    }
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {Math.round(uploadQueue.reduce((sum, f) => sum + f.progress, 0) / uploadQueue.length)}% • {uploadQueue.filter(f => f.status === "completed").length}/{uploadQueue.length} done
+                  </p>
                 </div>
               </div>
-              {/* Overall progress bar */}
-              <div className="flex items-center gap-3">
-                <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all duration-300"
-                    style={{ width: `${(uploadQueue.filter(f => f.status === "completed").length / uploadQueue.length) * 100}%` }}
-                  />
-                </div>
-                <span className="text-xs text-gray-400 w-10">
-                  {Math.round((uploadQueue.filter(f => f.status === "completed").length / uploadQueue.length) * 100)}%
-                </span>
+              <div className="flex items-center gap-2">
+                {uploadQueue.some(f => f.status === "error") && (
+                  <span className="text-xs text-red-400 font-medium">
+                    {uploadQueue.filter(f => f.status === "error").length} failed
+                  </span>
+                )}
                 <button
                   onClick={() => setUploadQueue([])}
                   className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800"
@@ -2154,40 +2175,41 @@ const handleDelete = async (fileId: string) => {
                 </button>
               </div>
             </div>
-            {/* File list */}
-            <div className="px-4 pb-3 space-y-2 max-h-60 overflow-y-auto">
-              {uploadQueue.map((file, index) => (
-                <div key={file.id} className="flex items-center gap-3 bg-gray-800/50 rounded-lg px-3 py-2.5">
-                  {getStatusIcon(file.status)}
+            {/* Overall Progress Bar */}
+            <div className="px-5 py-2 bg-gray-900/50">
+              <div className="w-full bg-gray-800 rounded-full h-1.5">
+                <div
+                  className="bg-gradient-to-r from-violet-500 to-violet-400 h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.round(uploadQueue.reduce((sum, f) => sum + f.progress, 0) / uploadQueue.length)}%` }}
+                />
+              </div>
+            </div>
+            {/* File List */}
+            <div className={`divide-y divide-gray-800/50 ${uploadQueue.length > 5 ? "max-h-48 overflow-y-auto" : ""}`}>
+              {uploadQueue.map((file) => (
+                <div key={file.id} className="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-800/30 transition-colors">
+                  <div className="w-5 flex-shrink-0">
+                    {file.status === "uploading" && <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />}
+                    {file.status === "completed" && <CheckCircle className="w-4 h-4 text-emerald-400" />}
+                    {file.status === "error" && <AlertCircle className="w-4 h-4 text-red-400" />}
+                    {file.status === "pending" && <div className="w-3 h-3 rounded-full bg-gray-600" />}
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-sm truncate">{file.name}</span>
-                      <span className="text-xs text-gray-500 ml-2 shrink-0">{formatBytes(file.size)}</span>
-                    </div>
+                    <p className="text-sm text-gray-300 truncate">{file.name}</p>
                     {file.status === "uploading" && (
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
-                            style={{ width: `${file.progress || 0}%` }}
-                          />
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1 h-1 bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-full bg-violet-500 rounded-full transition-all" style={{ width: `${file.progress}%` }} />
                         </div>
-                        <span className="text-xs text-violet-400 w-10 text-right font-mono">{file.progress || 0}%</span>
                       </div>
                     )}
-                    {file.status === "error" && (
-                      <p className="text-xs text-red-400 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {file.error || "Upload failed - tap to retry"}
-                      </p>
+                    {file.status === "error" && <p className="text-xs text-red-400 truncate">{file.error}</p>}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {file.status === "uploading" && (
+                      <span className="text-xs text-gray-400 tabular-nums w-8 text-right">{file.progress}%</span>
                     )}
-                    {file.status === "completed" && (
-                      <p className="text-xs text-emerald-400 flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" /> Completed
-                      </p>
-                    )}
-                    {file.status === "pending" && (
-                      <p className="text-xs text-gray-500">Waiting in queue...</p>
-                    )}
+                    <span className="text-xs text-gray-500">{formatBytes(file.size)}</span>
                   </div>
                 </div>
               ))}
