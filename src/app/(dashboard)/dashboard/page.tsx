@@ -215,10 +215,13 @@ export default function DashboardPage() {
       }
     };
 
-    // Upload 10 files concurrently (R2 handles unlimited connections)
+    // Sort: largest files first → they start early, small files fill remaining slots
+    const sorted = [...newFiles].sort((a, b) => b.file.size - a.file.size);
+
+    // Upload 10 files concurrently (largest first strategy)
     const CONCURRENT_FILES = 10;
-    for (let i = 0; i < newFiles.length; i += CONCURRENT_FILES) {
-      await Promise.all(newFiles.slice(i, i + CONCURRENT_FILES).map(uploadOne));
+    for (let i = 0; i < sorted.length; i += CONCURRENT_FILES) {
+      await Promise.all(sorted.slice(i, i + CONCURRENT_FILES).map(uploadOne));
     }
 
     // Redirect after all complete

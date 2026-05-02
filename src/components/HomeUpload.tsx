@@ -118,9 +118,12 @@ export default function HomeUpload() {
       }
     };
 
-    // Upload 10 files concurrently
-    for (let i = 0; i < newFiles.length; i += 10) {
-      await Promise.all(newFiles.slice(i, i + 10).map(uploadOne));
+    // Sort: largest files first → start heavy uploads early
+    const sorted = [...newFiles].sort((a, b) => b.file.size - a.file.size);
+
+    // Upload 10 files concurrently (largest first)
+    for (let i = 0; i < sorted.length; i += 10) {
+      await Promise.all(sorted.slice(i, i + 10).map(uploadOne));
     }
 
     // Redirect after all complete
