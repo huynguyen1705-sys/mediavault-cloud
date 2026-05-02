@@ -33,8 +33,18 @@ export async function POST(req: NextRequest) {
       where: { clerkUserId: userId },
       data: { theme },
     });
-    return NextResponse.json({ ok: true, theme });
-  } catch {
+
+    // Set cookie from SERVER side — guaranteed to be sent on next SSR request
+    const res = NextResponse.json({ ok: true, theme });
+    res.cookies.set("mv-theme", theme, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+      sameSite: "lax",
+      httpOnly: false, // ThemeProvider needs to read it client-side too
+    });
+    return res;
+  } catch (e: any) {
+    console.error("Theme save error:", e?.message);
     return NextResponse.json({ error: "Failed to save theme" }, { status: 500 });
   }
 }
