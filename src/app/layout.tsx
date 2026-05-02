@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MediaVault Cloud - Secure Media Storage",
+  title: "fii.one - Secure Cloud Storage",
   description: "Store, share, and manage your media files securely",
 };
 

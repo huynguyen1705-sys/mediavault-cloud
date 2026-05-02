@@ -279,11 +279,11 @@ export default function PricingPage() {
               <Zap className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
-              MediaVault
+              fii.one
             </span>
           </div>
           <div className="text-gray-500 text-sm">
-            © 2024 MediaVault. All rights reserved.
+            © 2024 fii.one. All rights reserved.
           </div>
         </div>
       </div>

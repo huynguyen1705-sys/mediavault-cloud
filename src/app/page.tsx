@@ -128,7 +128,7 @@ export default function HomePage() {
                     <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-500" />
                     <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-500" />
                   </div>
-                  <span className="text-xs md:text-sm text-gray-500">MediaVault</span>
+                  <span className="text-xs md:text-sm text-gray-500">fii.one</span>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
                   {[1, 2, 3, 4].map((i) => (
@@ -225,7 +225,7 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-2xl md:text-4xl font-bold mb-3 md:mb-4">Ready to Get Started?</h2>
           <p className="text-gray-400 text-sm md:text-lg mb-6 md:mb-8">
-            Join thousands of users who trust MediaVault.
+            Join thousands of users who trust fii.one.
           </p>
           <Link
             href="/register"
@@ -241,10 +241,10 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Cloud className="w-5 h-5 text-violet-400" />
-            <span className="font-semibold">MediaVault Cloud</span>
+            <span className="font-semibold">fii.one</span>
           </div>
           <p className="text-gray-500 text-sm">
-            © 2024 MediaVault. All rights reserved.
+            © 2024 fii.one. All rights reserved.
           </p>
         </div>
       </footer>

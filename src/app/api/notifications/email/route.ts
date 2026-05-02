@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "MediaVault <noreply@fii.one>",
+        from: "fii.one <noreply@fii.one>",
         to,
         subject: emailData.subject,
         html: emailData.html,

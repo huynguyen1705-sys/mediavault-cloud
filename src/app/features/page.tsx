@@ -122,7 +122,7 @@ export default function FeaturesPage() {
               Everything You Need to Manage Media
             </h1>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              MediaVault combines powerful storage, beautiful previews, and seamless sharing
+              fii.one combines powerful storage, beautiful previews, and seamless sharing
               in one platform designed for creators and teams.
             </p>
           </motion.div>
@@ -183,7 +183,7 @@ export default function FeaturesPage() {
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-gray-400 mb-8">
-            Join thousands of creators who trust MediaVault for their media storage
+            Join thousands of creators who trust fii.one for their media storage
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link

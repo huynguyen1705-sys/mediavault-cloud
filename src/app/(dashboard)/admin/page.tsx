@@ -198,7 +198,7 @@ export default function AdminPage() {
       {/* Quick Stats */}
       <div className="mt-8 p-4 bg-violet-500/10 border border-violet-500/20 rounded-xl">
         <p className="text-center text-sm text-gray-400">
-          You have full admin access to MediaVault
+          You have full admin access to fii.one
         </p>
       </div>
     </div>

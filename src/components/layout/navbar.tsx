@@ -81,7 +81,7 @@ export default function Navbar() {
               <Cloud className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
             <span className="text-lg md:text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
-              MediaVault
+              fii.one
             </span>
           </Link>
 

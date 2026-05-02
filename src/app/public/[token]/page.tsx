@@ -128,7 +128,7 @@ export default function PublicGalleryPage() {
           <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center text-sm font-bold">
             M
           </div>
-          <span className="text-lg font-semibold text-white">MediaVault</span>
+          <span className="text-lg font-semibold text-white">fii.one</span>
           {data && (
             <span className="ml-auto text-sm text-gray-400">
               Shared by {data.owner}

@@ -21,7 +21,7 @@ export function emailTemplates() {
       <div style="text-align: center; margin: 32px 0;">
         <a href="${data.downloadUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px;">Download / Extend</a>
       </div>
-      <p style="font-size: 13px; color: #6b7280; text-align: center;">MediaVault Cloud Storage</p>
+      <p style="font-size: 13px; color: #6b7280; text-align: center;">fii.one Cloud Storage</p>
     </div>
   </div>
 </body>
@@ -55,7 +55,7 @@ export function emailTemplates() {
       <div style="text-align: center; margin: 32px 0;">
         <a href="#" style="display: inline-block; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px;">Upgrade Plan</a>
       </div>
-      <p style="font-size: 13px; color: #6b7280; text-align: center;">MediaVault Cloud Storage</p>
+      <p style="font-size: 13px; color: #6b7280; text-align: center;">fii.one Cloud Storage</p>
     </div>
   </div>
 </body>
@@ -64,7 +64,7 @@ export function emailTemplates() {
 
     // Account suspended
     accountSuspended: (data: { reason: string; ownerName: string; supportEmail: string }) => ({
-      subject: `🔒 Your MediaVault Account Has Been Suspended`,
+      subject: `🔒 Your fii.one Account Has Been Suspended`,
       html: `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -75,7 +75,7 @@ export function emailTemplates() {
     </div>
     <div style="padding: 32px;">
       <p style="font-size: 16px; line-height: 1.6;">Dear ${data.ownerName},</p>
-      <p style="font-size: 16px; line-height: 1.6;">Your MediaVault account has been <strong style="color: #f97316;">suspended</strong>.</p>
+      <p style="font-size: 16px; line-height: 1.6;">Your fii.one account has been <strong style="color: #f97316;">suspended</strong>.</p>
       <p style="font-size: 16px; line-height: 1.6; background: #0f1629; border-left: 4px solid #f97316; padding: 16px; border-radius: 8px; margin: 24px 0;">
         <strong>Reason:</strong> ${data.reason}
       </p>
@@ -83,7 +83,7 @@ export function emailTemplates() {
       <div style="text-align: center; margin: 32px 0;">
         <a href="mailto:${data.supportEmail}" style="display: inline-block; background: #f97316; color: white; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px;">Contact Support</a>
       </div>
-      <p style="font-size: 13px; color: #6b7280; text-align: center;">MediaVault Cloud Storage</p>
+      <p style="font-size: 13px; color: #6b7280; text-align: center;">fii.one Cloud Storage</p>
     </div>
   </div>
 </body>
@@ -92,7 +92,7 @@ export function emailTemplates() {
 
     // Account banned
     accountBanned: (data: { reason: string; ownerName: string; supportEmail: string }) => ({
-      subject: `🚫 Your MediaVault Account Has Been Banned`,
+      subject: `🚫 Your fii.one Account Has Been Banned`,
       html: `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -103,7 +103,7 @@ export function emailTemplates() {
     </div>
     <div style="padding: 32px;">
       <p style="font-size: 16px; line-height: 1.6;">Dear ${data.ownerName},</p>
-      <p style="font-size: 16px; line-height: 1.6;">Your MediaVault account has been <strong style="color: #ef4444;">permanently banned</strong> and all data has been removed.</p>
+      <p style="font-size: 16px; line-height: 1.6;">Your fii.one account has been <strong style="color: #ef4444;">permanently banned</strong> and all data has been removed.</p>
       <p style="font-size: 16px; line-height: 1.6; background: #0f1629; border-left: 4px solid #ef4444; padding: 16px; border-radius: 8px; margin: 24px 0;">
         <strong>Reason:</strong> ${data.reason}
       </p>
@@ -111,7 +111,7 @@ export function emailTemplates() {
       <div style="text-align: center; margin: 32px 0;">
         <a href="mailto:${data.supportEmail}" style="display: inline-block; background: #991b1b; color: white; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px;">Appeal Decision</a>
       </div>
-      <p style="font-size: 13px; color: #6b7280; text-align: center;">MediaVault Cloud Storage</p>
+      <p style="font-size: 13px; color: #6b7280; text-align: center;">fii.one Cloud Storage</p>
     </div>
   </div>
 </body>
