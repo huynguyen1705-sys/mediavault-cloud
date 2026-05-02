@@ -284,8 +284,20 @@ export default function FilesPage() {
   // Build tree from flat list
 
   // Sort files
+  // Resolve URLs from cache into files (only recomputes when urlVersion or files change)
+  const filesWithUrls = useMemo(() => {
+    return files.map(f => {
+      const cached = urlCacheRef.current[f.id];
+      if (cached) {
+        return { ...f, url: cached.url || f.url, thumbnailUrl: cached.thumbnailUrl || f.thumbnailUrl };
+      }
+      return f;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [files, urlVersion]);
+
   const sortedFiles = useMemo(() => {
-    return [...files].sort((a, b) => {
+    return [...filesWithUrls].sort((a, b) => {
       let cmp = 0;
       switch (sortBy) {
         case "name":
@@ -303,7 +315,7 @@ export default function FilesPage() {
       }
       return sortOrder === "asc" ? cmp : -cmp;
     });
-  }, [files, sortBy, sortOrder]);
+  }, [filesWithUrls, sortBy, sortOrder]);
 
   const buildTree = useCallback((folders: FolderItem[]): FolderTreeNode[] => {
     const map = new Map<string, FolderTreeNode>();
@@ -364,10 +376,16 @@ export default function FilesPage() {
   }, [isLoaded, user]);
 
   // Fetch files
-  // Batch fetch presigned URLs for visible files
+  // Track URL fetch version to trigger single re-render after all batches complete
+  const [urlVersion, setUrlVersion] = useState(0);
+  const urlFetchInProgress = useRef(false);
+
+  // Batch fetch presigned URLs for visible files (updates cache only, single re-render at end)
   const fetchUrlsForFiles = useCallback(async (fileList: FileItem[]) => {
+    if (urlFetchInProgress.current) return; // Prevent duplicate fetches
+    
     const now = Date.now();
-    const cacheMaxAge = 50 * 60 * 1000; // 50 minutes (presigned URLs expire in 1h)
+    const cacheMaxAge = 50 * 60 * 1000; // 50 minutes
 
     // Filter files that need URL generation
     const needUrls = fileList.filter(f => {
@@ -377,30 +395,35 @@ export default function FilesPage() {
 
     if (needUrls.length === 0) return;
 
-    // Batch in groups of 30
-    for (let i = 0; i < needUrls.length; i += 30) {
-      const batch = needUrls.slice(i, i + 30);
-      try {
-        const res = await fetch("/api/files/urls", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fileIds: batch.map(f => f.id) }),
-        });
-        if (res.ok) {
-          const { urls } = await res.json();
-          const updateNow = Date.now();
-          // Update cache and state
-          setFiles(prev => prev.map(f => {
-            if (urls[f.id]) {
-              urlCacheRef.current[f.id] = { ...urls[f.id], cachedAt: updateNow };
-              return { ...f, url: urls[f.id].url, thumbnailUrl: urls[f.id].thumbnailUrl };
+    urlFetchInProgress.current = true;
+
+    try {
+      // Batch in groups of 30
+      for (let i = 0; i < needUrls.length; i += 30) {
+        const batch = needUrls.slice(i, i + 30);
+        try {
+          const res = await fetch("/api/files/urls", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fileIds: batch.map(f => f.id) }),
+          });
+          if (res.ok) {
+            const { urls } = await res.json();
+            const updateNow = Date.now();
+            // Update cache ONLY (no state update per batch)
+            for (const [id, data] of Object.entries(urls)) {
+              urlCacheRef.current[id] = { ...(data as any), cachedAt: updateNow };
             }
-            return f;
-          }));
+          }
+        } catch (e) {
+          console.error("Batch URL fetch error:", e);
         }
-      } catch (e) {
-        console.error("Batch URL fetch error:", e);
       }
+
+      // Single re-render after ALL batches complete
+      setUrlVersion(v => v + 1);
+    } finally {
+      urlFetchInProgress.current = false;
     }
   }, []);
 

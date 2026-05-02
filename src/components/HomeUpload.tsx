@@ -40,8 +40,8 @@ export default function HomeUpload() {
     // Small delay for UI feedback before starting uploads
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Upload with concurrency limit of 3
-    const uploadChunk = async (uploadFile: UploadFile) => {
+    // Upload via presigned URL → R2 direct → confirm
+    const uploadOne = async (uploadFile: UploadFile) => {
       try {
         setUploadQueue((prev) =>
           prev.map((f) =>
@@ -49,18 +49,51 @@ export default function HomeUpload() {
           )
         );
 
-        const formData = new FormData();
-        formData.append("file", uploadFile.file);
+        const updateProgress = (percent: number) => {
+          setUploadQueue((prev) =>
+            prev.map((f) =>
+              f.id === uploadFile.id ? { ...f, progress: percent } : f
+            )
+          );
+        };
 
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
+        // Step 1: Get presigned URL
+        const urlRes = await fetch(
+          `/api/upload-url?fileName=${encodeURIComponent(uploadFile.file.name)}&contentType=${encodeURIComponent(uploadFile.file.type || "application/octet-stream")}&fileSize=${uploadFile.file.size}`
+        );
+        if (!urlRes.ok) {
+          const err = await urlRes.json().catch(() => ({ error: "Server error" }));
+          throw new Error(err.error || "Failed to get upload URL");
+        }
+        const { uploadUrl, fileKey } = await urlRes.json();
+
+        // Step 2: Upload directly to R2 with progress
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) updateProgress(Math.round((e.loaded / e.total) * 90));
+          };
+          xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`Upload failed (${xhr.status})`));
+          xhr.onerror = () => reject(new Error("Network error"));
+          xhr.open("PUT", uploadUrl);
+          xhr.setRequestHeader("Content-Type", uploadFile.file.type || "application/octet-stream");
+          xhr.send(uploadFile.file);
         });
 
-        if (!uploadRes.ok) {
-          const errorData = await uploadRes.json();
-          throw new Error(errorData.error || "Upload failed");
-        }
+        updateProgress(95);
+
+        // Step 3: Confirm
+        const confirmRes = await fetch("/api/upload/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileKey,
+            fileName: uploadFile.file.name,
+            mimeType: uploadFile.file.type || "application/octet-stream",
+            fileSize: uploadFile.file.size,
+          }),
+        });
+        if (!confirmRes.ok) throw new Error("Upload confirmation failed");
 
         setUploadQueue((prev) =>
           prev.map((f) =>
@@ -81,7 +114,7 @@ export default function HomeUpload() {
     // Run uploads in parallel, max 3 at a time
     for (let i = 0; i < newFiles.length; i += 3) {
       const chunk = newFiles.slice(i, i + 3);
-      await Promise.all(chunk.map(uploadChunk));
+      await Promise.all(chunk.map(uploadOne));
     }
 
     // Clear completed after delay
