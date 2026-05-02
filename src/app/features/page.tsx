@@ -142,7 +142,7 @@ export default function FeaturesPage() {
                 transition={{ duration: 0.5, delay: index * 0.05 }}
                 viewport={{ once: true }}
               >
-                <div className="bg-gray-900/50 border border-gray-800 hover:border-gray-700 transition-colors rounded-2xl p-6 h-full">
+                <div className="bg-[#111111]/50 border border-gray-800 hover:border-gray-700 transition-colors rounded-2xl p-6 h-full">
                   <div
                     className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4`}
                   >
@@ -158,7 +158,7 @@ export default function FeaturesPage() {
       </section>
 
       {/* Tech Stack */}
-      <section className="py-20 px-6 bg-gray-900/30">
+      <section className="py-20 px-6 bg-[#111111]/30">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-6">Built With Modern Tech</h2>
           <p className="text-gray-400 mb-12">
@@ -168,7 +168,7 @@ export default function FeaturesPage() {
             {techStack.map((tech) => (
               <div
                 key={tech.name}
-                className="p-4 bg-gray-900 border border-gray-800 rounded-xl"
+                className="p-4 bg-[#111111] border border-gray-800 rounded-xl"
               >
                 <div className="font-semibold mb-1">{tech.name}</div>
                 <div className="text-xs text-gray-500">{tech.desc}</div>

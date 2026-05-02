@@ -195,7 +195,7 @@ const GridFileCard = memo(function GridFileCard({
 
   return (
     <div
-      className={`group bg-gray-900 border rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer ${
+      className={`group bg-[#111111] border rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer ${
         isDragging ? "opacity-50" : ""
       } ${
         isSelected ? "border-violet-500 bg-violet-500/10" :
@@ -1824,7 +1824,7 @@ const handleDelete = async (fileId: string) => {
       {/* RIGHT CONTENT */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header - Sticky */}
-        <div className="p-4 border-b border-gray-800 bg-gray-900 sticky top-0 z-10">
+        <div className="p-4 border-b border-gray-800 bg-[#141414] sticky top-0 z-10">
           <div className="flex items-center justify-between gap-4">
             {/* Breadcrumbs */}
             <div className="flex items-center gap-2 overflow-x-auto">
@@ -1896,7 +1896,7 @@ const handleDelete = async (fileId: string) => {
 
             {/* Bulk Action Bar - Sticky when files selected */}
             {selectedFiles.size > 0 && (
-              <div className="sticky top-0 z-20 flex items-center justify-between gap-4 bg-gray-900/95 backdrop-blur px-4 py-3 border-b border-gray-800 shadow-lg">
+              <div className="sticky top-0 z-20 flex items-center justify-between gap-4 bg-[#141414]/95 backdrop-blur px-4 py-3 border-b border-gray-800 shadow-lg">
                 <div className="flex items-center gap-3">
                   <button onClick={clearSelection} className="p-1.5 hover:bg-gray-800 rounded-lg">
                     <X className="w-5 h-5" />
@@ -2002,11 +2002,11 @@ const handleDelete = async (fileId: string) => {
                     fetchFiles();
                   }
                 }}
-                className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500 transition-colors"
+                className="w-full pl-10 pr-4 py-2 bg-[#111111] border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500 transition-colors"
               />
               {/* Search History Dropdown */}
               {showSearchHistory && searchHistory.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-800 rounded-lg shadow-xl z-50 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#111111] border border-gray-800 rounded-lg shadow-xl z-50 overflow-hidden">
                   <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-800">Recent searches</div>
                   {searchHistory.map((item, idx) => (
                     <button
@@ -2041,7 +2041,7 @@ const handleDelete = async (fileId: string) => {
             {/* Filter button - toggle on mobile */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`md:hidden p-2 bg-gray-900 border border-gray-800 rounded-lg transition-colors ${
+              className={`md:hidden p-2 bg-[#111111] border border-gray-800 rounded-lg transition-colors ${
                 showFilters || filterType !== "all" || filterDate !== "all" || filterSize !== "all"
                   ? "text-violet-400 border-violet-500/50"
                   : "text-gray-400 hover:text-white"
@@ -2056,7 +2056,7 @@ const handleDelete = async (fileId: string) => {
               <select
                 value={filterType}
                 onChange={(e) => { setFilterType(e.target.value); fetchFiles(); }}
-                className="px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
+                className="px-3 py-2 bg-[#111111] border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
               >
                 <option value="all">All</option>
                 <option value="image">Images</option>
@@ -2067,7 +2067,7 @@ const handleDelete = async (fileId: string) => {
               <select
                 value={filterDate}
                 onChange={(e) => { setFilterDate(e.target.value); fetchFiles(); }}
-                className="px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
+                className="px-3 py-2 bg-[#111111] border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
                 title="Filter by date"
               >
                 <option value="all">Any Time</option>
@@ -2079,7 +2079,7 @@ const handleDelete = async (fileId: string) => {
               <select
                 value={filterSize}
                 onChange={(e) => { setFilterSize(e.target.value); fetchFiles(); }}
-                className="px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
+                className="px-3 py-2 bg-[#111111] border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
                 title="Filter by size"
               >
                 <option value="all">Any Size</option>
@@ -2105,7 +2105,7 @@ const handleDelete = async (fileId: string) => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
+                className="px-3 py-2 bg-[#111111] border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500"
               >
                 <option value="date">Date</option>
                 <option value="name">Name</option>
@@ -2114,7 +2114,7 @@ const handleDelete = async (fileId: string) => {
               </select>
               <button
                 onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                className="p-2 bg-gray-900 border border-gray-800 rounded-lg hover:bg-gray-800 transition-colors"
+                className="p-2 bg-[#111111] border border-gray-800 rounded-lg hover:bg-gray-800 transition-colors"
                 title={sortOrder === "asc" ? "Ascending" : "Descending"}
               >
                 {sortOrder === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
@@ -2140,9 +2140,9 @@ const handleDelete = async (fileId: string) => {
 
         {/* Upload Queue */}
         {uploadQueue.length > 0 && (
-          <div className="border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm">
+          <div className="border-b border-gray-800 bg-[#111111]/80 backdrop-blur-sm">
             {/* Summary Header */}
-            <div className="px-5 py-3 bg-gray-800/50 border-b border-gray-700/50 flex items-center justify-between">
+            <div className="px-5 py-3 bg-[#1a1a1a]/80 border-b border-gray-700/50 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
                   <Upload className="w-4 h-4 text-violet-400" />
@@ -2176,7 +2176,7 @@ const handleDelete = async (fileId: string) => {
               </div>
             </div>
             {/* Overall Progress Bar */}
-            <div className="px-5 py-2 bg-gray-900/50">
+            <div className="px-5 py-2 bg-[#111111]/50">
               <div className="w-full bg-gray-800 rounded-full h-1.5">
                 <div
                   className="bg-gradient-to-r from-violet-500 to-violet-400 h-1.5 rounded-full transition-all duration-300"
@@ -2239,7 +2239,7 @@ const handleDelete = async (fileId: string) => {
           {/* Drag & Drop Overlay */}
           {isDragging && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-              <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 text-center border-2 border-dashed border-violet-500 dark:border-violet-500 shadow-xl">
+              <div className="bg-white dark:bg-[#111111] rounded-2xl p-8 text-center border-2 border-dashed border-violet-500 dark:border-violet-500 shadow-xl">
                 <CloudUpload className="w-16 h-16 text-violet-400 mx-auto mb-4 animate-bounce" />
                 <p className="text-lg font-medium text-gray-900 dark:text-violet-300">Drop files to upload</p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Files will be uploaded to current folder</p>
@@ -2281,7 +2281,7 @@ const handleDelete = async (fileId: string) => {
           {loading && viewMode === "grid" && (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+                <div key={i} className="bg-[#111111] border border-gray-800 rounded-xl p-4">
                   <div className="aspect-square bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 rounded-lg mb-3 animate-shimmer bg-[length:200%_100%]" />
                   <div className="flex items-start gap-2">
                     <div className="flex-1">
@@ -2296,7 +2296,7 @@ const handleDelete = async (fileId: string) => {
 
           {/* Loading Skeletons - List View */}
           {loading && viewMode === "list" && (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <div className="bg-[#111111] border border-gray-800 rounded-xl overflow-hidden">
               <div className="bg-gray-800 border-b border-gray-700 px-4 py-3">
                 <div className="flex gap-4">
                   <div className="w-12" />
@@ -2375,9 +2375,9 @@ const handleDelete = async (fileId: string) => {
 
           {/* Files List - Professional Table Style */}
           {!loading && files.length > 0 && viewMode === "list" && (
-            <div className="bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm">
+            <div className="bg-[#111111]/50 border border-gray-800 rounded-xl overflow-hidden backdrop-blur-sm">
               {/* Table Header */}
-              <div className="grid grid-cols-[36px_1fr_60px_40px] md:grid-cols-[40px_1fr_80px_110px_130px_80px] gap-0 bg-gray-800/80 px-3 md:px-4 h-10 border-b border-gray-700/50 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <div className="grid grid-cols-[36px_1fr_60px_40px] md:grid-cols-[40px_1fr_80px_110px_130px_80px] gap-0 bg-[#1a1a1a] px-3 md:px-4 h-10 border-b border-gray-700/50 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 {/* Checkbox/icon col */}
                 <div className="flex items-center">
                   {selectMode ? (
@@ -2607,7 +2607,7 @@ const handleDelete = async (fileId: string) => {
       {showMobileSheet && selectedFile && (
         <>
           <div className="fixed inset-0 bg-black/60 z-40" onClick={() => setShowMobileSheet(false)} />
-          <div className="fixed inset-x-0 bottom-0 z-50 bg-gray-900 rounded-t-2xl shadow-2xl border-t border-gray-800 animate-slideUp md:hidden">
+          <div className="fixed inset-x-0 bottom-0 z-50 bg-[#0f0f0f] rounded-t-2xl shadow-2xl border-t border-gray-800 animate-slideUp md:hidden">
             {/* Handle bar */}
             <div className="flex justify-center py-3">
               <div className="w-10 h-1 bg-gray-600 rounded-full" />
@@ -2685,7 +2685,7 @@ const handleDelete = async (fileId: string) => {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setFolderContextMenu(null)} />
           <div
-            className="fixed z-50 bg-gray-900 border border-gray-800 rounded-xl shadow-xl py-2 min-w-[180px]"
+            className="fixed z-50 bg-[#111111] border border-gray-800 rounded-xl shadow-xl py-2 min-w-[180px]"
             style={getSmartMenuPosition(folderContextMenu.x, folderContextMenu.y)}
           >
             <button
@@ -2816,7 +2816,7 @@ const handleDelete = async (fileId: string) => {
 
               {/* DOCX/PPTX via DocViewer */}
               {(selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.presentationml.presentation") && selectedFile.url && (
-                <div className="bg-gray-900 rounded-2xl shadow-2xl w-[90vw] max-w-5xl overflow-hidden">
+                <div className="bg-[#111111] rounded-2xl shadow-2xl w-[90vw] max-w-5xl overflow-hidden">
                   <DocViewer documents={[{ uri: `/api/files/${selectedFile.id}/proxy`, fileName: selectedFile.name }]} />
                 </div>
               )}
@@ -2838,7 +2838,7 @@ const handleDelete = async (fileId: string) => {
 
               {/* NO URL AVAILABLE */}
               {!selectedFile.url && (
-                <div className="bg-gray-900 rounded-2xl p-8 shadow-2xl text-center">
+                <div className="bg-[#111111] rounded-2xl p-8 shadow-2xl text-center">
                   <File className="w-16 h-16 mx-auto mb-4 text-gray-600" />
                   <p className="text-gray-400">Preview not available</p>
                 </div>
@@ -2848,7 +2848,7 @@ const handleDelete = async (fileId: string) => {
 
           {/* Zoom controls - Fixed position */}
           {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-gray-900/95 backdrop-blur px-4 py-2 rounded-full shadow-xl border border-gray-800">
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-[#141414]/95 backdrop-blur px-4 py-2 rounded-full shadow-xl border border-gray-800">
               <button onClick={() => { setZoom((z) => Math.max(0.5, z - 0.25)); setDragPos({ x: 0, y: 0 }); }} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
                 <ZoomOut className="w-5 h-5" />
               </button>
@@ -2863,7 +2863,7 @@ const handleDelete = async (fileId: string) => {
           )}
 
           {/* Desktop sidebar - Right Panel (hidden on mobile) */}
-          <div className="hidden md:flex w-80 bg-gray-900 border-l border-gray-800 flex-col overflow-hidden">
+          <div className="hidden md:flex w-80 bg-[#0f0f0f] border-l border-gray-800 flex-col overflow-hidden">
             <div className="p-4 border-b border-gray-800">
               <h3 className="font-semibold">File Details</h3>
             </div>
@@ -3039,7 +3039,7 @@ const handleDelete = async (fileId: string) => {
       )}
       {/* Details Panel */}
       {showDetails && selectedFile && (
-        <div className="w-80 bg-gray-900 border-l border-gray-800 flex flex-col overflow-hidden">
+        <div className="w-80 bg-[#0f0f0f] border-l border-gray-800 flex flex-col overflow-hidden">
           <div className="p-4 border-b border-gray-800 flex items-center justify-between">
             <h3 className="font-semibold">File Details</h3>
             <button onClick={() => setShowDetails(false)} className="p-1 hover:bg-gray-800 rounded-lg">
@@ -3142,7 +3142,7 @@ const handleDelete = async (fileId: string) => {
       {/* New Folder Modal */}
       {showNewFolderModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setShowNewFolderModal(false); setNewFolderParentId(null); }}>
-          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[#111111] rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold mb-4">Create New Folder</h2>
 
             {/* Folder name input */}
@@ -3195,7 +3195,7 @@ const handleDelete = async (fileId: string) => {
       {/* Move File Modal */}
       {showMoveModal && movingFile && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setShowMoveModal(false); setMovingFile(null); }}>
-          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[#111111] rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold mb-4">Move File</h2>
             <p className="text-sm text-gray-400 mb-4">Moving: <span className="text-white">{movingFile.name}</span></p>
             <div className="mb-4">
@@ -3237,7 +3237,7 @@ const handleDelete = async (fileId: string) => {
       {/* Rename Modal */}
       {showRenameModal && renamingItem && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setShowRenameModal(false); setRenamingItem(null); setNewName(""); }}>
-          <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[#111111] rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold mb-4">Rename {renamingItem?.type === "file" ? "File" : "Folder"}</h2>
             <input
               type="text"
@@ -3310,7 +3310,7 @@ const handleDelete = async (fileId: string) => {
 
     return (
       <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowShareModal(false)}>
-        <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-[#111111] rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Share File</h2>
             <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X className="w-5 h-5" /></button>

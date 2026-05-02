@@ -70,7 +70,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <Navbar />
 
       {/* Hero Section */}
@@ -121,7 +121,7 @@ export default function HomePage() {
           {/* Mock Preview - Hide on small mobile */}
           <div className="mt-10 md:mt-16 relative hidden sm:block">
             <div className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-2xl p-1">
-              <div className="bg-gray-900 rounded-xl p-4 md:p-6">
+              <div className="bg-[#111111] rounded-xl p-4 md:p-6">
                 <div className="flex items-center gap-4 mb-4 md:mb-6">
                   <div className="flex gap-2">
                     <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500" />
@@ -144,7 +144,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Grid */}
-      <section className="py-12 md:py-20 px-4 bg-gray-900/50">
+      <section className="py-12 md:py-20 px-4 bg-[#111111]/50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 md:mb-16">
             <h2 className="text-2xl md:text-4xl font-bold mb-2">Everything You Need</h2>
@@ -155,7 +155,7 @@ export default function HomePage() {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="p-4 md:p-6 bg-gray-900 border border-gray-800 rounded-xl md:rounded-2xl hover:border-violet-500/50 transition-colors"
+                className="p-4 md:p-6 bg-[#111111] border border-gray-800 rounded-xl md:rounded-2xl hover:border-violet-500/50 transition-colors"
               >
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-violet-500/10 rounded-lg md:rounded-xl flex items-center justify-center mb-3 md:mb-4">
                   <feature.icon className="w-5 h-5 md:w-6 md:h-6 text-violet-400" />
@@ -183,7 +183,7 @@ export default function HomePage() {
                 className={`p-4 md:p-8 rounded-xl md:rounded-2xl border ${
                   plan.popular
                     ? "bg-gradient-to-b from-violet-500/10 to-purple-500/5 border-violet-500/50"
-                    : "bg-gray-900 border-gray-800"
+                    : "bg-[#111111] border-gray-800"
                 }`}
               >
                 {plan.popular && (

@@ -121,7 +121,7 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-[#0a0a0a]">
       {/* Header */}
       <div className="bg-gradient-to-b from-violet-950/30 to-gray-950 pt-24 pb-16">
         <div className="max-w-4xl mx-auto px-4 text-center">
@@ -143,7 +143,7 @@ export default function PricingPage() {
               className={`relative rounded-2xl p-6 border transition-all ${
                 plan.popular
                   ? "bg-gradient-to-b from-violet-900/40 to-gray-900 border-violet-500/50 shadow-lg shadow-violet-500/10"
-                  : "bg-gray-900/80 border-gray-800 hover:border-gray-700"
+                  : "bg-[#111111]/80 border-gray-800 hover:border-gray-700"
               }`}
             >
               {plan.popular && (
@@ -220,7 +220,7 @@ export default function PricingPage() {
       </div>
 
       {/* FAQ Section */}
-      <div className="bg-gray-900/50 border-t border-gray-800 py-16">
+      <div className="bg-[#111111]/50 border-t border-gray-800 py-16">
         <div className="max-w-3xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">
             Frequently Asked Questions
@@ -230,7 +230,7 @@ export default function PricingPage() {
             {faqs.map((faq, i) => (
               <div
                 key={i}
-                className="bg-gray-900/80 border border-gray-800 rounded-xl overflow-hidden"
+                className="bg-[#111111]/80 border border-gray-800 rounded-xl overflow-hidden"
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}

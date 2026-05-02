@@ -310,7 +310,7 @@ export default function DashboardPage() {
             transition-all duration-300 text-center
             ${isDragOver
               ? "border-violet-500 bg-violet-500/10"
-              : "border-gray-700 hover:border-violet-500/50 hover:bg-gray-900/50"
+              : "border-gray-700 hover:border-violet-500/50 hover:bg-[#111111]/50"
             }
           `}
         >
@@ -330,7 +330,7 @@ export default function DashboardPage() {
 
       {/* Upload Progress - Professional Panel */}
       {uploadQueue.length > 0 && (
-        <div className="mb-8 bg-gray-900/80 border border-gray-800 rounded-2xl overflow-hidden backdrop-blur-sm">
+        <div className="mb-8 bg-[#111111]/80 border border-gray-800 rounded-2xl overflow-hidden backdrop-blur-sm">
           {/* Summary Header */}
           <div className="px-5 py-3 bg-gray-800/50 border-b border-gray-700/50 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -367,7 +367,7 @@ export default function DashboardPage() {
             </div>
           </div>
           {/* Overall Progress Bar */}
-          <div className="px-5 py-2 bg-gray-900/50">
+          <div className="px-5 py-2 bg-[#111111]/50">
             <div className="w-full bg-gray-800 rounded-full h-1.5">
               <div
                 className="bg-gradient-to-r from-violet-500 to-violet-400 h-1.5 rounded-full transition-all duration-300"
@@ -404,7 +404,7 @@ export default function DashboardPage() {
       {/* Quick Stats - 4 Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {/* Storage */}
-        <div className="p-4 bg-gray-900 border border-gray-800 rounded-xl">
+        <div className="p-4 bg-[#111111] border border-gray-800 rounded-xl">
           <div className="flex items-center justify-between mb-3">
             <span className="text-gray-400 text-sm">Storage Used</span>
             <HardDrive className="w-5 h-5 text-violet-400" />
@@ -420,7 +420,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Bandwidth */}
-        <div className="p-4 bg-gray-900 border border-gray-800 rounded-xl">
+        <div className="p-4 bg-[#111111] border border-gray-800 rounded-xl">
           <div className="flex items-center justify-between mb-3">
             <span className="text-gray-400 text-sm">Bandwidth Used</span>
             <Link className="w-5 h-5 text-emerald-400" />
@@ -436,7 +436,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Total Files */}
-        <div className="p-4 bg-gray-900 border border-gray-800 rounded-xl">
+        <div className="p-4 bg-[#111111] border border-gray-800 rounded-xl">
           <div className="flex items-center justify-between mb-3">
             <span className="text-gray-400 text-sm">Total Files</span>
             <File className="w-5 h-5 text-amber-400" />
@@ -446,7 +446,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Expiring Soon */}
-        <div className="p-4 bg-gray-900 border border-gray-800 rounded-xl">
+        <div className="p-4 bg-[#111111] border border-gray-800 rounded-xl">
           <div className="flex items-center justify-between mb-3">
             <span className="text-gray-400 text-sm">Expiring</span>
             <Clock className="w-5 h-5 text-orange-400" />
@@ -509,7 +509,7 @@ export default function DashboardPage() {
       {/* Storage Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* File Types Breakdown */}
-        <div className="p-6 bg-gray-900 border border-gray-800 rounded-xl">
+        <div className="p-6 bg-[#111111] border border-gray-800 rounded-xl">
           <h3 className="text-lg font-semibold text-white mb-4">File Types</h3>
           <div className="space-y-3">
             {stats?.recentFiles?.length ? stats.recentFiles.map((type: any) => (
@@ -531,7 +531,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Links */}
-        <div className="p-6 bg-gray-900 border border-gray-800 rounded-xl">
+        <div className="p-6 bg-[#111111] border border-gray-800 rounded-xl">
           <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
           <div className="space-y-3">
             <NextLink href="/files" className="flex items-center gap-3 p-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors">
