@@ -1696,7 +1696,7 @@ const handleDelete = async (fileId: string) => {
       </AnimatePresence>
 
       {/* LEFT SIDEBAR - Folder Tree */}
-      <div className={`${sidebarOpen ? "w-full md:w-64" : "w-0"} transition-all duration-200 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden fixed md:relative inset-0 z-20 md:z-auto`}>
+      <div className={`${sidebarOpen ? "w-full md:w-64" : "w-0 pointer-events-none md:pointer-events-auto"} transition-all duration-200 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden fixed md:relative inset-0 z-20 md:z-auto`}>
         {/* Header */}
         <div className="p-3 border-b border-gray-800 flex items-center justify-between md:justify-between">
           <span className="text-sm font-medium text-gray-400">Folders</span>
