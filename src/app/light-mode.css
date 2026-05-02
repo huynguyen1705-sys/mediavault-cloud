@@ -1,214 +1,288 @@
-/* Light mode styles - targeted overrides only */
-
-/* Elements with this class are always dark regardless of theme */
-html.light .theme-always-dark,
-html.light .theme-always-dark * {
-  /* Reset all light overrides for this subtree */
-}
-html.light .theme-always-dark { background-color: #0f0f0f !important; }
-html.light .theme-always-dark .text-gray-300 { color: #d1d5db !important; }
-html.light .theme-always-dark .text-gray-400 { color: #9ca3af !important; }
-html.light .theme-always-dark .text-white { color: #ffffff !important; }
-html.light .theme-always-dark .text-amber-400 { color: #fbbf24 !important; }
-html.light .theme-always-dark .text-blue-400 { color: #60a5fa !important; }
-html.light .theme-always-dark .text-emerald-400 { color: #34d399 !important; }
-html.light .theme-always-dark .text-violet-400 { color: #a78bfa !important; }
-html.light .theme-always-dark .text-red-400 { color: #f87171 !important; }
-html.light .theme-always-dark .hover\:bg-white\/5:hover { background-color: rgba(255,255,255,0.05) !important; }
-html.light .theme-always-dark .bg-violet-500\/10 { background-color: rgba(139,92,246,0.1) !important; }
-html.light .theme-always-dark a { color: inherit !important; }
-html.light .theme-always-dark button { background-color: transparent !important; color: inherit !important; }
-
+/* Light mode - complete professional white theme */
+/* When .light class is on <html>, EVERYTHING becomes white/near-white */
 
 html.light,
 html.light body {
   background-color: #ffffff !important;
-  color: #0f172a !important;
+  color: #111827 !important;
 }
 
-/* ===== BACKGROUNDS ===== */
-html.light .bg-gray-950 { background-color: #ffffff !important; }
+/* ===== ALL BACKGROUNDS → WHITE ===== */
+html.light [class*="bg-gray-950"],
+html.light [class*="bg-gray-900"],
+html.light [class*="bg-gray-800"],
+html.light [class*="bg-gray-700"],
+html.light [class*="bg-\[#0a0a0a\]"],
+html.light [class*="bg-\[#0f0f0f\]"],
+html.light [class*="bg-\[#111111\]"],
+html.light [class*="bg-\[#141414\]"],
+html.light [class*="bg-\[#1a1a1a\]"],
+html.light [class*="bg-\[#0f1623\]"] {
+  background-color: #ffffff !important;
+}
+
+/* Specific hex overrides */
+html.light .bg-\[\#0f0f0f\] { background-color: #ffffff !important; }
+html.light .bg-\[\#0f0f0f\]\/90 { background-color: rgba(255,255,255,0.95) !important; }
+html.light .bg-\[\#111111\] { background-color: #ffffff !important; }
+html.light .bg-\[\#141414\] { background-color: #f8fafc !important; }
+html.light .bg-\[\#1a1a1a\] { background-color: #f1f5f9 !important; }
 html.light .bg-\[\#0a0a0a\] { background-color: #ffffff !important; }
-html.light .bg-gray-900 { background-color: #f8fafc !important; }
-html.light .bg-gray-900\/80 { background-color: rgba(248, 250, 252, 0.9) !important; }
-html.light .bg-gray-900\/50 { background-color: rgba(248, 250, 252, 0.8) !important; }
-html.light .bg-gray-800 { background-color: #f1f5f9 !important; }
-html.light .bg-gray-800\/50 { background-color: rgba(241, 245, 249, 0.7) !important; }
-html.light .bg-gray-800\/30 { background-color: rgba(241, 245, 249, 0.5) !important; }
-html.light .bg-gray-800\/60 { background-color: rgba(241, 245, 249, 0.8) !important; }
-html.light .bg-gray-700 { background-color: #e2e8f0 !important; }
-html.light .bg-gray-700\/50 { background-color: rgba(226, 232, 240, 0.7) !important; }
+html.light .bg-\[\#0f1623\] { background-color: #ffffff !important; border-color: #e2e8f0 !important; }
 
-/* ===== BORDERS ===== */
-html.light .border-gray-800 { border-color: #e2e8f0 !important; }
-html.light .border-gray-700 { border-color: #e2e8f0 !important; }
-html.light .border-gray-700\/50 { border-color: rgba(226, 232, 240, 0.7) !important; }
-html.light .border-gray-800\/40 { border-color: rgba(226, 232, 240, 0.6) !important; }
-html.light .divide-gray-800\/40 > * + * { border-color: #e2e8f0 !important; }
-html.light .divide-gray-800\/50 > * + * { border-color: #e2e8f0 !important; }
-html.light .border-r.border-gray-800 { border-color: #e2e8f0 !important; }
+/* Semi-transparent backgrounds */
+html.light .bg-gray-900\/80,
+html.light .bg-gray-900\/95,
+html.light .bg-gray-900\/50 { background-color: rgba(255,255,255,0.97) !important; }
+html.light .bg-gray-800\/80 { background-color: #f8fafc !important; }
+html.light .bg-gray-800\/50 { background-color: rgba(248,250,252,0.8) !important; }
+html.light .bg-gray-800\/60 { background-color: rgba(248,250,252,0.85) !important; }
+html.light .bg-gray-800\/30 { background-color: rgba(248,250,252,0.5) !important; }
+html.light .bg-gray-700\/50 { background-color: rgba(226,232,240,0.6) !important; }
 
-/* ===== TEXT ===== */
-html.light .text-white { color: #0f172a !important; }
-html.light .text-gray-100 { color: #0f172a !important; }
+/* ===== ALL TEXT → DARK (gray/near-black) ===== */
+html.light .text-white { color: #111827 !important; }
+html.light .text-gray-100 { color: #111827 !important; }
 html.light .text-gray-200 { color: #1e293b !important; }
 html.light .text-gray-300 { color: #334155 !important; }
 html.light .text-gray-400 { color: #64748b !important; }
 html.light .text-gray-500 { color: #64748b !important; }
 
-/* Keep colored text as-is - high specificity */
-html.light .text-violet-400, html.light [class*="text-violet-400"] { color: #7c3aed !important; }
-html.light .text-violet-300, html.light [class*="text-violet-300"] { color: #8b5cf6 !important; }
-html.light .text-emerald-400, html.light [class*="text-emerald-400"] { color: #059669 !important; }
-html.light .text-red-400, html.light [class*="text-red-400"] { color: #dc2626 !important; }
-html.light .text-blue-400, html.light [class*="text-blue-400"] { color: #2563eb !important; }
-html.light .text-pink-400, html.light [class*="text-pink-400"] { color: #db2777 !important; }
-html.light .text-amber-400, html.light [class*="text-amber-400"] { color: #d97706 !important; }
-html.light .text-green-400, html.light [class*="text-green-400"] { color: #16a34a !important; }
-html.light .text-orange-400, html.light [class*="text-orange-400"] { color: #ea580c !important; }
+/* ===== COLORED ICONS/TEXT - keep readable colors in light mode ===== */
+html.light .text-violet-400 { color: #6d28d9 !important; }
+html.light .text-violet-300 { color: #7c3aed !important; }
+html.light .text-amber-400 { color: #b45309 !important; }
+html.light .text-emerald-400 { color: #047857 !important; }
+html.light .text-blue-400 { color: #1d4ed8 !important; }
+html.light .text-pink-400 { color: #be185d !important; }
+html.light .text-red-400 { color: #b91c1c !important; }
+html.light .text-green-400 { color: #15803d !important; }
+html.light .text-orange-400 { color: #c2410c !important; }
+html.light .text-yellow-400 { color: #a16207 !important; }
+html.light .text-cyan-400 { color: #0e7490 !important; }
 
-/* ===== NAVBAR - always dark ===== */
-html.light nav.theme-always-dark {
-  background-color: rgba(15, 15, 15, 0.95) !important;
-  border-color: rgba(255,255,255,0.08) !important;
+/* ===== BORDERS ===== */
+html.light .border-gray-800 { border-color: #e2e8f0 !important; }
+html.light .border-gray-700 { border-color: #e2e8f0 !important; }
+html.light .border-gray-600 { border-color: #e2e8f0 !important; }
+html.light .border-gray-700\/50 { border-color: rgba(226,232,240,0.7) !important; }
+html.light .border-gray-800\/40 { border-color: rgba(226,232,240,0.5) !important; }
+html.light .border-gray-800\/50 { border-color: #e2e8f0 !important; }
+html.light .divide-gray-800\/40 > * + * { border-color: #e2e8f0 !important; }
+html.light .divide-gray-800\/50 > * + * { border-color: #e2e8f0 !important; }
+html.light .border-r.border-gray-800 { border-color: #e2e8f0 !important; }
+html.light .border-t.border-gray-700 { border-color: #e2e8f0 !important; }
+html.light .border-t.border-gray-800 { border-color: #e2e8f0 !important; }
+
+/* ===== NAVBAR ===== */
+html.light nav {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+  backdrop-filter: blur(16px);
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
 }
-html.light nav.theme-always-dark .text-gray-400 { color: #9ca3af !important; }
-html.light nav.theme-always-dark .text-white { color: #ffffff !important; }
-html.light nav.theme-always-dark .text-amber-400 { color: #fbbf24 !important; }
-html.light nav.theme-always-dark .text-blue-400 { color: #60a5fa !important; }
-html.light nav.theme-always-dark .text-emerald-400 { color: #34d399 !important; }
-html.light nav.theme-always-dark .text-violet-400 { color: #a78bfa !important; }
-html.light nav.theme-always-dark .text-red-400 { color: #f87171 !important; }
-html.light nav.theme-always-dark a { color: inherit !important; }
-html.light nav.theme-always-dark button { background-color: transparent !important; color: inherit !important; }
+html.light nav .text-gray-400 { color: #64748b !important; }
+html.light nav .text-gray-300 { color: #475569 !important; }
+html.light nav a { color: #475569 !important; }
+html.light nav a:hover { color: #111827 !important; }
+html.light nav .text-amber-400 { color: #b45309 !important; }
+html.light nav .text-blue-400 { color: #1d4ed8 !important; }
+html.light nav .text-emerald-400 { color: #047857 !important; }
+html.light nav .text-violet-400 { color: #6d28d9 !important; }
+html.light nav .text-red-400 { color: #b91c1c !important; }
 
 /* ===== BUTTONS ===== */
-/* Only gray buttons get light treatment */
 html.light button.bg-gray-800,
-html.light button[class*="bg-gray-800"] {
+html.light button[class*="bg-gray-800"],
+html.light button.bg-gray-700,
+html.light button[class*="bg-gray-700"] {
   background-color: #f1f5f9 !important;
   color: #334155 !important;
+  border-color: #e2e8f0 !important;
 }
 html.light button.bg-gray-800:hover,
 html.light button[class*="bg-gray-800"]:hover {
   background-color: #e2e8f0 !important;
 }
 
-/* Keep violet/purple buttons untouched */
-html.light .bg-violet-600 { background-color: #7c3aed !important; color: #ffffff !important; }
-html.light .bg-violet-500 { background-color: #8b5cf6 !important; color: #ffffff !important; }
-html.light .bg-violet-600:hover { background-color: #6d28d9 !important; }
+/* Violet buttons - slightly darker for light mode */
+html.light .bg-violet-600 { background-color: #6d28d9 !important; color: #ffffff !important; }
+html.light .bg-violet-500 { background-color: #7c3aed !important; color: #ffffff !important; }
+html.light .bg-violet-600:hover { background-color: #5b21b6 !important; }
 html.light label.bg-violet-600,
-html.light button.bg-violet-600,
-html.light label[class*="bg-violet-600"],
-html.light button[class*="bg-violet-600"] {
-  background-color: #7c3aed !important;
-  color: #ffffff !important;
-}
+html.light button.bg-violet-600 { background-color: #6d28d9 !important; color: #ffffff !important; }
 
 /* ===== INPUTS ===== */
 html.light input[type="text"],
 html.light input[type="search"],
 html.light input[type="email"],
 html.light input[type="password"],
+html.light input[type="file"],
 html.light select,
 html.light textarea {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
-  color: #0f172a !important;
+  color: #111827 !important;
 }
 html.light input::placeholder { color: #94a3b8 !important; }
+html.light input:focus { border-color: #7c3aed !important; outline: none !important; box-shadow: 0 0 0 3px rgba(124,58,237,0.1) !important; }
 
-/* ===== THUMBNAILS - NO OVERRIDE ===== */
-/* Do NOT override backgrounds on image containers, gradient cards, or preview areas */
-html.light .aspect-square img { opacity: 1 !important; }
-html.light .aspect-square { border-color: #e2e8f0 !important; }
-
-/* Only override bg-gray-800 on non-thumbnail containers */
-html.light .aspect-square.bg-gray-800 { background-color: #f1f5f9 !important; }
-
-/* Keep gradient backgrounds on file type cards */
-html.light [class*="bg-gradient-to-br"] {
-  /* Do not override gradients */
+/* ===== CARDS ===== */
+html.light .rounded-xl,
+html.light .rounded-2xl,
+html.light .rounded-lg {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+}
+html.light .rounded-xl:hover,
+html.light .rounded-lg:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
 }
 
-/* ===== LIST VIEW HEADER ===== */
-html.light .bg-gray-800\/80 {
-  background-color: #7c3aed !important;
+/* ===== LIST VIEW ===== */
+/* Header row - violet on white */
+html.light .bg-gray-800\/80,
+html.light .bg-gray-800\/90 {
+  background-color: #6d28d9 !important;
 }
-html.light .bg-gray-800\/80 * {
+html.light .bg-gray-800\/80 *,
+html.light .bg-gray-800\/90 * {
   color: #ffffff !important;
 }
 html.light .bg-gray-800\/80 button {
   background-color: transparent !important;
-  color: #ffffff !important;
+  color: rgba(255,255,255,0.85) !important;
 }
 html.light .bg-gray-800\/80 button:hover {
-  background-color: rgba(255, 255, 255, 0.15) !important;
+  background-color: rgba(255,255,255,0.15) !important;
+  color: #ffffff !important;
 }
+html.light .bg-gray-800\/80 .opacity-20 { opacity: 0.4 !important; }
 
-/* ===== LIST ROWS ===== */
-html.light .hover\:bg-gray-800\/50:hover { background-color: #f8fafc !important; }
+/* List row hover */
+html.light .hover\:bg-gray-800\/50:hover { background-color: #f1f5f9 !important; }
 html.light .hover\:bg-gray-800\/30:hover { background-color: #f8fafc !important; }
+
+/* Selected row */
+html.light .bg-violet-500\/10 { background-color: rgba(109,40,217,0.06) !important; }
 
 /* ===== PROGRESS BARS ===== */
 html.light .bg-gray-800.rounded-full,
-html.light .bg-gray-700.rounded-full {
+html.light .bg-gray-700.rounded-full,
+html.light .bg-gray-800\.rounded-full {
   background-color: #e2e8f0 !important;
 }
 
-/* ===== MODALS & OVERLAYS - Keep dark backdrop ===== */
-html.light .bg-black\/60 { background-color: rgba(0, 0, 0, 0.5) !important; }
-html.light .bg-black\/50 { background-color: rgba(0, 0, 0, 0.4) !important; }
+/* ===== MODALS / OVERLAYS ===== */
+/* Backdrop stays dark for modal effect */
+html.light .bg-black\/60,
+html.light .bg-black\/50,
+html.light .bg-black\/40 { background-color: rgba(0,0,0,0.4) !important; }
 
-/* Modal content */
-html.light [class*="fixed"][class*="z-50"][class*="bg-gray-900"] {
+/* Modal content - white */
+html.light [class*="fixed"][class*="z-50"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15) !important;
+}
+html.light [class*="fixed"][class*="z-50"] button { color: #475569 !important; }
+html.light [class*="fixed"][class*="z-50"] button:hover { background-color: #f1f5f9 !important; }
+
+/* ===== BOTTOM SHEET (mobile) ===== */
+html.light .rounded-t-2xl {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
 }
 
-/* ===== BOTTOM SHEET ===== */
-html.light .rounded-t-2xl.border-t.border-gray-700 {
+/* ===== CONTEXT MENU ===== */
+html.light .fixed.z-50 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.12) !important;
+}
+html.light .fixed.z-50 button { color: #334155 !important; background-color: transparent !important; }
+html.light .fixed.z-50 button:hover { background-color: #f1f5f9 !important; }
+html.light .fixed.z-50 .text-gray-400 { color: #64748b !important; }
+html.light .fixed.z-50 hr { border-color: #e2e8f0 !important; }
+
+/* ===== MOBILE MENU ===== */
+html.light .md\:hidden.bg-\[\#0f0f0f\] {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
 }
-
-/* ===== DROPDOWNS & CONTEXT MENUS ===== */
-html.light [class*="bg-\[#0f1623\]"] {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
-}
-html.light [class*="bg-\[#0f1623\]"] button { color: #334155 !important; background-color: transparent !important; }
-html.light [class*="bg-\[#0f1623\]"] button:hover { background-color: #f1f5f9 !important; }
-
-/* ===== SCROLLBAR ===== */
-html.light ::-webkit-scrollbar { background-color: #f8fafc; }
-html.light ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
-
-/* ===== FLOATING BUTTONS on mobile ===== */
-html.light .shadow-lg.shadow-black\/30 { box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
-html.light .shadow-lg.shadow-violet-500\/30 { box-shadow: 0 4px 12px rgba(124,58,237,0.3) !important; }
-
-/* ===== UPLOAD PANEL ===== */
-html.light .bg-violet-500\/20 { background-color: rgba(124, 58, 237, 0.08) !important; }
+html.light .md\:hidden.bg-\[\#0f0f0f\] a { color: #334155 !important; }
+html.light .md\:hidden.bg-\[\#0f0f0f\] a:hover { color: #111827 !important; }
+html.light .md\:hidden.bg-\[\#0f0f0f\] .text-amber-400 { color: #b45309 !important; }
+html.light .md\:hidden.bg-\[\#0f0f0f\] .text-blue-400 { color: #1d4ed8 !important; }
+html.light .md\:hidden.bg-\[\#0f0f0f\] .text-emerald-400 { color: #047857 !important; }
+html.light .md\:hidden.bg-\[\#0f0f0f\] .text-violet-400 { color: #6d28d9 !important; }
 
 /* ===== SIDEBAR (desktop) ===== */
-html.light .hidden.md\:flex.w-64.bg-gray-900 { background-color: #f8fafc !important; }
+html.light .hidden\.md\:flex {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+html.light .hidden\.md\:flex .text-amber-400 { color: #b45309 !important; }
+
+/* ===== BADGES ===== */
+html.light [class*="bg-violet-500\/20"] { background-color: rgba(109,40,217,0.08) !important; }
+html.light [class*="bg-violet-500\/10"] { background-color: rgba(109,40,217,0.05) !important; }
+html.light [class*="bg-emerald-400\/10"] { background-color: rgba(5,150,105,0.08) !important; }
+html.light [class*="bg-blue-400\/10"] { background-color: rgba(37,99,235,0.08) !important; }
+html.light [class*="bg-red-400\/10"] { background-color: rgba(220,38,38,0.08) !important; }
+html.light [class*="bg-pink-400\/10"] { background-color: rgba(219,39,119,0.08) !important; }
+html.light [class*="bg-amber-400\/10"] { background-color: rgba(217,119,6,0.08) !important; }
+html.light [class*="bg-green-400\/10"] { background-color: rgba(21,128,61,0.08) !important; }
+html.light [class*="bg-gray-700\/50"] { background-color: rgba(226,232,240,0.5) !important; }
+
+/* ===== HOVER STATES ===== */
+html.light .hover\:bg-gray-800:hover { background-color: #f1f5f9 !important; }
+html.light .hover\:bg-gray-700:hover { background-color: #e2e8f0 !important; }
+html.light .hover\:border-gray-700:hover { border-color: #cbd5e1 !important; }
+html.light .hover\:border-gray-600:hover { border-color: #cbd5e1 !important; }
+
+/* ===== SCROLLBAR ===== */
+html.light ::-webkit-scrollbar { background-color: #f8fafc; width: 8px; }
+html.light ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+html.light ::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+
+/* ===== SHADOWS ===== */
+html.light .shadow-lg { box-shadow: 0 10px 25px -3px rgba(0,0,0,0.08) !important; }
+html.light .shadow-xl { box-shadow: 0 20px 50px -12px rgba(0,0,0,0.15) !important; }
+html.light .shadow-black\/30 { --tw-shadow-color: rgba(0,0,0,0.08) !important; }
+
+/* ===== SHIMMER ===== */
+html.light .animate-shimmer { background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%) !important; }
 
 /* ===== EMPTY STATE ===== */
-html.light .text-gray-500.text-sm { color: #64748b !important; }
+html.light .text-gray-500 { color: #64748b !important; }
+html.light .text-gray-600 { color: #64748b !important; }
 
-/* ===== BADGES - keep colored ===== */
-html.light [class*="bg-emerald-400\/10"] { background-color: rgba(5, 150, 105, 0.08) !important; }
-html.light [class*="bg-blue-400\/10"] { background-color: rgba(37, 99, 235, 0.08) !important; }
-html.light [class*="bg-pink-400\/10"] { background-color: rgba(219, 39, 119, 0.08) !important; }
-html.light [class*="bg-red-400\/10"] { background-color: rgba(220, 38, 38, 0.08) !important; }
-html.light [class*="bg-violet-400\/10"] { background-color: rgba(124, 58, 237, 0.08) !important; }
-html.light [class*="bg-gray-700\/50"] { background-color: rgba(226, 232, 240, 0.5) !important; }
+/* ===== ASPECT SQUARE (grid thumbnails) ===== */
+html.light .aspect-square { border-color: #e2e8f0 !important; }
+html.light .aspect-square.bg-gray-800 { background-color: #f8fafc !important; }
+html.light .aspect-square img { border-radius: inherit !important; }
 
-/* ===== GRID CARDS - just lighten the bg, not images ===== */
-html.light .group.cursor-pointer > .aspect-square.bg-gray-800 { background-color: #f1f5f9 !important; }
+/* ===== FLOATING BUTTONS ===== */
+html.light .shadow-lg.shadow-black\/30 { box-shadow: 0 4px 14px rgba(0,0,0,0.1) !important; }
+html.light .shadow-lg.shadow-violet-500\/30 { box-shadow: 0 4px 14px rgba(109,40,217,0.25) !important; }
 
-/* ===== SHIMMER in light mode ===== */
-html.light .animate-shimmer { background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%) !important; }
+/* ===== STICKY HEADER ===== */
+html.light .sticky { background-color: inherit !important; }
+html.light .sticky\.top-0 { position: sticky; top: 0; z-index: 10; }
+
+/* ===== UPLOAD ZONE ===== */
+html.light .border-dashed.border-violet-500 { border-color: #7c3aed !important; }
+html.light .border-dashed:hover { background-color: rgba(109,40,217,0.02) !important; }
+html.light .bg-violet-500\/10 { background-color: rgba(109,40,217,0.05) !important; }
+
+/* ===== GRADIENT BACKGROUNDS (file type cards) ===== */
+/* Keep gradient backgrounds intact */
+html.light [class*="bg-gradient-to-br"] {
+  background-image: inherit !important;
+}
+
+/* ===== SELECTED FILES ===== */
+html.light .border-l-2.border-l-violet-500 { border-color: #7c3aed !important; }

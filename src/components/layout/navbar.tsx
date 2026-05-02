@@ -64,7 +64,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0f0f0f]/90 backdrop-blur-lg border-b border-gray-800 theme-always-dark">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0f0f0f]/90 backdrop-blur-lg border-b border-gray-800 ">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Mobile: Menu button (left) */}
@@ -180,7 +180,7 @@ export default function Navbar() {
 
       {/* Mobile Menu - always dark regardless of theme */}
       {mobileOpen && (
-        <div className="md:hidden bg-[#0f0f0f] border-b border-gray-800 theme-always-dark">
+        <div className="md:hidden bg-[#0f0f0f] border-b border-gray-800 ">
           <div className="px-4 py-3 space-y-1">
             {!isSignedIn ? (
               guestLinks.map((link) => {
