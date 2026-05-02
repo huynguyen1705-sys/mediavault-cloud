@@ -22,7 +22,7 @@ body {
 
 /* Light mode body override - must be after body rule */
 html.light body {
-  background: #fafafa !important;
+  background: #ffffff !important;
   color: #111827 !important;
 }
 
