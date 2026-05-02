@@ -207,8 +207,125 @@ html.light [class*="bg-red-400\/10"] { background-color: rgba(220, 38, 38, 0.08)
 html.light [class*="bg-violet-400\/10"] { background-color: rgba(124, 58, 237, 0.08) !important; }
 html.light [class*="bg-gray-700\/50"] { background-color: rgba(226, 232, 240, 0.5) !important; }
 
-/* ===== GRID CARDS - just lighten the bg, not images ===== */
-html.light .group.cursor-pointer > .aspect-square.bg-gray-800 { background-color: #f1f5f9 !important; }
+/* ===== GRID FILE CARDS - White cards with shadow ===== */
+html.light .group.bg-\[\#111111\] {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+html.light .group.bg-\[\#111111\]:hover {
+  border-color: #d1d5db !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+html.light .group.bg-\[\#111111\] .text-gray-300 { color: #374151 !important; }
+html.light .group.bg-\[\#111111\] .text-gray-400 { color: #6b7280 !important; }
+html.light .group.bg-\[\#111111\] .text-gray-500 { color: #9ca3af !important; }
+
+/* ===== CARD THUMBNAIL BACKGROUND ===== */
+html.light .aspect-square.bg-gray-800 {
+  background-color: #f3f4f6 !important;
+}
+html.light .group.bg-\[\#111111\] .aspect-square.bg-gray-800 {
+  background-color: #f9fafb !important;
+}
+
+/* ===== HOME PAGE CARDS ===== */
+html.light .bg-\[\#111111\]:not(.theme-always-dark *) {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+}
+
+/* ===== SEARCH BAR - Clean white input ===== */
+html.light .bg-\[\#111111\].rounded-xl:has(input[type="search"]),
+html.light .bg-\[\#111111\].rounded-lg:has(input) {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  box-shadow: none !important;
+}
+html.light input[type="search"],
+html.light input[type="text"].bg-\[\#111111\] {
+  background-color: transparent !important;
+  border: none !important;
+  color: #0f172a !important;
+}
+
+/* ===== MORE MENU BUTTON - Outline style in light mode ===== */
+html.light .group.bg-\[\#111111\] button .text-gray-400 { color: #6b7280 !important; }
+
+/* ===== CONTEXT MENU / DROPDOWNS ===== */
+html.light [class*="bg-\[#0f1623\]"],
+html.light .bg-\[#0f1623\] {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12) !important;
+}
+html.light [class*="bg-\[#0f1623\]"] button { color: #374151 !important; background-color: transparent !important; }
+html.light [class*="bg-\[#0f1623\]"] button:hover { background-color: #f3f4f6 !important; }
+
+/* ===== MODALS & OVERLAYS ===== */
+html.light .bg-black\/60 { background-color: rgba(0, 0, 0, 0.4) !important; }
+html.light .bg-black\/50 { background-color: rgba(0, 0, 0, 0.3) !important; }
+
+/* Modal content */
+html.light [class*="fixed"][class*="z-50"].bg-\[\#111111\],
+html.light .bg-\[\#111111\].rounded-2xl {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+/* ===== BOTTOM SHEET ===== */
+html.light .rounded-t-2xl.border-t.border-gray-700 {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+/* ===== DASHBOARD CARDS ===== */
+html.light .bg-\[\#111111\]\/80 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+html.light .bg-\[\#111111\]\/50 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+html.light .bg-\[\#111111\]\/50 {
+  background-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* ===== HOME PAGE SECTIONS ===== */
+html.light .bg-\[\#111111\]\/50,
+html.light .bg-\[\#111111\]\/30 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* ===== FILES PAGE - List view header ===== */
+html.light .bg-gray-800\/80 {
+  background-color: #f9fafb !important;
+}
+html.light .bg-gray-800\/80 * {
+  color: #374151 !important;
+}
+html.light .bg-gray-800\/80 button {
+  background-color: transparent !important;
+  color: #374151 !important;
+}
+
+/* ===== LIST ROWS ===== */
+html.light .hover\:bg-gray-800\/50:hover { background-color: #f3f4f6 !important; }
+html.light .hover\:bg-gray-800\/30:hover { background-color: #f9fafb !important; }
 
 /* ===== SHIMMER in light mode ===== */
-html.light .animate-shimmer { background: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%) !important; }
+html.light .animate-shimmer { background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%) !important; }
+
+/* ===== BADGES - keep colored but adjust opacity ===== */
+html.light [class*="bg-emerald-400\/10"] { background-color: rgba(5, 150, 105, 0.06) !important; }
+html.light [class*="bg-blue-400\/10"] { background-color: rgba(37, 99, 235, 0.06) !important; }
+html.light [class*="bg-pink-400\/10"] { background-color: rgba(219, 39, 119, 0.06) !important; }
+html.light [class*="bg-red-400\/10"] { background-color: rgba(220, 38, 38, 0.06) !important; }
+html.light [class*="bg-violet-400\/10"] { background-color: rgba(124, 58, 237, 0.06) !important; }
+html.light [class*="bg-gray-700\/50"] { background-color: rgba(229, 231, 235, 0.5) !important; }
+
+/* ===== PROGRESS BARS ===== */
+html.light .bg-gray-800.rounded-full,
+html.light .bg-gray-700.rounded-full {
+  background-color: #e5e7eb !important;
+}
