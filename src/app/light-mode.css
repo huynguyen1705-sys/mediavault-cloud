@@ -256,11 +256,11 @@ html.light .group.bg-\[\#111111\] button .text-gray-400 { color: #6b7280 !import
 /* ===== CONTEXT MENU / DROPDOWNS ===== */
 html.light [class*="bg-\[#0f1623\]"] {
   background-color: #ffffff !important;
-  border-color: #e5e7eb !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12) !important;
+  border-color: #d1d5db !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
 }
-html.light [class*="bg-\[#0f1623\]"] button { color: #374151 !important; background-color: transparent !important; }
-html.light [class*="bg-\[#0f1623\]"] button:hover { background-color: #f3f4f6 !important; }
+html.light [class*="bg-\[#0f1623\]"] button { color: #1f2937 !important; background-color: transparent !important; }
+html.light [class*="bg-\[#0f1623\]"] button:hover { background-color: #e5e7eb !important; }
 
 /* ===== MODALS & OVERLAYS ===== */
 html.light .bg-black\/60 { background-color: rgba(0, 0, 0, 0.4) !important; }

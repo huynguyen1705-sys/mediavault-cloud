@@ -205,7 +205,7 @@ const GridFileCard = memo(function GridFileCard({
   }, []);
 
   const itemCls = isLight
-    ? "w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 flex items-center gap-2.5 transition-colors duration-100"
+    ? "w-full px-3 py-1.5 text-left text-sm text-gray-800 hover:bg-gray-200 hover:text-gray-900 flex items-center gap-2.5 transition-colors duration-100"
     : "w-full px-3 py-1.5 text-left text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2.5 transition-colors duration-100";
 
   return (
@@ -273,7 +273,7 @@ const GridFileCard = memo(function GridFileCard({
               ref={menuRef}
               className={`absolute right-0 top-8 z-50 min-w-[180px] rounded-xl py-1 shadow-xl ${
                 isLight
-                  ? 'bg-white border border-gray-200'
+                  ? 'bg-white border border-gray-300'
                   : 'bg-[#0f1623] border border-white/10'
               }`}
               onClick={(e) => e.stopPropagation()}
@@ -361,16 +361,16 @@ const ContextMenuPortal = memo(function ContextMenuPortal({
     zIndex: 9999,
     minWidth: '180px',
     backgroundColor: isLight ? '#ffffff' : '#0f1623',
-    border: isLight ? '1px solid #e5e7eb' : '1px solid rgba(255,255,255,0.08)',
+    border: isLight ? '1px solid #d1d5db' : '1px solid rgba(255,255,255,0.08)',
     borderRadius: '10px',
     padding: '4px 0',
-    boxShadow: isLight ? '0 8px 24px rgba(0,0,0,0.12)' : '0 8px 24px rgba(0,0,0,0.5)',
+    boxShadow: isLight ? '0 10px 30px rgba(0,0,0,0.15)' : '0 8px 24px rgba(0,0,0,0.5)',
   };
 
   const itemCls = isLight
-    ? "w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 flex items-center gap-2.5 transition-colors duration-100"
+    ? "w-full px-3 py-1.5 text-left text-sm text-gray-800 hover:bg-gray-200 hover:text-gray-900 flex items-center gap-2.5 transition-colors duration-100"
     : "w-full px-3 py-1.5 text-left text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2.5 transition-colors duration-100";
-  const dividerCls = isLight ? "my-1 border-t border-gray-100" : "my-1 border-t border-white/5";
+  const dividerCls = isLight ? "my-1 border-t border-gray-200" : "my-1 border-t border-white/5";
 
   return (
     <div id="ctx-menu-portal" style={menuStyle}>
