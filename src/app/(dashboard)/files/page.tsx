@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo, memo } from "react";
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { AudioPreview, PdfPreview, CodePreview, TextPreview, XlsxPreview } from "@/components/PreviewComponents";
 import DocViewer from "@cyntler/react-doc-viewer";
