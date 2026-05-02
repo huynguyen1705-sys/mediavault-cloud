@@ -869,8 +869,8 @@ export default function FilesPage() {
     // Small delay for UI feedback
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const MULTIPART_THRESHOLD = 10 * 1024 * 1024; // 10MB
-    const PART_SIZE = 5 * 1024 * 1024; // 5MB chunks
+    const MULTIPART_THRESHOLD = 200 * 1024 * 1024; // 200MB - only very large files
+    const PART_SIZE = 10 * 1024 * 1024; // 10MB chunks
     const CONCURRENT_PARTS = 4;
     const CONCURRENT_FILES = 10;
 

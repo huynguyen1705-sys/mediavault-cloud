@@ -40,8 +40,8 @@ export default function HomeUpload() {
     // Small delay for UI feedback before starting uploads
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    const MULTIPART_THRESHOLD = 10 * 1024 * 1024; // 10MB
-    const PART_SIZE = 5 * 1024 * 1024; // 5MB chunks
+    const MULTIPART_THRESHOLD = 200 * 1024 * 1024; // 200MB - only very large (CORS ETag issue for smaller)
+    const PART_SIZE = 10 * 1024 * 1024; // 10MB chunks
     const CONCURRENT_PARTS = 4;
 
     const uploadOne = async (uploadFile: UploadFile) => {

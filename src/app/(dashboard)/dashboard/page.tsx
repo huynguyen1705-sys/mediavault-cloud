@@ -85,9 +85,9 @@ export default function DashboardPage() {
 
     setUploadQueue((prev) => [...prev, ...newFiles]);
 
-    const MULTIPART_THRESHOLD = 10 * 1024 * 1024; // 10MB - chunk anything above this
-    const PART_SIZE = 5 * 1024 * 1024; // 5MB chunks (smaller = more parallelism)
-    const CONCURRENT_PARTS = 4; // Upload 4 parts simultaneously
+    const MULTIPART_THRESHOLD = 200 * 1024 * 1024; // 200MB - only for very large files (R2 CORS ETag issue for smaller)
+    const PART_SIZE = 10 * 1024 * 1024; // 10MB chunks
+    const CONCURRENT_PARTS = 4;
 
     // Upload single file (small files < 50MB)
     const uploadSingle = async (uploadFile: typeof newFiles[0], updateProgress: (p: number) => void) => {
