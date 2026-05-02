@@ -1980,7 +1980,7 @@ const handleDelete = async (fileId: string) => {
               type="file"
               multiple
               accept="*/*"
-              className="sr-only"
+              style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden', pointerEvents: 'none' }}
               onChange={(e) => { handleUpload(e.target.files); e.target.value = ''; }}
             />
           </div>
