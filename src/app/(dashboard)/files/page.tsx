@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo, memo } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { AudioPreview, PdfPreview, CodePreview, TextPreview, XlsxPreview } from "@/components/PreviewComponents";
 import DocViewer from "@cyntler/react-doc-viewer";
 import { useUser } from "@clerk/nextjs";
@@ -106,6 +107,173 @@ interface UploadFile {
   progress: number;
   error?: string;
 }
+
+// ============================================================
+// GRID FILE CARD - Fully memoized, manages its own dropdown menu
+// ============================================================
+const GridFileCard = memo(function GridFileCard({
+  file, isSelected, isHighlighted, selectMode, isDragging,
+  onSelect, onClick, onDragStart, onDragEnd, onMobileSheet,
+  onShare, onView, onDetails, onMove, onRename, onCopyLink, onDelete,
+  trashMode, onRestore, onPermanentDelete
+}: {
+  file: FileItem;
+  isSelected: boolean;
+  isHighlighted: boolean;
+  selectMode: boolean;
+  isDragging: boolean;
+  onSelect: () => void;
+  onClick: () => void;
+  onDragStart: (e: React.DragEvent) => void;
+  onDragEnd: (e: React.DragEvent) => void;
+  onMobileSheet: () => void;
+  onShare: () => void;
+  onView: () => void;
+  onDetails: () => void;
+  onMove: () => void;
+  onRename: () => void;
+  onCopyLink: () => void;
+  onDelete: () => void;
+  trashMode: boolean;
+  onRestore: () => void;
+  onPermanentDelete: () => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node) &&
+          btnRef.current && !btnRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const t = setTimeout(() => document.addEventListener('mousedown', handler), 10);
+    return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
+  }, [menuOpen]);
+
+  const ext = file.name.split('.').pop()?.toLowerCase() || '';
+  const isImage = file.mimeType?.startsWith('image/');
+  const isVideo = file.mimeType?.startsWith('video/');
+  const isAudio = file.mimeType?.startsWith('audio/');
+
+  // Thumbnail / icon
+  const renderPreview = () => {
+    if (file.thumbnailUrl) {
+      return (
+        <div className="aspect-square rounded-lg bg-gray-800 overflow-hidden relative">
+          <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+          <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={(e) => { e.stopPropagation(); if (file.url) window.open(file.url, '_blank'); }} className="p-1.5 bg-black/60 hover:bg-black/80 rounded text-white" title="Download"><Download className="w-3.5 h-3.5" /></button>
+            <button onClick={(e) => { e.stopPropagation(); onShare(); }} className="p-1.5 bg-black/60 hover:bg-black/80 rounded text-white" title="Share"><Share2 className="w-3.5 h-3.5" /></button>
+          </div>
+        </div>
+      );
+    }
+    if (isVideo) return <div className="aspect-square rounded-lg bg-gradient-to-br from-blue-600 to-purple-700 flex flex-col items-center justify-center"><Film className="w-10 h-10 text-white/90 mb-2" /><Play className="w-6 h-6 text-white/70" /></div>;
+    if (isAudio) return <div className="aspect-square rounded-lg bg-gradient-to-br from-pink-500 to-pink-700 flex flex-col items-center justify-center"><Headphones className="w-10 h-10 text-white/90" /></div>;
+    if (file.mimeType?.includes('pdf')) return <div className="aspect-square rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex flex-col items-center justify-center"><FileText className="w-10 h-10 text-white/90" /><span className="text-[10px] text-white/70 mt-1">PDF</span></div>;
+    return <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center"><File className="w-10 h-10 text-gray-500" /></div>;
+  };
+
+  const itemCls = "w-full px-3 py-1.5 text-left text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2.5 transition-colors duration-100";
+
+  return (
+    <div
+      className={`group bg-gray-900 border rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer ${
+        isDragging ? "opacity-50" : ""
+      } ${
+        isSelected ? "border-violet-500 bg-violet-500/10" :
+        isHighlighted ? "border-emerald-500/60 bg-emerald-500/5 ring-1 ring-emerald-500/30" :
+        "border-gray-800"
+      }`}
+      draggable={true}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onClick={onClick}
+      onContextMenu={(e) => { e.preventDefault(); setMenuOpen(true); }}
+      onTouchEnd={(e) => {
+        // Simple tap detection for mobile
+        onMobileSheet();
+      }}
+    >
+      {selectMode && (
+        <div className="flex items-center gap-2 mb-3">
+          <div
+            onClick={(e) => { e.stopPropagation(); onSelect(); }}
+            className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
+              isSelected ? "bg-violet-500 border-violet-500" : "border-gray-600 hover:border-violet-400"
+            }`}
+          >
+            {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
+          </div>
+          <div className="flex-1" />
+        </div>
+      )}
+
+      {renderPreview()}
+
+      <div className="flex items-start gap-2 mt-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{file.name}</p>
+          <p className="text-xs text-gray-500">{formatBytes(Number(file.fileSize))}</p>
+        </div>
+        <div className="relative">
+          <button
+            ref={btnRef}
+            className="p-1 hover:bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+
+          {/* Inline dropdown menu - local state only */}
+          {menuOpen && (
+            <div
+              ref={menuRef}
+              className="absolute right-0 top-8 z-50 min-w-[180px] bg-[#0f1623] border border-white/10 rounded-xl py-1 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button className={itemCls} onClick={() => { setMenuOpen(false); onView(); }}><Eye className="w-3.5 h-3.5 text-gray-500" /> View</button>
+              <button className={itemCls} onClick={() => { setMenuOpen(false); onDetails(); }}><Info className="w-3.5 h-3.5 text-gray-500" /> Details</button>
+              <hr className="my-1 border-t border-white/5" />
+              <button className={itemCls} onClick={() => { setMenuOpen(false); onShare(); }}><Share2 className="w-3.5 h-3.5 text-violet-400" /> Share</button>
+              <button className={itemCls} onClick={() => { setMenuOpen(false); onMove(); }}><FolderInput className="w-3.5 h-3.5 text-gray-500" /> Move to...</button>
+              <button className={itemCls} onClick={() => { setMenuOpen(false); onRename(); }}><Edit className="w-3.5 h-3.5 text-gray-500" /> Rename</button>
+              <button className={itemCls} onClick={() => { setMenuOpen(false); onCopyLink(); }}><Copy className="w-3.5 h-3.5 text-gray-500" /> Copy Link</button>
+              {file.url && (
+                <a href={file.url} download={file.name} className={itemCls} onClick={() => setMenuOpen(false)}><Download className="w-3.5 h-3.5 text-blue-400" /> Download</a>
+              )}
+              <hr className="my-1 border-t border-white/5" />
+              {trashMode ? (
+                <>
+                  <button className={`${itemCls} text-emerald-400`} onClick={() => { setMenuOpen(false); onRestore(); }}><RotateCcw className="w-3.5 h-3.5" /> Restore</button>
+                  <button className={`${itemCls} text-red-400`} onClick={() => { setMenuOpen(false); onPermanentDelete(); }}><XCircle className="w-3.5 h-3.5" /> Delete Forever</button>
+                </>
+              ) : (
+                <button className={`${itemCls} text-red-400`} onClick={() => { setMenuOpen(false); onDelete(); }}><Trash2 className="w-3.5 h-3.5" /> Move to Trash</button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}, (prev, next) => {
+  // Custom comparator - only re-render when these change
+  return prev.file.id === next.file.id &&
+    prev.file.thumbnailUrl === next.file.thumbnailUrl &&
+    prev.file.url === next.file.url &&
+    prev.file.name === next.file.name &&
+    prev.isSelected === next.isSelected &&
+    prev.isHighlighted === next.isHighlighted &&
+    prev.selectMode === next.selectMode &&
+    prev.isDragging === next.isDragging &&
+    prev.trashMode === next.trashMode;
+});
 
 // ============================================================
 // CONTEXT MENU - Separate component to prevent parent re-render
@@ -287,6 +455,22 @@ export default function FilesPage() {
   // Track URL fetch version to trigger single re-render after all batches complete
   const [urlVersion, setUrlVersion] = useState(0);
   const urlFetchInProgress = useRef(false);
+
+  // Highlighted files (recently uploaded) - reads from sessionStorage, auto-clears
+  const [highlightedFiles, setHighlightedFiles] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const stored = sessionStorage.getItem('mv-highlight-files');
+    if (stored) {
+      try {
+        const ids: string[] = JSON.parse(stored);
+        setHighlightedFiles(new Set(ids));
+        sessionStorage.removeItem('mv-highlight-files');
+        // Auto-clear highlight after 5 seconds
+        const t = setTimeout(() => setHighlightedFiles(new Set()), 5000);
+        return () => clearTimeout(t);
+      } catch { /* ignore */ }
+    }
+  }, []);
 
   // Resolve URLs from cache into files (only recomputes when urlVersion or files change)
   const filesWithUrls = useMemo(() => {
@@ -2052,82 +2236,33 @@ const handleDelete = async (fileId: string) => {
             </div>
           )}
 
-          {/* Files Grid */}
+          {/* Files Grid - Each card manages its own menu (no shared state re-render) */}
           {!loading && files.length > 0 && viewMode === "grid" && (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
               {sortedFiles.map((file) => (
-                <div
+                <GridFileCard
                   key={file.id}
-                  className={`group bg-gray-900 border rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer ${
-                    draggingFileId === file.id ? "opacity-50" : ""
-                  } ${
-                    selectedFiles.has(file.id)
-                      ? "border-violet-500 bg-violet-500/10"
-                      : "border-gray-800"
-                  }`}
-                  draggable={true}
+                  file={file}
+                  isSelected={selectedFiles.has(file.id)}
+                  isHighlighted={highlightedFiles.has(file.id)}
+                  selectMode={selectMode}
+                  isDragging={draggingFileId === file.id}
+                  onSelect={() => toggleFileSelection(file.id)}
+                  onClick={() => { if (selectMode) { toggleFileSelection(file.id); } else { setSelectedFile(file); setShowPreview(true); } }}
                   onDragStart={(e) => handleDragStart(e, file)}
                   onDragEnd={handleDragEnd}
-                  onClick={() => {
-                    if (selectMode) {
-                      toggleFileSelection(file.id);
-                    } else {
-                      setSelectedFile(file);
-                      setShowPreview(true);
-                    }
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setContextMenu({ x: e.clientX, y: e.clientY, file });
-                  }}
-                  onTouchStart={(e) => {
-                    setTouchStartPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-                  }}
-                  onTouchEnd={(e) => {
-                    if (touchStartPos) {
-                      const diffX = Math.abs(e.changedTouches[0].clientX - touchStartPos.x);
-                      const diffY = Math.abs(e.changedTouches[0].clientY - touchStartPos.y);
-                      // If minimal movement = tap, show mobile sheet
-                      if (diffX < 10 && diffY < 10) {
-                        setSelectedFile(file);
-                        setShowMobileSheet(true);
-                      }
-                      setTouchStartPos(null);
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    {selectMode && (
-                      <div
-                        onClick={(e) => { e.stopPropagation(); toggleFileSelection(file.id); }}
-                        className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
-                          selectedFiles.has(file.id)
-                            ? "bg-violet-500 border-violet-500"
-                            : "border-gray-600 hover:border-violet-400"
-                        }`}
-                      >
-                        {selectedFiles.has(file.id) && <CheckCircle className="w-4 h-4 text-white" />}
-                      </div>
-                    )}
-                    <div className="flex-1" />
-                  </div>
-                  <MiniPreview
-                    file={file}
-                    onPreview={() => { setSelectedFile(file); setShowPreview(true); }}
-                  />
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{file.name}</p>
-                      <p className="text-xs text-gray-500">{formatBytes(Number(file.fileSize))}</p>
-                    </div>
-                    <button
-                      className="p-1 hover:bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => { e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, file }); }}
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                  onMobileSheet={() => { setSelectedFile(file); setShowMobileSheet(true); }}
+                  onShare={() => { setSelectedFile(file); setShowShareModal(true); }}
+                  onView={() => { setSelectedFile(file); setShowPreview(true); }}
+                  onDetails={() => { setSelectedFile(file); setShowDetails(true); }}
+                  onMove={() => { setMovingFile(file); setShowMoveModal(true); }}
+                  onRename={() => { setRenamingItem({ type: "file", item: file }); setNewName(file.name); setShowRenameModal(true); }}
+                  onCopyLink={() => { navigator.clipboard.writeText(window.location.origin + "/api/files/" + file.id); showToastMessage("Link copied!"); }}
+                  onDelete={() => handleDelete(file.id)}
+                  trashMode={trashMode}
+                  onRestore={() => handleRestore(file.id)}
+                  onPermanentDelete={() => handlePermanentDelete(file.id)}
+                />
               ))}
             </div>
           )}

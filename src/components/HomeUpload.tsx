@@ -94,6 +94,13 @@ export default function HomeUpload() {
           }),
         });
         if (!confirmRes.ok) throw new Error("Upload confirmation failed");
+        const confirmData = await confirmRes.json().catch(() => null);
+        // Track uploaded file IDs for highlight after redirect
+        if (confirmData?.file?.id) {
+          const existing = JSON.parse(sessionStorage.getItem('mv-highlight-files') || '[]');
+          existing.push(confirmData.file.id);
+          sessionStorage.setItem('mv-highlight-files', JSON.stringify(existing));
+        }
 
         setUploadQueue((prev) =>
           prev.map((f) =>
