@@ -491,6 +491,14 @@ export default function FilesPage() {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isLight, setIsLight] = useState(false);
+  useEffect(() => {
+    const update = () => setIsLight(document.documentElement.classList.contains('light'));
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
 
   // Initialize sidebar state based on screen size
   useEffect(() => {
@@ -2784,23 +2792,31 @@ const handleDelete = async (fileId: string) => {
       {showPreview && selectedFile && (
         <div
           className="fixed inset-0 z-50 flex flex-col md:flex-row"
-          style={{ backgroundColor: 'rgba(0,0,0,0.95)' }}
+          style={{ backgroundColor: isLight ? 'rgba(255,255,255,0.97)' : 'rgba(0,0,0,0.95)' }}
         >
           {/* Top bar - Close and Info buttons */}
           <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
             {/* Info button for mobile */}
             <button
               onClick={() => setMobileDetailsOpen(true)}
-              className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors backdrop-blur-sm md:hidden"
+              className={`p-3 rounded-full transition-colors backdrop-blur-sm md:hidden ${
+                isLight
+                  ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                  : 'bg-black/50 hover:bg-black/70 text-white'
+              }`}
             >
-              <Info className="w-6 h-6 text-white" />
+              <Info className="w-6 h-6" />
             </button>
             {/* Close button */}
             <button
               onClick={() => setShowPreview(false)}
-              className="p-3 bg-black/30 hover:bg-black/50 border border-white/50 hover:border-white rounded-full transition-colors"
+              className={`p-3 rounded-full transition-colors border ${
+                isLight
+                  ? 'bg-white hover:bg-gray-100 border-gray-300 hover:border-gray-400 text-gray-800'
+                  : 'bg-black/30 hover:bg-black/50 border-white/50 hover:border-white text-white'
+              }`}
             >
-              <X className="w-6 h-6 text-white" />
+              <X className="w-6 h-6" />
             </button>
           </div>
 
