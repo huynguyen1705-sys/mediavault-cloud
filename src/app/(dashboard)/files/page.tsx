@@ -2506,7 +2506,7 @@ const handleDelete = async (fileId: string) => {
                     </div>
 
                     {/* File name column */}
-                    <div className="flex items-center gap-3 min-w-0 pr-3">
+                    <div className="flex items-center gap-3 min-w-0 pr-3 pl-2">
                       {selectMode && (
                         <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-gray-800/60">
                           {file.thumbnailUrl ? (
