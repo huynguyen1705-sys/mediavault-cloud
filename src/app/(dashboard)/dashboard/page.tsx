@@ -84,7 +84,10 @@ export default function DashboardPage() {
     }));
 
     setUploadQueue((prev) => [...prev, ...newFiles]);
-    // Upload via server: server generates thumbnail -> uploads to R2 -> returns link
+
+    const DIRECT_UPLOAD_THRESHOLD = 50 * 1024 * 1024; // 50MB
+
+    // Upload via server (with thumbnail) for small files, presigned URL for large files
     const uploadOne = async (uploadFile: typeof newFiles[0]) => {
       try {
         setUploadQueue((prev) =>
@@ -93,39 +96,81 @@ export default function DashboardPage() {
           )
         );
 
-        const formData = new FormData();
-        formData.append("file", uploadFile.file);
-        // folderId not needed for dashboard upload
+        const updateProgress = (percent: number) => {
+          setUploadQueue((prev) =>
+            prev.map((f) =>
+              f.id === uploadFile.id ? { ...f, progress: percent } : f
+            )
+          );
+        };
 
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-              const percent = Math.round((e.loaded / e.total) * 100);
-              setUploadQueue((prev) =>
-                prev.map((f) =>
-                  f.id === uploadFile.id ? { ...f, progress: percent } : f
-                )
-              );
-            }
-          };
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              setUploadQueue((prev) =>
-                prev.map((f) =>
-                  f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f
-                )
-              );
-              resolve();
-            } else {
-              try { reject(new Error(JSON.parse(xhr.responseText).error || "Upload failed")); }
-              catch { reject(new Error("Upload failed")); }
-            }
-          };
-          xhr.onerror = () => reject(new Error("Upload failed"));
-          xhr.open("POST", "/api/upload");
-          xhr.send(formData);
-        });
+        if (uploadFile.file.size > DIRECT_UPLOAD_THRESHOLD) {
+          // LARGE FILE: presigned URL → R2 direct → confirm
+          // Step 1: Get presigned URL
+          const urlRes = await fetch(
+            `/api/upload-url?fileName=${encodeURIComponent(uploadFile.file.name)}&contentType=${encodeURIComponent(uploadFile.file.type)}&fileSize=${uploadFile.file.size}`
+          );
+          if (!urlRes.ok) {
+            const err = await urlRes.json();
+            throw new Error(err.error || "Failed to get upload URL");
+          }
+          const { uploadUrl, fileKey } = await urlRes.json();
+
+          // Step 2: Upload to R2 with progress
+          await new Promise<void>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.upload.onprogress = (e) => {
+              if (e.lengthComputable) updateProgress(Math.round((e.loaded / e.total) * 95));
+            };
+            xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error("R2 upload failed"));
+            xhr.onerror = () => reject(new Error("Network error during upload"));
+            xhr.open("PUT", uploadUrl);
+            xhr.setRequestHeader("Content-Type", uploadFile.file.type);
+            xhr.send(uploadFile.file);
+          });
+
+          // Step 3: Confirm upload
+          const confirmRes = await fetch("/api/upload/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fileKey,
+              fileName: uploadFile.file.name,
+              mimeType: uploadFile.file.type,
+              fileSize: uploadFile.file.size,
+            }),
+          });
+          if (!confirmRes.ok) throw new Error("Upload confirm failed");
+          updateProgress(100);
+
+        } else {
+          // SMALL FILE: server-side upload with thumbnail generation
+          const formData = new FormData();
+          formData.append("file", uploadFile.file);
+
+          await new Promise<void>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.upload.onprogress = (e) => {
+              if (e.lengthComputable) updateProgress(Math.round((e.loaded / e.total) * 100));
+            };
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) resolve();
+              else {
+                try { reject(new Error(JSON.parse(xhr.responseText).error || "Upload failed")); }
+                catch { reject(new Error("Upload failed")); }
+              }
+            };
+            xhr.onerror = () => reject(new Error("Network error"));
+            xhr.open("POST", "/api/upload");
+            xhr.send(formData);
+          });
+        }
+
+        setUploadQueue((prev) =>
+          prev.map((f) =>
+            f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f
+          )
+        );
       } catch (error: any) {
         setUploadQueue((prev) =>
           prev.map((f) =>
@@ -135,14 +180,19 @@ export default function DashboardPage() {
       }
     };
 
+    // Upload 3 files concurrently
     for (let i = 0; i < newFiles.length; i += 3) {
       await Promise.all(newFiles.slice(i, i + 3).map(uploadOne));
     }
-    // Only redirect after ALL files complete
-    const allCompleted = uploadQueue.every(f => f.status === "completed");
-    if (allCompleted && newFiles.length > 0) {
-      setTimeout(() => router.push("/files"), 1000);
-    }
+
+    // Redirect after all complete
+    setTimeout(() => {
+      setUploadQueue((prev) => {
+        const allDone = prev.every(f => f.status === "completed");
+        if (allDone && prev.length > 0) router.push("/files");
+        return prev;
+      });
+    }, 1500);
   }, [router]);
 
   if (!isLoaded || loading) {

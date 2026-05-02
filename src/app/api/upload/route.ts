@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { uploadToR2, generateFileKey, getPresignedUrl } from "@/lib/r2";
 import prisma from "@/lib/db";
 import { exec } from "child_process";
@@ -10,19 +10,78 @@ import * as os from "os";
 
 const execAsync = promisify(exec);
 
+// Max body size for this route (Next.js 14+ App Router)
+export const maxDuration = 300; // 5 minutes timeout for large uploads
+
+// Streaming write: reads file from FormData in chunks to avoid full memory copy
+async function writeFileToDisk(file: File, destPath: string): Promise<void> {
+  const stream = file.stream();
+  const writer = fs.createWriteStream(destPath);
+  const reader = stream.getReader();
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      writer.write(Buffer.from(value));
+    }
+  } finally {
+    writer.end();
+    await new Promise<void>((resolve, reject) => {
+      writer.on("finish", resolve);
+      writer.on("error", reject);
+    });
+  }
+}
+
+async function generateThumbnail(
+  tempFilePath: string,
+  fileKey: string,
+  isVideo: boolean
+): Promise<{ thumbnailPath: string | null; thumbnailStatus: string }> {
+  const tempDir = os.tmpdir();
+  const tempThumbnailPath = path.join(tempDir, `thumb_${Date.now()}.jpg`);
+  const thumbnailKey = `${path.dirname(fileKey)}/thumbnails/${path.basename(fileKey)}.jpg`;
+
+  try {
+    if (isVideo) {
+      await execAsync(
+        `ffmpeg -i "${tempFilePath}" -ss 00:00:01 -vframes 1 -vf "scale=320:-1" "${tempThumbnailPath}" -y 2>/dev/null`,
+        { timeout: 30000 }
+      );
+    } else {
+      // Image thumbnail - maintain aspect ratio
+      await execAsync(
+        `ffmpeg -i "${tempFilePath}" -vf "scale=320:-1" "${tempThumbnailPath}" -y 2>/dev/null`,
+        { timeout: 15000 }
+      );
+    }
+
+    if (!fs.existsSync(tempThumbnailPath)) {
+      return { thumbnailPath: null, thumbnailStatus: "failed" };
+    }
+
+    const thumbBuffer = fs.readFileSync(tempThumbnailPath);
+    const { key: thumbKey } = await uploadToR2(thumbBuffer, thumbnailKey, "image/jpeg");
+
+    // Clean up temp thumbnail
+    fs.unlinkSync(tempThumbnailPath);
+
+    return { thumbnailPath: thumbKey, thumbnailStatus: "ready" };
+  } catch (error) {
+    // Clean up on failure
+    if (fs.existsSync(tempThumbnailPath)) fs.unlinkSync(tempThumbnailPath);
+    return { thumbnailPath: null, thumbnailStatus: "failed" };
+  }
+}
+
 export async function POST(request: NextRequest) {
   let tempFilePath: string | null = null;
-  let tempThumbnailPath: string | null = null;
 
   try {
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 401 });
     }
 
     // Get user profile with plan
@@ -39,10 +98,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Account suspended" }, { status: 403 });
     }
 
-    // Determine max file size from plan
-    const maxFileSize = userProfile.plan.maxFileSizeMb * 1024 * 1024;
+    // Parse FormData
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch (e) {
+      return NextResponse.json(
+        { error: "Request body too large or malformed. Try a smaller file or use presigned upload for files >50MB." },
+        { status: 413 }
+      );
+    }
 
-    const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const folderId = formData.get("folderId") as string | null;
 
@@ -51,14 +117,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Check file size against plan limit
+    const maxFileSize = userProfile.plan.maxFileSizeMb * 1024 * 1024;
     if (file.size > maxFileSize) {
       return NextResponse.json(
-        { error: `File too large. Maximum size for your plan (${userProfile.plan.displayName}) is ${userProfile.plan.maxFileSizeMb}MB. Please upgrade your plan.` },
+        { error: `File too large. Max ${userProfile.plan.maxFileSizeMb}MB for ${userProfile.plan.displayName} plan.` },
         { status: 400 }
       );
     }
 
-    // Check storage limit BEFORE reading full file into memory
+    // Check storage limit
     const fileSizeBytes = BigInt(file.size);
     const storageLimitBytes = BigInt(userProfile.plan.storageGb * 1024 * 1024 * 1024);
     const newStorageUsed = userProfile.storageUsedBytes + fileSizeBytes;
@@ -73,70 +140,30 @@ export async function POST(request: NextRequest) {
     // Generate unique file key for R2
     const fileKey = generateFileKey(userId, file.name);
 
-    // Create temp directory
+    // Write file to temp (streaming to avoid double memory)
     const tempDir = os.tmpdir();
     const fileExt = path.extname(file.name);
-    tempFilePath = path.join(tempDir, `upload_${Date.now()}${fileExt}`);
+    tempFilePath = path.join(tempDir, `upload_${Date.now()}_${Math.random().toString(36).slice(2)}${fileExt}`);
 
-    // Write file to temp location
-    const buffer = Buffer.from(await file.arrayBuffer());
-    fs.writeFileSync(tempFilePath, buffer);
+    await writeFileToDisk(file, tempFilePath);
 
-    // Generate thumbnail if needed
+    // Upload main file to R2 (read from disk)
+    const fileBuffer = fs.readFileSync(tempFilePath);
+    const { key } = await uploadToR2(fileBuffer, fileKey, file.type);
+
+    // Generate thumbnail (non-blocking for response - but we wait to save correct status)
     let thumbnailPath: string | null = null;
     let thumbnailStatus = "not_applicable";
 
-    if (file.type.startsWith("video/")) {
-      thumbnailStatus = "pending";
-      try {
-        // Create thumbnail from video
-        const thumbnailExt = ".jpg";
-        tempThumbnailPath = path.join(tempDir, `thumb_${Date.now()}${thumbnailExt}`);
-        const thumbnailKey = `${path.dirname(fileKey)}/thumbnails/${path.basename(fileKey)}${thumbnailExt}`;
-
-        // Extract thumbnail at 1 second mark
-        await execAsync(
-          `ffmpeg -i "${tempFilePath}" -ss 00:00:01 -vframes 1 -vf "scale=320:180" "${tempThumbnailPath}" -y 2>/dev/null`
-        );
-
-        // Upload thumbnail to R2
-        const thumbBuffer = fs.readFileSync(tempThumbnailPath);
-        const { key: thumbKey } = await uploadToR2(thumbBuffer, thumbnailKey, "image/jpeg");
-        thumbnailPath = thumbKey;
-
-        // Update thumbnail status to ready
-        thumbnailStatus = "ready";
-      } catch (thumbError) {
-        console.error("Thumbnail generation failed:", thumbError);
-        thumbnailStatus = "failed";
-      }
-    } else if (file.type.startsWith("image/")) {
-      thumbnailStatus = "pending";
-      try {
-        // Create thumbnail for images
-        const thumbnailExt = ".jpg";
-        tempThumbnailPath = path.join(tempDir, `thumb_${Date.now()}${thumbnailExt}`);
-        const thumbnailKey = `${path.dirname(fileKey)}/thumbnails/${path.basename(fileKey)}${thumbnailExt}`;
-
-        // Resize image to thumbnail
-        await execAsync(
-          `ffmpeg -i "${tempFilePath}" -vf "scale=320:180" "${tempThumbnailPath}" -y 2>/dev/null`
-        );
-
-        // Upload thumbnail to R2
-        const thumbBuffer = fs.readFileSync(tempThumbnailPath);
-        const { key: thumbKey } = await uploadToR2(thumbBuffer, thumbnailKey, "image/jpeg");
-        thumbnailPath = thumbKey;
-
-        thumbnailStatus = "ready";
-      } catch (thumbError) {
-        console.error("Image thumbnail failed:", thumbError);
-        thumbnailStatus = "failed";
-      }
+    if (file.type.startsWith("video/") || file.type.startsWith("image/")) {
+      const result = await generateThumbnail(
+        tempFilePath,
+        fileKey,
+        file.type.startsWith("video/")
+      );
+      thumbnailPath = result.thumbnailPath;
+      thumbnailStatus = result.thumbnailStatus;
     }
-
-    // Upload main file to R2
-    const { key, url } = await uploadToR2(buffer, fileKey, file.type);
 
     // Calculate expiration for free users
     const expiresAt = userProfile.plan.fileRetentionDays > 0
@@ -180,7 +207,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Generate presigned URL for download
+    // Generate presigned URL for immediate display
     const presignedUrl = await getPresignedUrl(key);
 
     return NextResponse.json({
@@ -196,42 +223,17 @@ export async function POST(request: NextRequest) {
         expiresAt: expiresAt?.toISOString() || null,
       }
     });
-  } catch (error) {
-    console.error("Upload error:", error);
-
-    // Log failed upload
-    try {
-      const { userId } = await auth();
-      if (userId) {
-        const userProfile = await prisma.user.findUnique({
-          where: { clerkUserId: userId },
-        });
-        if (userProfile) {
-          await prisma.upload.create({
-            data: {
-              userId: userProfile.id,
-              fileName: "unknown",
-              fileSize: BigInt(0),
-              status: "failed",
-            },
-          });
-        }
-      }
-    } catch (logError) {
-      console.error("Failed to log error:", logError);
-    }
+  } catch (error: any) {
+    console.error("Upload error:", error?.message || error);
 
     return NextResponse.json(
-      { error: "Upload failed" },
+      { error: "Upload failed. Please try again." },
       { status: 500 }
     );
   } finally {
     // Clean up temp files
     if (tempFilePath && fs.existsSync(tempFilePath)) {
-      fs.unlinkSync(tempFilePath);
-    }
-    if (tempThumbnailPath && fs.existsSync(tempThumbnailPath)) {
-      fs.unlinkSync(tempThumbnailPath);
+      try { fs.unlinkSync(tempFilePath); } catch {}
     }
   }
 }
