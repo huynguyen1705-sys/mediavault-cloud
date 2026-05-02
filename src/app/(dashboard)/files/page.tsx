@@ -1821,15 +1821,26 @@ const handleDelete = async (fileId: string) => {
         </div>
       </div>
 
-      {/* Mobile Folders button (floating) */}
+      {/* Mobile floating buttons */}
       {!sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="md:hidden fixed bottom-6 left-4 z-30 flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-full border border-gray-700 shadow-lg shadow-black/30"
-        >
-          <Folder className="w-4 h-4 text-violet-400" />
-          <span className="text-sm text-gray-300 font-medium">Folders</span>
-        </button>
+        <div className="md:hidden fixed bottom-6 left-4 right-4 z-30 flex justify-between pointer-events-none">
+          {/* Folders button - left */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="pointer-events-auto flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-full border border-gray-700 shadow-lg shadow-black/30"
+          >
+            <Folder className="w-4 h-4 text-violet-400" />
+            <span className="text-sm text-gray-300 font-medium">Folders</span>
+          </button>
+          {/* Upload FAB - right */}
+          <label
+            htmlFor="file-input"
+            className="pointer-events-auto flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 rounded-full shadow-lg shadow-violet-500/30 cursor-pointer"
+          >
+            <Upload className="w-4 h-4 text-white" />
+            <span className="text-sm text-white font-medium">Upload</span>
+          </label>
+        </div>
       )}
 
       {/* RIGHT CONTENT */}
@@ -1871,13 +1882,13 @@ const handleDelete = async (fileId: string) => {
                   <CheckSquare className="w-4 h-4" />
                   {selectMode ? "Cancel" : "Select"}
                 </button>
-                <button
-                  onClick={() => document.getElementById("file-input")?.click()}
-                  className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors"
+                <label
+                  htmlFor="file-input"
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
                 >
                   <Upload className="w-4 h-4" />
                   Upload
-                </button>
+                </label>
                 {/* Trash & Refresh - hidden on mobile */}
                 <div className="hidden md:flex items-center gap-1">
                   <button
@@ -1969,8 +1980,8 @@ const handleDelete = async (fileId: string) => {
               type="file"
               multiple
               accept="*/*"
-              className="hidden"
-              onChange={(e) => handleUpload(e.target.files)}
+              className="sr-only"
+              onChange={(e) => { handleUpload(e.target.files); e.target.value = ''; }}
             />
           </div>
 
@@ -2277,13 +2288,13 @@ const handleDelete = async (fileId: string) => {
               <p className="text-gray-500 mb-6 text-center max-w-sm">
                 Drag and drop files here or click the button below to upload your first files
               </p>
-              <button
-                onClick={() => document.getElementById("file-input")?.click()}
-                className="px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-colors flex items-center gap-2"
+              <label
+                htmlFor="file-input"
+                className="px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
               >
                 <Upload className="w-5 h-5" />
                 Upload Files
-              </button>
+              </label>
             </motion.div>
           )}
 
