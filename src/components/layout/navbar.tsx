@@ -146,7 +146,13 @@ export default function Navbar() {
               <div className="flex items-center gap-3">
                 {/* Theme Toggle Button */}
                 <button
-                  onClick={() => { toggleTheme(); window.location.reload(); }}
+                  onClick={() => {
+                    // Set cookie SYNCHRONOUSLY before reload (most reliable)
+                    const next = theme === "dark" ? "light" : "dark";
+                    document.cookie = `mv-theme=${next}; path=/; max-age=31536000; SameSite=Lax`;
+                    toggleTheme();
+                    window.location.reload();
+                  }}
                   className="p-2 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
                   title={theme === "dark" ? "Light mode" : "Dark mode"}
                 >
