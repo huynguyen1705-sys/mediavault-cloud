@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
-import { getPresignedUrl, getPublicUrl, deleteFromR2 } from "@/lib/r2";
+import { getPresignedUrl, deleteFromR2 } from "@/lib/r2";
 
-// GET - List files for user
+// GET - List files for user (paginated, fast)
 export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth();
@@ -21,22 +21,25 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const folderId = searchParams.get("folderId");
-    const type = searchParams.get("type"); // image, video, audio
+    const type = searchParams.get("type");
     const search = searchParams.get("search");
-    const dateFilter = searchParams.get("date"); // today, week, month
-    const sizeFilter = searchParams.get("size"); // small (<1MB), medium (1-10MB), large (>10MB)
+    const dateFilter = searchParams.get("date");
+    const sizeFilter = searchParams.get("size");
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") === "asc" ? "asc" : "desc";
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
+    const offset = (page - 1) * limit;
 
-    // Build where clause (exclude trashed files by default)
+    // Build where clause
     const where: any = {
       userId: userProfile.id,
-      deletedAt: null, // Only show non-deleted files
+      deletedAt: null,
     };
 
-    if (folderId === "root" || folderId === null) {
+    if (folderId === "root" || folderId === null || !folderId) {
       where.folderId = null;
-    } else if (folderId) {
+    } else {
       where.folderId = folderId;
     }
 
@@ -50,11 +53,10 @@ export async function GET(request: NextRequest) {
       where.name = { contains: search, mode: "insensitive" };
     }
 
-    // Date filter
     if (dateFilter) {
       const now = new Date();
       if (dateFilter === "today") {
-        where.createdAt = { gte: new Date(now.setHours(0, 0, 0, 0)) };
+        where.createdAt = { gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()) };
       } else if (dateFilter === "week") {
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
@@ -66,83 +68,118 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Size filter
     if (sizeFilter) {
       if (sizeFilter === "small") {
-        where.fileSize = { lt: 1024 * 1024 }; // < 1MB
+        where.fileSize = { lt: 1024 * 1024 };
       } else if (sizeFilter === "medium") {
         where.AND = [
-          { fileSize: { gte: 1024 * 1024 } }, // >= 1MB
-          { fileSize: { lte: 10 * 1024 * 1024 } }, // <= 10MB
+          { fileSize: { gte: 1024 * 1024 } },
+          { fileSize: { lte: 10 * 1024 * 1024 } },
         ];
       } else if (sizeFilter === "large") {
-        where.fileSize = { gt: 10 * 1024 * 1024 }; // > 10MB
+        where.fileSize = { gt: 10 * 1024 * 1024 };
       }
     }
 
-    // Fetch files with presigned URLs
-    const files = await prisma.file.findMany({
-      where,
-      orderBy: { [sortBy]: sortOrder },
-      include: {
-        folder: {
-          select: { id: true, name: true },
+    // Fetch files with pagination (NO presigned URLs in list - generate on demand)
+    const [files, totalCount] = await Promise.all([
+      prisma.file.findMany({
+        where,
+        orderBy: { [sortBy]: sortOrder },
+        skip: offset,
+        take: limit,
+        include: {
+          folder: { select: { id: true, name: true } },
         },
-      },
-    });
+      }),
+      prisma.file.count({ where }),
+    ]);
 
-    // Generate presigned URLs for each file
-    const filesWithUrls = await Promise.all(
-      files.map(async (file) => {
-        let presignedUrl = null;
-        if (file.storagePath) {
-          presignedUrl = await getPresignedUrl(file.storagePath);
-        }
+    // Return file metadata WITHOUT presigned URLs (fast!)
+    // Client will request URLs on demand via /api/files/[id] or batch endpoint
+    const filesData = files.map((file) => ({
+      id: file.id,
+      name: file.name,
+      mimeType: file.mimeType,
+      fileSize: file.fileSize.toString(),
+      storagePath: file.storagePath,
+      thumbnailPath: file.thumbnailPath,
+      thumbnailStatus: file.thumbnailStatus,
+      url: null, // Generated on demand
+      thumbnailUrl: null, // Generated on demand
+      folderId: file.folderId,
+      folder: file.folder,
+      isPublic: file.isPublic,
+      downloadEnabled: file.downloadEnabled,
+      expiresAt: file.expiresAt?.toISOString() || null,
+      createdAt: file.createdAt.toISOString(),
+      updatedAt: file.updatedAt.toISOString(),
+    }));
 
-        return {
-          id: file.id,
-          name: file.name,
-          mimeType: file.mimeType,
-          fileSize: file.fileSize.toString(),
-          thumbnailUrl: file.thumbnailPath 
-            ? await getPresignedUrl(file.thumbnailPath) 
-            : file.mimeType?.startsWith("image/") && file.storagePath 
-              ? await getPresignedUrl(file.storagePath) 
-              : file.thumbnailStatus === "pending" || file.thumbnailStatus === "processing"
-                ? "processing"
-                : null,
-          thumbnailStatus: file.thumbnailStatus,
-          url: presignedUrl,
-          folderId: file.folderId,
-          folder: file.folder,
-          isPublic: file.isPublic,
-          downloadEnabled: file.downloadEnabled,
-          expiresAt: file.expiresAt?.toISOString() || null,
-          createdAt: file.createdAt.toISOString(),
-          updatedAt: file.updatedAt.toISOString(),
-        };
-      })
-    );
-
-    // Also fetch folders
-    const folders = folderId === "root" || folderId === null
+    // Fetch folders
+    const folders = (!folderId || folderId === "root")
       ? await prisma.folder.findMany({
           where: { userId: userProfile.id, parentId: null },
           orderBy: { name: "asc" },
         })
-      : folderId
-        ? await prisma.folder.findMany({
-            where: { userId: userProfile.id, parentId: folderId },
-            orderBy: { name: "asc" },
-          })
-        : [];
+      : await prisma.folder.findMany({
+          where: { userId: userProfile.id, parentId: folderId },
+          orderBy: { name: "asc" },
+        });
 
     return NextResponse.json({
-      files: filesWithUrls,
+      files: filesData,
       folders,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
     });
   } catch (error) {
     console.error("List files error:", error);
     return NextResponse.json({ error: "Failed to list files" }, { status: 500 });
+  }
+}
+
+// DELETE - Delete file(s)
+export async function DELETE(request: NextRequest) {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userProfile = await prisma.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    if (!userProfile) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const body = await request.json();
+    const { fileIds } = body;
+
+    if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
+      return NextResponse.json({ error: "No file IDs provided" }, { status: 400 });
+    }
+
+    // Soft delete (move to trash)
+    await prisma.file.updateMany({
+      where: {
+        id: { in: fileIds },
+        userId: userProfile.id,
+      },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Delete files error:", error);
+    return NextResponse.json({ error: "Failed to delete files" }, { status: 500 });
   }
 }

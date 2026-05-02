@@ -364,6 +364,46 @@ export default function FilesPage() {
   }, [isLoaded, user]);
 
   // Fetch files
+  // Batch fetch presigned URLs for visible files
+  const fetchUrlsForFiles = useCallback(async (fileList: FileItem[]) => {
+    const now = Date.now();
+    const cacheMaxAge = 50 * 60 * 1000; // 50 minutes (presigned URLs expire in 1h)
+
+    // Filter files that need URL generation
+    const needUrls = fileList.filter(f => {
+      const cached = urlCacheRef.current[f.id];
+      return !cached || (now - cached.cachedAt) > cacheMaxAge;
+    });
+
+    if (needUrls.length === 0) return;
+
+    // Batch in groups of 30
+    for (let i = 0; i < needUrls.length; i += 30) {
+      const batch = needUrls.slice(i, i + 30);
+      try {
+        const res = await fetch("/api/files/urls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileIds: batch.map(f => f.id) }),
+        });
+        if (res.ok) {
+          const { urls } = await res.json();
+          const updateNow = Date.now();
+          // Update cache and state
+          setFiles(prev => prev.map(f => {
+            if (urls[f.id]) {
+              urlCacheRef.current[f.id] = { ...urls[f.id], cachedAt: updateNow };
+              return { ...f, url: urls[f.id].url, thumbnailUrl: urls[f.id].thumbnailUrl };
+            }
+            return f;
+          }));
+        }
+      } catch (e) {
+        console.error("Batch URL fetch error:", e);
+      }
+    }
+  }, []);
+
   const fetchFiles = useCallback(async () => {
     if (!isLoaded) return;
     setLoading(true);
@@ -379,30 +419,29 @@ export default function FilesPage() {
       if (res.ok) {
         const data = await res.json();
         const now = Date.now();
-        const cacheMaxAge = 23 * 60 * 60 * 1000; // 23 hours
-        // Merge with cached URLs to avoid re-generating presigned URLs
-        const mergedFiles = (data.files || []).map((file: FileItem) => {
+        const cacheMaxAge = 50 * 60 * 1000;
+
+        // Apply cached URLs where available
+        const filesWithCache = (data.files || []).map((file: FileItem) => {
           const cached = urlCacheRef.current[file.id];
           if (cached && (now - cached.cachedAt) < cacheMaxAge) {
             return { ...file, url: cached.url, thumbnailUrl: cached.thumbnailUrl };
           }
-          // Cache the new URL
-          urlCacheRef.current[file.id] = {
-            url: file.url,
-            thumbnailUrl: file.thumbnailUrl,
-            cachedAt: now,
-          };
           return file;
         });
-        setFiles(mergedFiles);
+
+        setFiles(filesWithCache);
         setFolders(data.folders || []);
+
+        // Lazy-load presigned URLs for visible files (non-blocking)
+        fetchUrlsForFiles(filesWithCache);
       }
     } catch (error) {
       console.error("Fetch files error:", error);
     } finally {
       setLoading(false);
     }
-  }, [isLoaded, currentFolderId, searchQuery, filterType]);
+  }, [isLoaded, currentFolderId, searchQuery, filterType, fetchUrlsForFiles]);
 
   useEffect(() => {
     fetchFiles();
