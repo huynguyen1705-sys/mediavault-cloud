@@ -190,6 +190,19 @@ html.light .bg-\[\#111111\]\/30 {
 }
 
 /* ===== GRID FILE CARDS — Elevated white ===== */
+/* list view containers */
+html.light .bg-\[\#1a1a1a\] { background-color: #f3f4f6 !important; }
+html.light .bg-\[\#1a1a1a\]\/80 { background-color: rgba(255,255,255,0.8) !important; }
+html.light .border-gray-700\/50 { border-color: #d1d5db !important; }
+
+/* list row divider fix - make nearly invisible in light mode */
+/* list row divider - fix black line issue in light mode */
+html.light [class*="divide-gray-800"] > * + * { border-color: #f3f4f6 !important; }
+html.light .divide-gray-800\/40 > * + * { border-color: #f3f4f6 !important; }
+html.light .divide-gray-800\/50 > * + * { border-color: #e5e7eb !important; }
+html.light .divide-gray-800 > * + * { border-color: #e5e7eb !important; }
+html.light .divide-gray-800 > * + * { border-color: #e5e7eb !important; }
+
 html.light .group.bg-\[\#111111\] {
   background-color: #ffffff !important;
   border-color: #e5e7eb !important;
