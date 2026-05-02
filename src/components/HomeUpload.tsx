@@ -40,96 +40,90 @@ export default function HomeUpload() {
     // Small delay for UI feedback before starting uploads
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Upload via presigned URL → R2 direct → confirm
+    const MULTIPART_THRESHOLD = 50 * 1024 * 1024; // 50MB
+    const PART_SIZE = 10 * 1024 * 1024;
+    const CONCURRENT_PARTS = 4;
+
     const uploadOne = async (uploadFile: UploadFile) => {
       try {
-        setUploadQueue((prev) =>
-          prev.map((f) =>
-            f.id === uploadFile.id ? { ...f, status: "uploading" } : f
-          )
-        );
+        setUploadQueue((prev) => prev.map((f) => f.id === uploadFile.id ? { ...f, status: "uploading" } : f));
+        const updateProgress = (p: number) => setUploadQueue((prev) => prev.map((f) => f.id === uploadFile.id ? { ...f, progress: p } : f));
 
-        const updateProgress = (percent: number) => {
-          setUploadQueue((prev) =>
-            prev.map((f) =>
-              f.id === uploadFile.id ? { ...f, progress: percent } : f
-            )
-          );
-        };
+        let fileKey: string;
 
-        // Step 1: Get presigned URL
-        const urlRes = await fetch(
-          `/api/upload-url?fileName=${encodeURIComponent(uploadFile.file.name)}&contentType=${encodeURIComponent(uploadFile.file.type || "application/octet-stream")}&fileSize=${uploadFile.file.size}`
-        );
-        if (!urlRes.ok) {
-          const err = await urlRes.json().catch(() => ({ error: "Server error" }));
-          throw new Error(err.error || "Failed to get upload URL");
+        if (uploadFile.file.size >= MULTIPART_THRESHOLD) {
+          // Multipart upload for large files
+          const initRes = await fetch("/api/upload/multipart", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "init", fileName: uploadFile.file.name, contentType: uploadFile.file.type || "application/octet-stream", fileSize: uploadFile.file.size }),
+          });
+          if (!initRes.ok) throw new Error("Failed to init multipart");
+          const { uploadId, fileKey: fk } = await initRes.json();
+          fileKey = fk;
+
+          const totalParts = Math.ceil(uploadFile.file.size / PART_SIZE);
+          const completedParts: { PartNumber: number; ETag: string }[] = [];
+          let uploadedBytes = 0;
+
+          for (let i = 0; i < totalParts; i += CONCURRENT_PARTS) {
+            const batch = Array.from({ length: Math.min(CONCURRENT_PARTS, totalParts - i) }, (_, j) => i + j + 1);
+            await Promise.all(batch.map(async (partNum) => {
+              const start = (partNum - 1) * PART_SIZE;
+              const end = Math.min(start + PART_SIZE, uploadFile.file.size);
+              const chunk = uploadFile.file.slice(start, end);
+              const urlRes = await fetch("/api/upload/multipart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "get-part-urls", fileKey, uploadId, partNumbers: [partNum] }) });
+              if (!urlRes.ok) throw new Error("Part URL failed");
+              const { urls } = await urlRes.json();
+              const res = await fetch(urls[partNum], { method: "PUT", body: chunk });
+              if (!res.ok) throw new Error(`Part ${partNum} failed`);
+              completedParts.push({ PartNumber: partNum, ETag: res.headers.get("etag") || `"${partNum}"` });
+              uploadedBytes += (end - start);
+              updateProgress(Math.round((uploadedBytes / uploadFile.file.size) * 90));
+            }));
+          }
+
+          completedParts.sort((a, b) => a.PartNumber - b.PartNumber);
+          const compRes = await fetch("/api/upload/multipart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "complete", fileKey, uploadId, parts: completedParts }) });
+          if (!compRes.ok) throw new Error("Complete multipart failed");
+        } else {
+          // Single upload for small files
+          const urlRes = await fetch(`/api/upload-url?fileName=${encodeURIComponent(uploadFile.file.name)}&contentType=${encodeURIComponent(uploadFile.file.type || "application/octet-stream")}&fileSize=${uploadFile.file.size}`);
+          if (!urlRes.ok) throw new Error("Failed to get upload URL");
+          const data = await urlRes.json();
+          fileKey = data.fileKey;
+
+          await new Promise<void>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.upload.onprogress = (e) => { if (e.lengthComputable) updateProgress(Math.round((e.loaded / e.total) * 90)); };
+            xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`Upload failed (${xhr.status})`));
+            xhr.onerror = () => reject(new Error("Network error"));
+            xhr.open("PUT", data.uploadUrl);
+            xhr.setRequestHeader("Content-Type", uploadFile.file.type || "application/octet-stream");
+            xhr.send(uploadFile.file);
+          });
         }
-        const { uploadUrl, fileKey } = await urlRes.json();
-
-        // Step 2: Upload directly to R2 with progress
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) updateProgress(Math.round((e.loaded / e.total) * 90));
-          };
-          xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`Upload failed (${xhr.status})`));
-          xhr.onerror = () => reject(new Error("Network error"));
-          xhr.open("PUT", uploadUrl);
-          xhr.setRequestHeader("Content-Type", uploadFile.file.type || "application/octet-stream");
-          xhr.send(uploadFile.file);
-        });
 
         updateProgress(95);
-
-        // Step 3: Confirm
-        const confirmRes = await fetch("/api/upload/confirm", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fileKey,
-            fileName: uploadFile.file.name,
-            mimeType: uploadFile.file.type || "application/octet-stream",
-            fileSize: uploadFile.file.size,
-          }),
-        });
-        if (!confirmRes.ok) throw new Error("Upload confirmation failed");
+        const confirmRes = await fetch("/api/upload/confirm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileKey, fileName: uploadFile.file.name, mimeType: uploadFile.file.type || "application/octet-stream", fileSize: uploadFile.file.size }) });
+        if (!confirmRes.ok) throw new Error("Confirm failed");
         const confirmData = await confirmRes.json().catch(() => null);
-        // Track uploaded file IDs for highlight after redirect
         if (confirmData?.file?.id) {
           const existing = JSON.parse(sessionStorage.getItem('mv-highlight-files') || '[]');
           existing.push(confirmData.file.id);
           sessionStorage.setItem('mv-highlight-files', JSON.stringify(existing));
         }
-
-        setUploadQueue((prev) =>
-          prev.map((f) =>
-            f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f
-          )
-        );
+        setUploadQueue((prev) => prev.map((f) => f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f));
       } catch (error: any) {
-        setUploadQueue((prev) =>
-          prev.map((f) =>
-            f.id === uploadFile.id
-              ? { ...f, status: "error", error: error.message }
-              : f
-          )
-        );
+        setUploadQueue((prev) => prev.map((f) => f.id === uploadFile.id ? { ...f, status: "error", error: error.message } : f));
       }
     };
 
-    // Run uploads in parallel, max 3 at a time
-    for (let i = 0; i < newFiles.length; i += 3) {
-      const chunk = newFiles.slice(i, i + 3);
-      await Promise.all(chunk.map(uploadOne));
+    // Upload 5 files concurrently
+    for (let i = 0; i < newFiles.length; i += 5) {
+      await Promise.all(newFiles.slice(i, i + 5).map(uploadOne));
     }
 
-    // After all uploads in this batch finish, check if any succeeded → redirect
-    const hasSuccess = newFiles.some(f => {
-      // Check current state
-      return true; // If we reached here after Promise.all, uploads are done
-    });
-    // Wait a moment then redirect (all batches done at this point)
+    // Redirect after all complete
     setTimeout(() => {
       setUploadQueue(prev => {
         const anyCompleted = prev.some(f => f.status === "completed");

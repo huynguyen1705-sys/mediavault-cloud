@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand, CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand, AbortMultipartUploadCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
 
@@ -124,4 +124,71 @@ export async function getFileMetadata(key: string): Promise<{ size: number; cont
 // Get public URL for a file
 export function getPublicUrl(key: string): string {
   return `${getPublicUrlBase()}/${key}`;
+}
+
+// ========= MULTIPART UPLOAD =========
+
+// Initiate multipart upload
+export async function createMultipartUpload(key: string, contentType: string): Promise<string> {
+  const client = getR2Client();
+  const bucket = getBucket();
+
+  const result = await client.send(
+    new CreateMultipartUploadCommand({
+      Bucket: bucket,
+      Key: key,
+      ContentType: contentType,
+    })
+  );
+
+  if (!result.UploadId) throw new Error("Failed to create multipart upload");
+  return result.UploadId;
+}
+
+// Generate presigned URL for a single part
+export async function getPartUploadUrl(key: string, uploadId: string, partNumber: number, expiresIn = 3600): Promise<string> {
+  const client = getR2Client();
+  const bucket = getBucket();
+
+  const command = new UploadPartCommand({
+    Bucket: bucket,
+    Key: key,
+    UploadId: uploadId,
+    PartNumber: partNumber,
+  });
+
+  return getSignedUrl(client, command, { expiresIn });
+}
+
+// Complete multipart upload
+export async function completeMultipartUpload(
+  key: string,
+  uploadId: string,
+  parts: { PartNumber: number; ETag: string }[]
+): Promise<void> {
+  const client = getR2Client();
+  const bucket = getBucket();
+
+  await client.send(
+    new CompleteMultipartUploadCommand({
+      Bucket: bucket,
+      Key: key,
+      UploadId: uploadId,
+      MultipartUpload: { Parts: parts },
+    })
+  );
+}
+
+// Abort multipart upload (cleanup on failure)
+export async function abortMultipartUpload(key: string, uploadId: string): Promise<void> {
+  const client = getR2Client();
+  const bucket = getBucket();
+
+  await client.send(
+    new AbortMultipartUploadCommand({
+      Bucket: bucket,
+      Key: key,
+      UploadId: uploadId,
+    })
+  ).catch(() => {}); // Ignore errors on abort
 }

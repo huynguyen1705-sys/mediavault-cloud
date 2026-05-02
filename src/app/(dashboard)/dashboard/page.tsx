@@ -85,70 +85,123 @@ export default function DashboardPage() {
 
     setUploadQueue((prev) => [...prev, ...newFiles]);
 
-    // All uploads: presigned URL → R2 direct → confirm (fastest, no body size limit)
+    const MULTIPART_THRESHOLD = 50 * 1024 * 1024; // 50MB
+    const PART_SIZE = 10 * 1024 * 1024; // 10MB chunks
+    const CONCURRENT_PARTS = 4; // Upload 4 parts simultaneously
+
+    // Upload single file (small files < 50MB)
+    const uploadSingle = async (uploadFile: typeof newFiles[0], updateProgress: (p: number) => void) => {
+      const urlRes = await fetch(
+        `/api/upload-url?fileName=${encodeURIComponent(uploadFile.file.name)}&contentType=${encodeURIComponent(uploadFile.file.type || "application/octet-stream")}&fileSize=${uploadFile.file.size}`
+      );
+      if (!urlRes.ok) {
+        const err = await urlRes.json().catch(() => ({ error: "Server error" }));
+        throw new Error(err.error || "Failed to get upload URL");
+      }
+      const { uploadUrl, fileKey } = await urlRes.json();
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) updateProgress(Math.round((e.loaded / e.total) * 90));
+        };
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(`Upload failed (${xhr.status})`));
+        xhr.onerror = () => reject(new Error("Network error"));
+        xhr.open("PUT", uploadUrl);
+        xhr.setRequestHeader("Content-Type", uploadFile.file.type || "application/octet-stream");
+        xhr.send(uploadFile.file);
+      });
+
+      return fileKey;
+    };
+
+    // Upload large file via multipart (>= 50MB) — 4 concurrent chunks
+    const uploadMultipart = async (uploadFile: typeof newFiles[0], updateProgress: (p: number) => void) => {
+      const file = uploadFile.file;
+      const totalParts = Math.ceil(file.size / PART_SIZE);
+
+      // Init multipart
+      const initRes = await fetch("/api/upload/multipart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "init", fileName: file.name, contentType: file.type || "application/octet-stream", fileSize: file.size }),
+      });
+      if (!initRes.ok) throw new Error((await initRes.json().catch(() => ({}))).error || "Failed to init multipart");
+      const { uploadId, fileKey } = await initRes.json();
+
+      const completedParts: { PartNumber: number; ETag: string }[] = [];
+      let uploadedBytes = 0;
+
+      // Upload parts with concurrency
+      const uploadPart = async (partNum: number) => {
+        const start = (partNum - 1) * PART_SIZE;
+        const end = Math.min(start + PART_SIZE, file.size);
+        const chunk = file.slice(start, end);
+
+        // Get presigned URL for this part
+        const urlRes = await fetch("/api/upload/multipart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get-part-urls", fileKey, uploadId, partNumbers: [partNum] }),
+        });
+        if (!urlRes.ok) throw new Error("Failed to get part URL");
+        const { urls } = await urlRes.json();
+
+        // Upload chunk
+        const res = await fetch(urls[partNum], { method: "PUT", body: chunk });
+        if (!res.ok) throw new Error(`Part ${partNum} upload failed`);
+        const etag = res.headers.get("etag") || `"part${partNum}"`;
+
+        completedParts.push({ PartNumber: partNum, ETag: etag });
+        uploadedBytes += (end - start);
+        updateProgress(Math.round((uploadedBytes / file.size) * 90));
+      };
+
+      // Process parts in batches of CONCURRENT_PARTS
+      for (let i = 0; i < totalParts; i += CONCURRENT_PARTS) {
+        const batch = Array.from({ length: Math.min(CONCURRENT_PARTS, totalParts - i) }, (_, j) => i + j + 1);
+        await Promise.all(batch.map(uploadPart));
+      }
+
+      // Complete multipart
+      completedParts.sort((a, b) => a.PartNumber - b.PartNumber);
+      const completeRes = await fetch("/api/upload/multipart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "complete", fileKey, uploadId, parts: completedParts }),
+      });
+      if (!completeRes.ok) {
+        await fetch("/api/upload/multipart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "abort", fileKey, uploadId }) });
+        throw new Error("Failed to complete multipart upload");
+      }
+
+      return fileKey;
+    };
+
+    // Main upload orchestrator
     const uploadOne = async (uploadFile: typeof newFiles[0]) => {
       try {
-        setUploadQueue((prev) =>
-          prev.map((f) =>
-            f.id === uploadFile.id ? { ...f, status: "uploading" } : f
-          )
-        );
+        setUploadQueue((prev) => prev.map((f) => f.id === uploadFile.id ? { ...f, status: "uploading" } : f));
 
         const updateProgress = (percent: number) => {
-          setUploadQueue((prev) =>
-            prev.map((f) =>
-              f.id === uploadFile.id ? { ...f, progress: percent } : f
-            )
-          );
+          setUploadQueue((prev) => prev.map((f) => f.id === uploadFile.id ? { ...f, progress: percent } : f));
         };
 
-        // Step 1: Get presigned URL from server
-        const urlRes = await fetch(
-          `/api/upload-url?fileName=${encodeURIComponent(uploadFile.file.name)}&contentType=${encodeURIComponent(uploadFile.file.type || "application/octet-stream")}&fileSize=${uploadFile.file.size}`
-        );
-        if (!urlRes.ok) {
-          const err = await urlRes.json().catch(() => ({ error: "Server error" }));
-          throw new Error(err.error || "Failed to get upload URL");
-        }
-        const { uploadUrl, fileKey } = await urlRes.json();
-
-        // Step 2: Upload directly to R2 with XHR progress
-        await new Promise<void>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.upload.onprogress = (e) => {
-            if (e.lengthComputable) {
-              updateProgress(Math.round((e.loaded / e.total) * 90));
-            }
-          };
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`Upload failed (${xhr.status})`));
-          };
-          xhr.onerror = () => reject(new Error("Network error"));
-          xhr.open("PUT", uploadUrl);
-          xhr.setRequestHeader("Content-Type", uploadFile.file.type || "application/octet-stream");
-          xhr.send(uploadFile.file);
-        });
+        // Choose strategy based on file size
+        const fileKey = uploadFile.file.size >= MULTIPART_THRESHOLD
+          ? await uploadMultipart(uploadFile, updateProgress)
+          : await uploadSingle(uploadFile, updateProgress);
 
         updateProgress(95);
 
-        // Step 3: Confirm upload (saves metadata + triggers thumbnail)
+        // Confirm upload (save to DB + thumbnail)
         const confirmRes = await fetch("/api/upload/confirm", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fileKey,
-            fileName: uploadFile.file.name,
-            mimeType: uploadFile.file.type || "application/octet-stream",
-            fileSize: uploadFile.file.size,
-          }),
+          body: JSON.stringify({ fileKey, fileName: uploadFile.file.name, mimeType: uploadFile.file.type || "application/octet-stream", fileSize: uploadFile.file.size }),
         });
-        if (!confirmRes.ok) {
-          const err = await confirmRes.json().catch(() => ({ error: "Confirm failed" }));
-          throw new Error(err.error || "Upload confirmation failed");
-        }
+        if (!confirmRes.ok) throw new Error("Upload confirmation failed");
         const confirmData = await confirmRes.json().catch(() => null);
-        // Track uploaded file IDs for highlight after redirect
         if (confirmData?.file?.id) {
           const existing = JSON.parse(sessionStorage.getItem('mv-highlight-files') || '[]');
           existing.push(confirmData.file.id);
@@ -156,35 +209,24 @@ export default function DashboardPage() {
         }
 
         updateProgress(100);
-        setUploadQueue((prev) =>
-          prev.map((f) =>
-            f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f
-          )
-        );
+        setUploadQueue((prev) => prev.map((f) => f.id === uploadFile.id ? { ...f, status: "completed", progress: 100 } : f));
       } catch (error: any) {
-        setUploadQueue((prev) =>
-          prev.map((f) =>
-            f.id === uploadFile.id ? { ...f, status: "error", error: error.message } : f
-          )
-        );
+        setUploadQueue((prev) => prev.map((f) => f.id === uploadFile.id ? { ...f, status: "error", error: error.message } : f));
       }
     };
 
-    // Upload 3 files concurrently
-    for (let i = 0; i < newFiles.length; i += 3) {
-      await Promise.all(newFiles.slice(i, i + 3).map(uploadOne));
+    // Upload 5 files concurrently (balanced for multi-user)
+    const CONCURRENT_FILES = 5;
+    for (let i = 0; i < newFiles.length; i += CONCURRENT_FILES) {
+      await Promise.all(newFiles.slice(i, i + CONCURRENT_FILES).map(uploadOne));
     }
 
-    // Check results and redirect if any succeeded
-    // At this point, ALL batches have completed (for loop is sequential)
+    // Redirect after all complete
     setTimeout(() => {
       setUploadQueue((prev) => {
         const hasCompleted = prev.some(f => f.status === "completed");
         const hasUploading = prev.some(f => f.status === "uploading" || f.status === "pending");
-        // Only redirect when nothing is still uploading and at least one succeeded
-        if (hasCompleted && !hasUploading) {
-          router.push("/files");
-        }
+        if (hasCompleted && !hasUploading) router.push("/files");
         return prev;
       });
     }, 1500);
@@ -261,21 +303,73 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Upload Progress - Full Width Below */}
+      {/* Upload Progress - Professional Panel */}
       {uploadQueue.length > 0 && (
-        <div className="mb-8 p-4 bg-gray-900/50 border border-gray-800 rounded-xl">
-          <h3 className="text-sm font-medium text-gray-400 mb-3">Uploading {uploadQueue.length} file(s)...</h3>
-          <div className="space-y-2">
+        <div className="mb-8 bg-gray-900/80 border border-gray-800 rounded-2xl overflow-hidden backdrop-blur-sm">
+          {/* Summary Header */}
+          <div className="px-5 py-3 bg-gray-800/50 border-b border-gray-700/50 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                <Upload className="w-4 h-4 text-violet-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-200">
+                  {uploadQueue.filter(f => f.status === "uploading").length > 0
+                    ? `Uploading ${uploadQueue.filter(f => f.status === "uploading").length} of ${uploadQueue.length}`
+                    : uploadQueue.every(f => f.status === "completed")
+                      ? "All uploads complete"
+                      : `${uploadQueue.length} file${uploadQueue.length > 1 ? "s" : ""} queued`
+                  }
+                </p>
+                <p className="text-xs text-gray-500">
+                  {(() => {
+                    const totalSize = uploadQueue.reduce((sum, f) => sum + (f.file?.size || 0), 0);
+                    const avgProgress = Math.round(uploadQueue.reduce((sum, f) => sum + f.progress, 0) / uploadQueue.length);
+                    return `${avgProgress}% • ${formatBytes(totalSize)} total`;
+                  })()}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-emerald-400 font-medium">
+                {uploadQueue.filter(f => f.status === "completed").length} done
+              </span>
+              {uploadQueue.some(f => f.status === "error") && (
+                <span className="text-xs text-red-400 font-medium">
+                  {uploadQueue.filter(f => f.status === "error").length} failed
+                </span>
+              )}
+            </div>
+          </div>
+          {/* Overall Progress Bar */}
+          <div className="px-5 py-2 bg-gray-900/50">
+            <div className="w-full bg-gray-800 rounded-full h-1.5">
+              <div
+                className="bg-gradient-to-r from-violet-500 to-violet-400 h-1.5 rounded-full transition-all duration-300"
+                style={{ width: `${Math.round(uploadQueue.reduce((sum, f) => sum + f.progress, 0) / uploadQueue.length)}%` }}
+              />
+            </div>
+          </div>
+          {/* File List (collapsible if many) */}
+          <div className={`divide-y divide-gray-800/50 ${uploadQueue.length > 5 ? "max-h-48 overflow-y-auto" : ""}`}>
             {uploadQueue.map((uploadFile) => (
-              <div key={uploadFile.id} className="flex items-center gap-3 p-3 bg-gray-900 rounded-lg">
-                {uploadFile.status === "uploading" && <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />}
-                {uploadFile.status === "completed" && <CheckCircle className="w-4 h-4 text-green-400" />}
-                {uploadFile.status === "error" && <div className="w-4 h-4 rounded-full bg-red-500" />}
-                <span className="text-sm text-gray-300 truncate flex-1">{uploadFile.file?.name}</span>
-                {uploadFile.status === "error" && <span className="text-xs text-red-400">{uploadFile.error}</span>}
-                <button onClick={() => setUploadQueue(prev => prev.filter(f => f.id !== uploadFile.id))} className="text-gray-500 hover:text-white">
-                  <X className="w-4 h-4" />
-                </button>
+              <div key={uploadFile.id} className="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-800/30 transition-colors">
+                <div className="w-5 flex-shrink-0">
+                  {uploadFile.status === "uploading" && <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />}
+                  {uploadFile.status === "completed" && <CheckCircle className="w-4 h-4 text-emerald-400" />}
+                  {uploadFile.status === "error" && <X className="w-4 h-4 text-red-400" />}
+                  {uploadFile.status === "pending" && <div className="w-3 h-3 rounded-full bg-gray-600" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-300 truncate">{uploadFile.file?.name}</p>
+                  {uploadFile.status === "error" && <p className="text-xs text-red-400 truncate">{uploadFile.error}</p>}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {uploadFile.status === "uploading" && (
+                    <span className="text-xs text-gray-400 tabular-nums w-8 text-right">{uploadFile.progress}%</span>
+                  )}
+                  <span className="text-xs text-gray-500">{formatBytes(uploadFile.file?.size || 0)}</span>
+                </div>
               </div>
             ))}
           </div>
