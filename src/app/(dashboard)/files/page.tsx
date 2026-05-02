@@ -191,7 +191,10 @@ const GridFileCard = memo(function GridFileCard({
     return <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center"><File className="w-10 h-10 text-gray-500" /></div>;
   };
 
-  const itemCls = "w-full px-3 py-1.5 text-left text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2.5 transition-colors duration-100";
+  const isLight = typeof document !== 'undefined' && document.documentElement.classList.contains('light');
+  const itemCls = isLight
+    ? "w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 flex items-center gap-2.5 transition-colors duration-100"
+    : "w-full px-3 py-1.5 text-left text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2.5 transition-colors duration-100";
 
   return (
     <div
@@ -256,7 +259,11 @@ const GridFileCard = memo(function GridFileCard({
           {menuOpen && (
             <div
               ref={menuRef}
-              className="absolute right-0 top-8 z-50 min-w-[180px] bg-[#0f1623] border border-white/10 rounded-xl py-1 shadow-xl"
+              className={`absolute right-0 top-8 z-50 min-w-[180px] rounded-xl py-1 shadow-xl ${
+                isLight
+                  ? 'bg-white border border-gray-200'
+                  : 'bg-[#0f1623] border border-white/10'
+              }`}
               onClick={(e) => e.stopPropagation()}
             >
               <button className={itemCls} onClick={() => { setMenuOpen(false); onView(); }}><Eye className="w-3.5 h-3.5 text-gray-500" /> View</button>
@@ -323,20 +330,24 @@ const ContextMenuPortal = memo(function ContextMenuPortal({
     return () => { clearTimeout(t); document.removeEventListener('mousedown', handler); };
   }, [onClose]);
 
+  const isLight = typeof document !== 'undefined' && document.documentElement.classList.contains('light');
+
   const menuStyle: React.CSSProperties = {
     ...getMenuPosition(x, y),
     position: 'fixed',
     zIndex: 9999,
     minWidth: '180px',
-    backgroundColor: '#0f1623',
-    border: '1px solid rgba(255,255,255,0.08)',
+    backgroundColor: isLight ? '#ffffff' : '#0f1623',
+    border: isLight ? '1px solid #e5e7eb' : '1px solid rgba(255,255,255,0.08)',
     borderRadius: '10px',
     padding: '4px 0',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+    boxShadow: isLight ? '0 8px 24px rgba(0,0,0,0.12)' : '0 8px 24px rgba(0,0,0,0.5)',
   };
 
-  const itemCls = "w-full px-3 py-1.5 text-left text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2.5 transition-colors duration-100";
-  const dividerCls = "my-1 border-t border-white/5";
+  const itemCls = isLight
+    ? "w-full px-3 py-1.5 text-left text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 flex items-center gap-2.5 transition-colors duration-100"
+    : "w-full px-3 py-1.5 text-left text-sm text-gray-300 hover:bg-white/5 hover:text-white flex items-center gap-2.5 transition-colors duration-100";
+  const dividerCls = isLight ? "my-1 border-t border-gray-100" : "my-1 border-t border-white/5";
 
   return (
     <div id="ctx-menu-portal" style={menuStyle}>
