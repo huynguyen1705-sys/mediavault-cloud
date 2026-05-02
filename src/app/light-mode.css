@@ -41,6 +41,8 @@ html.light body {
 /* Page bg: #fafafa | Cards: #ffffff | Elevated: #ffffff + shadow */
 html.light .bg-gray-950 { background-color: #fafafa !important; }
 html.light .bg-\[\#0a0a0a\] { background-color: #fafafa !important; }
+html.light [class*="bg-[#0a0a0a]"] { background-color: #fafafa !important; }
+html.light .min-h-screen { background-color: #fafafa !important; }
 html.light .bg-gray-900 { background-color: #ffffff !important; }
 html.light .bg-gray-900\/80 { background-color: rgba(255, 255, 255, 0.95) !important; }
 html.light .bg-gray-900\/50 { background-color: rgba(255, 255, 255, 0.9) !important; }

@@ -20,6 +20,12 @@ body {
   font-family: var(--font-geist-sans), Arial, sans-serif;
 }
 
+/* Light mode body override - must be after body rule */
+html.light body {
+  background: #fafafa !important;
+  color: #111827 !important;
+}
+
 /* Shake animation for folder click */
 @keyframes gentle-bounce {
   0%, 100% { transform: scale(1); }
