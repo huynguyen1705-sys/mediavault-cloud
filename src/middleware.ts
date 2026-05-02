@@ -21,7 +21,8 @@ const isPublicRoute = createRouteMatcher([
   "/public/:path*",
   "/s/:path*",
   "/api/files/:path*/proxy",
-  "/api/share/:path*",
+  // /api/share/[token] GET is handled without auth in the route itself
+  // Do NOT add /api/share here - POST needs Clerk session
   "/api/settings/theme",
 ]);
 
