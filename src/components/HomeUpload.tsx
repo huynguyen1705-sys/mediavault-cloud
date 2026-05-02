@@ -52,34 +52,58 @@ export default function HomeUpload() {
         let fileKey: string;
 
         if (uploadFile.file.size >= MULTIPART_THRESHOLD) {
-          // Multipart upload for large files
+          // Multipart upload with XHR for real-time progress
+          const file = uploadFile.file;
+          const totalParts = Math.ceil(file.size / PART_SIZE);
+
           const initRes = await fetch("/api/upload/multipart", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "init", fileName: uploadFile.file.name, contentType: uploadFile.file.type || "application/octet-stream", fileSize: uploadFile.file.size }),
+            body: JSON.stringify({ action: "init", fileName: file.name, contentType: file.type || "application/octet-stream", fileSize: file.size }),
           });
           if (!initRes.ok) throw new Error("Failed to init multipart");
           const { uploadId, fileKey: fk } = await initRes.json();
           fileKey = fk;
 
-          const totalParts = Math.ceil(uploadFile.file.size / PART_SIZE);
+          // Get all part URLs upfront (batch 10)
+          const allPartUrls: Record<number, string> = {};
+          for (let i = 0; i < totalParts; i += 10) {
+            const nums = Array.from({ length: Math.min(10, totalParts - i) }, (_, j) => i + j + 1);
+            const urlRes = await fetch("/api/upload/multipart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "get-part-urls", fileKey, uploadId, partNumbers: nums }) });
+            if (!urlRes.ok) throw new Error("Part URLs failed");
+            Object.assign(allPartUrls, (await urlRes.json()).urls);
+          }
+
           const completedParts: { PartNumber: number; ETag: string }[] = [];
           let uploadedBytes = 0;
 
+          const uploadPart = (partNum: number) => new Promise<void>((resolve, reject) => {
+            const start = (partNum - 1) * PART_SIZE;
+            const end = Math.min(start + PART_SIZE, file.size);
+            const chunk = file.slice(start, end);
+            const partSize = end - start;
+            const xhr = new XMLHttpRequest();
+            xhr.upload.onprogress = (e) => {
+              if (e.lengthComputable) {
+                const totalProgress = (uploadedBytes + partSize * (e.loaded / e.total)) / file.size;
+                updateProgress(Math.round(totalProgress * 90));
+              }
+            };
+            xhr.onload = () => {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                uploadedBytes += partSize;
+                completedParts.push({ PartNumber: partNum, ETag: xhr.getResponseHeader("etag") || `"${partNum}"` });
+                updateProgress(Math.round((uploadedBytes / file.size) * 90));
+                resolve();
+              } else reject(new Error(`Part ${partNum} failed`));
+            };
+            xhr.onerror = () => reject(new Error(`Part ${partNum} error`));
+            xhr.open("PUT", allPartUrls[partNum]);
+            xhr.send(chunk);
+          });
+
           for (let i = 0; i < totalParts; i += CONCURRENT_PARTS) {
             const batch = Array.from({ length: Math.min(CONCURRENT_PARTS, totalParts - i) }, (_, j) => i + j + 1);
-            await Promise.all(batch.map(async (partNum) => {
-              const start = (partNum - 1) * PART_SIZE;
-              const end = Math.min(start + PART_SIZE, uploadFile.file.size);
-              const chunk = uploadFile.file.slice(start, end);
-              const urlRes = await fetch("/api/upload/multipart", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "get-part-urls", fileKey, uploadId, partNumbers: [partNum] }) });
-              if (!urlRes.ok) throw new Error("Part URL failed");
-              const { urls } = await urlRes.json();
-              const res = await fetch(urls[partNum], { method: "PUT", body: chunk });
-              if (!res.ok) throw new Error(`Part ${partNum} failed`);
-              completedParts.push({ PartNumber: partNum, ETag: res.headers.get("etag") || `"${partNum}"` });
-              uploadedBytes += (end - start);
-              updateProgress(Math.round((uploadedBytes / uploadFile.file.size) * 90));
-            }));
+            await Promise.all(batch.map(uploadPart));
           }
 
           completedParts.sort((a, b) => a.PartNumber - b.PartNumber);

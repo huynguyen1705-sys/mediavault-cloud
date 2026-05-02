@@ -115,7 +115,7 @@ export default function DashboardPage() {
       return fileKey;
     };
 
-    // Upload large file via multipart (>= 50MB) — 4 concurrent chunks
+    // Upload large file via multipart — XHR for real-time progress per part
     const uploadMultipart = async (uploadFile: typeof newFiles[0], updateProgress: (p: number) => void) => {
       const file = uploadFile.file;
       const totalParts = Math.ceil(file.size / PART_SIZE);
@@ -129,35 +129,55 @@ export default function DashboardPage() {
       if (!initRes.ok) throw new Error((await initRes.json().catch(() => ({}))).error || "Failed to init multipart");
       const { uploadId, fileKey } = await initRes.json();
 
+      // Get ALL part URLs in one batch call (max 10 at a time)
+      const allPartUrls: Record<number, string> = {};
+      for (let i = 0; i < totalParts; i += 10) {
+        const nums = Array.from({ length: Math.min(10, totalParts - i) }, (_, j) => i + j + 1);
+        const urlRes = await fetch("/api/upload/multipart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get-part-urls", fileKey, uploadId, partNumbers: nums }),
+        });
+        if (!urlRes.ok) throw new Error("Failed to get part URLs");
+        const { urls } = await urlRes.json();
+        Object.assign(allPartUrls, urls);
+      }
+
       const completedParts: { PartNumber: number; ETag: string }[] = [];
       let uploadedBytes = 0;
 
-      // Upload parts with concurrency
+      // Upload single part with XHR (real-time progress)
       const uploadPart = async (partNum: number) => {
         const start = (partNum - 1) * PART_SIZE;
         const end = Math.min(start + PART_SIZE, file.size);
         const chunk = file.slice(start, end);
+        const partSize = end - start;
 
-        // Get presigned URL for this part
-        const urlRes = await fetch("/api/upload/multipart", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "get-part-urls", fileKey, uploadId, partNumbers: [partNum] }),
+        const etag = await new Promise<string>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const partProgress = e.loaded / e.total;
+              const totalProgress = (uploadedBytes + partSize * partProgress) / file.size;
+              updateProgress(Math.round(totalProgress * 90));
+            }
+          };
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(xhr.getResponseHeader("etag") || `"part${partNum}"`);
+            } else reject(new Error(`Part ${partNum} failed (${xhr.status})`));
+          };
+          xhr.onerror = () => reject(new Error(`Part ${partNum} network error`));
+          xhr.open("PUT", allPartUrls[partNum]);
+          xhr.send(chunk);
         });
-        if (!urlRes.ok) throw new Error("Failed to get part URL");
-        const { urls } = await urlRes.json();
 
-        // Upload chunk
-        const res = await fetch(urls[partNum], { method: "PUT", body: chunk });
-        if (!res.ok) throw new Error(`Part ${partNum} upload failed`);
-        const etag = res.headers.get("etag") || `"part${partNum}"`;
-
+        uploadedBytes += partSize;
         completedParts.push({ PartNumber: partNum, ETag: etag });
-        uploadedBytes += (end - start);
         updateProgress(Math.round((uploadedBytes / file.size) * 90));
       };
 
-      // Process parts in batches of CONCURRENT_PARTS
+      // Process parts with concurrency
       for (let i = 0; i < totalParts; i += CONCURRENT_PARTS) {
         const batch = Array.from({ length: Math.min(CONCURRENT_PARTS, totalParts - i) }, (_, j) => i + j + 1);
         await Promise.all(batch.map(uploadPart));
