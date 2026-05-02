@@ -1696,21 +1696,12 @@ const handleDelete = async (fileId: string) => {
       </AnimatePresence>
 
       {/* LEFT SIDEBAR - Folder Tree */}
-      <div className={`${sidebarOpen ? "w-full md:w-64" : "w-0 pointer-events-none md:pointer-events-auto"} transition-all duration-200 bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden fixed md:relative inset-0 z-20 md:z-auto`}>
-        {/* Header */}
-        <div className="p-3 border-b border-gray-800 flex items-center justify-between md:justify-between">
+      {/* DESKTOP SIDEBAR - always visible on md+ */}
+      <div className="hidden md:flex w-64 bg-gray-900 border-r border-gray-800 flex-col">
+        <div className="p-3 border-b border-gray-800 flex items-center justify-between">
           <span className="text-sm font-medium text-gray-400">Folders</span>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="p-1 hover:bg-gray-800 rounded"
-          >
-            <ChevronRight className="w-4 h-4 text-gray-500 rotate-180" />
-          </button>
         </div>
-
-        {/* Folder Tree - scrollable */}
         <div className="flex-1 overflow-y-auto py-2 px-2">
-          {/* My Files root */}
           <div
             className={`flex items-center gap-2 px-3 py-3 rounded-lg cursor-pointer transition-all duration-150 ${
               currentFolderId === null ? "bg-violet-500/20 text-violet-400" : dropTargetFolderId === null
@@ -1724,20 +1715,13 @@ const handleDelete = async (fileId: string) => {
             <Home className="w-5 h-5 shrink-0" />
             <span className="text-sm font-medium truncate">My Files</span>
           </div>
-
-          {/* Folder tree */}
           {allFolders.map(folder => (
             <FolderTreeNode key={folder.id} folder={folder} level={0} />
           ))}
-
           {allFolders.length === 0 && (
-            <div className="px-4 py-8 text-center text-gray-500 text-sm">
-              No folders yet
-            </div>
+            <div className="px-4 py-8 text-center text-gray-500 text-sm">No folders yet</div>
           )}
         </div>
-
-        {/* Storage Quota */}
         <div className="px-4 py-3 border-t border-gray-800">
           <div className="flex items-center justify-between text-xs text-gray-400 mb-1.5">
             <span>Storage</span>
@@ -1750,8 +1734,6 @@ const handleDelete = async (fileId: string) => {
             />
           </div>
         </div>
-
-        {/* New Folder Button */}
         <div className="p-3 border-t border-gray-800">
           <button
             onClick={() => setShowNewFolderModal(true)}
@@ -1763,14 +1745,90 @@ const handleDelete = async (fileId: string) => {
         </div>
       </div>
 
-      {/* Toggle Sidebar Button (when closed) */}
+      {/* MOBILE BOTTOM SHEET - Folders (slide up from bottom like Facebook) */}
+      <div
+        className={`md:hidden fixed inset-0 z-50 transition-all duration-300 ${
+          sidebarOpen ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+      >
+        {/* Backdrop */}
+        <div
+          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
+            sidebarOpen ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={() => setSidebarOpen(false)}
+        />
+        {/* Sheet */}
+        <div
+          className={`absolute bottom-0 left-0 right-0 bg-gray-900 rounded-t-2xl border-t border-gray-700 transition-transform duration-300 ease-out max-h-[75vh] flex flex-col ${
+            sidebarOpen ? "translate-y-0" : "translate-y-full"
+          }`}
+        >
+          {/* Handle bar */}
+          <div className="flex justify-center pt-3 pb-2">
+            <div className="w-10 h-1 bg-gray-600 rounded-full" />
+          </div>
+          {/* Header */}
+          <div className="px-4 pb-3 flex items-center justify-between border-b border-gray-800">
+            <h3 className="text-base font-semibold text-white">Folders</h3>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="p-2 hover:bg-gray-800 rounded-lg"
+            >
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+          {/* Folder Tree - scrollable */}
+          <div className="flex-1 overflow-y-auto py-3 px-3">
+            <div
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-xl cursor-pointer transition-all ${
+                currentFolderId === null ? "bg-violet-500/20 text-violet-400" : "text-gray-300 hover:bg-gray-800"
+              }`}
+              onClick={() => { navigateToFolder(null, "My Files"); setSidebarOpen(false); }}
+            >
+              <Home className="w-5 h-5 shrink-0" />
+              <span className="text-sm font-medium">My Files</span>
+            </div>
+            {allFolders.map(folder => (
+              <FolderTreeNode key={folder.id} folder={folder} level={0} />
+            ))}
+            {allFolders.length === 0 && (
+              <div className="px-4 py-8 text-center text-gray-500 text-sm">No folders yet</div>
+            )}
+          </div>
+          {/* Storage + New Folder */}
+          <div className="px-4 py-3 border-t border-gray-800">
+            <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+              <span>Storage</span>
+              <span>{formatBytes(storageUsed)} / {formatBytes(storageLimit)}</span>
+            </div>
+            <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden mb-3">
+              <div
+                className={`h-full rounded-full transition-all ${storageUsed / storageLimit > 0.9 ? "bg-red-500" : "bg-violet-500"}`}
+                style={{ width: `${Math.min((storageUsed / storageLimit) * 100, 100)}%` }}
+              />
+            </div>
+            <button
+              onClick={() => { setShowNewFolderModal(true); setSidebarOpen(false); }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl text-sm text-white font-medium transition-colors"
+            >
+              <FolderPlus className="w-4 h-4" />
+              New Folder
+            </button>
+          </div>
+          {/* Safe area padding for phones with home indicator */}
+          <div className="h-[env(safe-area-inset-bottom)]" />
+        </div>
+      </div>
+
+      {/* Mobile Folders button (floating) */}
       {!sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="absolute left-0 bottom-8 mb-4 z-10 flex items-center gap-1.5 px-2 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-r-lg border border-l-0 border-gray-700 md:hidden"
+          className="md:hidden fixed bottom-6 left-4 z-30 flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-full border border-gray-700 shadow-lg shadow-black/30"
         >
-          <ChevronRight className="w-4 h-4 text-gray-400 rotate-180" />
-          <span className="text-xs text-gray-400 whitespace-nowrap">My Folders</span>
+          <Folder className="w-4 h-4 text-violet-400" />
+          <span className="text-sm text-gray-300 font-medium">Folders</span>
         </button>
       )}
 
