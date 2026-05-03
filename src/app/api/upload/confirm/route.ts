@@ -181,8 +181,8 @@ async function generateThumbnailAsync(fileId: string, fileKey: string, mimeType:
     // Generate thumbnail
     const isVideo = mimeType.startsWith("video/");
     const cmd = isVideo
-      ? `ffmpeg -i "${tempFile}" -ss 00:00:01 -vframes 1 -vf "scale=320:-1" "${tempThumb}" -y 2>/dev/null`
-      : `ffmpeg -i "${tempFile}" -vf "scale=320:-1" "${tempThumb}" -y 2>/dev/null`;
+      ? `ffmpeg -i "${tempFile}" -ss 00:00:01 -vframes 1 -vf "scale=400:-1:flags=lanczos" -q:v 2 "${tempThumb}" -y 2>/dev/null`
+      : `ffmpeg -i "${tempFile}" -vf "scale=400:-1:flags=lanczos" -q:v 2 "${tempThumb}" -y 2>/dev/null`;
 
     await execAsync(cmd, { timeout: 30000 });
 
