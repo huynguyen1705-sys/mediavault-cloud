@@ -23,7 +23,7 @@ function getBucket() {
 
 // Get public URL base
 function getPublicUrlBase() {
-  return process.env.R2_PUBLIC_URL || `https://${process.env.R2_ACCOUNT_ID}.r2.dev`;
+  return process.env.R2_PUBLIC_URL || 'https://cdn.fii.one';
 }
 
 // Generate unique file key

@@ -17,6 +17,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'cdn.fii.one',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'pub-2971f994a6ac2fdadd4842209a20496e.r2.dev',
         pathname: '/**',
       },
