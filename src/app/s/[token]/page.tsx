@@ -79,6 +79,7 @@ export default function PublicGalleryPage() {
   const [requiresPassword, setRequiresPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showPasswordInput, setShowPasswordInput] = useState(false);
+  const [unlocked, setUnlocked] = useState(false); // for fade-out animation
 
   const fetchData = async (pwd?: string) => {
     setLoading(true);
@@ -96,12 +97,27 @@ export default function PublicGalleryPage() {
         return;
       }
 
+      if (res.status === 401 && !json.requiresPassword) {
+        // Wrong password
+        setPasswordError(json.error || "Invalid password");
+        setLoading(false);
+        return;
+      }
+
       if (res.status === 404) { setError("Share not found or has expired."); setLoading(false); return; }
       if (res.status === 410) { setError("This share link has expired."); setLoading(false); return; }
       if (!res.ok) { setError(json.error || "Failed to load shared content."); setLoading(false); return; }
 
       setData(json);
       setRequiresPassword(false);
+      // Animate password popup away
+      if (showPasswordInput) {
+        setUnlocked(true);
+        setTimeout(() => {
+          setShowPasswordInput(false);
+          setUnlocked(false);
+        }, 300);
+      }
     } catch {
       setError("Failed to connect. Please try again.");
     }
@@ -247,48 +263,53 @@ export default function PublicGalleryPage() {
 
         {/* Password Modal */}
         {showPasswordInput && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-900 rounded-2xl border border-gray-800 p-8 max-w-md w-full">
+          <div className={`fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300 ${unlocked ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+            <div className={`bg-gray-900 rounded-2xl border border-gray-800 p-8 max-w-md w-full transition-all duration-300 ${unlocked ? 'opacity-0 scale-90' : 'opacity-100 scale-100'}`}>
               <div className="flex flex-col items-center mb-6">
-                <div className="w-14 h-14 bg-purple-600/20 rounded-2xl flex items-center justify-center mb-4">
-                  <Lock className="w-7 h-7 text-purple-400" />
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors duration-300 ${unlocked ? 'bg-green-600/20' : 'bg-purple-600/20'}`}>
+                  <Lock className={`w-7 h-7 transition-colors duration-300 ${unlocked ? 'text-green-400' : 'text-purple-400'}`} />
                 </div>
-                <h2 className="text-xl font-bold text-white">Password Required</h2>
+                <h2 className="text-xl font-bold text-white">{unlocked ? 'Unlocked!' : 'Password Required'}</h2>
                 <p className="text-sm text-gray-400 mt-1 text-center">
-                  This shared content is protected. Enter the password to access.
+                  {unlocked ? 'Access granted. Loading file...' : 'This shared content is protected. Enter the password to access.'}
                 </p>
               </div>
 
-              <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <div>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                    autoFocus
-                  />
-                  {passwordError && (
-                    <p className="text-red-400 text-sm mt-2">{passwordError}</p>
-                  )}
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-xl font-medium transition-colors"
-                  >
-                    Unlock
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswordInput(false)}
-                    className="px-6 py-3 rounded-xl font-medium text-gray-400 hover:text-gray-200 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+              {!unlocked && (
+                <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                  <div>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); setPasswordError(null); }}
+                      placeholder="Enter password"
+                      className={`w-full bg-gray-800 border rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none transition-colors ${passwordError ? 'border-red-500 focus:border-red-400' : 'border-gray-700 focus:border-purple-500'}`}
+                      autoFocus
+                    />
+                    {passwordError && (
+                      <p className="text-red-400 text-sm mt-2 flex items-center gap-1">
+                        <span>⚠️</span> {passwordError}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-60 text-white py-3 rounded-xl font-medium transition-colors"
+                    >
+                      {loading ? 'Checking...' : 'Unlock'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordInput(false)}
+                      className="px-6 py-3 rounded-xl font-medium text-gray-400 hover:text-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}
