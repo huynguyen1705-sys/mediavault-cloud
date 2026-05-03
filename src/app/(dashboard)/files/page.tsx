@@ -2677,6 +2677,26 @@ const handleDelete = async (fileId: string) => {
                 <X className="w-5 h-5" />
               </button>
             </div>
+            {/* Share link quick copy */}
+            {selectedFile.shareUrl && (
+              <div className="px-4 py-3 border-b border-gray-800">
+                <div className="flex items-center gap-2">
+                  <Share2 className="w-4 h-4 text-gray-400 shrink-0" />
+                  <input
+                    type="text"
+                    readOnly
+                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}${selectedFile.shareUrl}`}
+                    className="flex-1 min-w-0 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-300"
+                  />
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${selectedFile.shareUrl}`); showToastMessage("Link copied!"); }}
+                    className="px-3 py-2 bg-violet-600 hover:bg-violet-500 rounded-lg transition-colors shrink-0"
+                  >
+                    <Copy className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              </div>
+            )}
             {/* Actions grid */}
             <div className="p-4 grid grid-cols-4 gap-4">
               <button onClick={() => { setShowPreview(true); setShowMobileSheet(false); }} className="flex flex-col items-center gap-2 p-3 hover:bg-gray-800 rounded-xl transition-colors">
