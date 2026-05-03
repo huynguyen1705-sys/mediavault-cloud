@@ -2949,28 +2949,27 @@ const handleDelete = async (fileId: string) => {
                     <div className="text-sm">{formatBytes(Number(selectedFile.fileSize))}</div>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-                  <div>
-                    <div className="text-xs text-gray-400">Created</div>
-                    <div className="text-sm">{new Date(selectedFile.createdAt).toLocaleDateString()}</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <RefreshCw className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-                  <div>
-                    <div className="text-xs text-gray-400">Modified</div>
-                    <div className="text-sm">{new Date(selectedFile.updatedAt).toLocaleDateString()}</div>
-                  </div>
-                </div>
-                {selectedFile.url && (
+                {/* Share Link with copy */}
+                {selectedFile.shareUrl && (
                   <div className="flex items-start gap-3">
-                    <ExternalLink className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                    <Share2 className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs text-gray-400">URL</div>
-                      <a href={selectedFile.url} target="_blank" rel="noopener noreferrer" className="text-sm text-violet-400 hover:text-violet-300 truncate block">
-                        Open
-                      </a>
+                      <div className="text-xs text-gray-400 mb-1">Share Link</div>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`${typeof window !== 'undefined' ? window.location.origin : ''}${selectedFile.shareUrl}`}
+                          className="flex-1 min-w-0 px-2 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-300"
+                        />
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${selectedFile.shareUrl}`); showToastMessage("Link copied!"); }}
+                          className="p-1.5 bg-violet-600 hover:bg-violet-500 rounded-lg transition-colors shrink-0"
+                          title="Copy link"
+                        >
+                          <Copy className="w-3.5 h-3.5 text-white" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
