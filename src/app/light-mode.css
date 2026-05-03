@@ -76,6 +76,175 @@ html.light .text-orange-400 { color: #ea580c !important; }
 html.light .text-purple-400 { color: #7c3aed !important; }
 html.light .text-yellow-400 { color: #ca8a04 !important; }
 
+/* ===== BG-BLACK (solid) — Public pages ===== */
+html.light .bg-black {
+  background-color: #ffffff !important;
+}
+html.light .bg-black\/80 {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* ===== PUBLIC HEADER ===== */
+html.light header.sticky {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border-color: #e5e7eb !important;
+}
+
+/* ===== PUBLIC FOOTER ===== */
+html.light footer {
+  background-color: #fafafa !important;
+  border-color: #e5e7eb !important;
+}
+html.light footer .text-gray-400,
+html.light footer .text-gray-500 {
+  color: #6b7280 !important;
+}
+html.light footer .text-white {
+  color: #111827 !important;
+}
+html.light footer a:hover {
+  color: #7c3aed !important;
+}
+
+/* ===== LANDING PAGE — Gradient sections ===== */
+html.light .bg-gradient-to-b.from-\[\#0a0a0a\],
+html.light .bg-gradient-to-b.from-\[\#111111\],
+html.light [class*="bg-gradient-to-b"][class*="from-[#"] {
+  background: #ffffff !important;
+}
+html.light .bg-gradient-to-b.from-\[\#111111\]\/50 {
+  background: #fafafa !important;
+}
+
+/* Landing sections with bg-[#111111]/50 */
+html.light [class*="bg-[#111111]/50"] {
+  background-color: #fafafa !important;
+}
+
+/* Comparison table alt rows */
+html.light .bg-gray-900\/30 {
+  background-color: #f9fafb !important;
+}
+
+/* Stats border section */
+html.light .border-y.border-gray-800 {
+  border-color: #e5e7eb !important;
+}
+
+/* Use case gradient cards */
+html.light [class*="bg-gradient-to-br"][class*="from-amber"] {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.06), rgba(249, 115, 22, 0.03)) !important;
+  border-color: #e5e7eb !important;
+}
+html.light [class*="bg-gradient-to-br"][class*="from-violet-500/20"] {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.06), rgba(147, 51, 234, 0.03)) !important;
+  border-color: #e5e7eb !important;
+}
+html.light [class*="bg-gradient-to-br"][class*="from-blue-500/20"] {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.06), rgba(6, 182, 212, 0.03)) !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Security trust box */
+html.light .bg-\[\#111111\].border.border-gray-800.rounded-2xl.p-8 {
+  background-color: #fafafa !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Testimonial cards */
+html.light .bg-\[\#0a0a0a\].border.border-gray-800.rounded-2xl {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Comparison table container */
+html.light .bg-\[\#111111\].border.border-gray-800.rounded-2xl.overflow-hidden {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Platform feature cards */
+html.light .bg-\[\#111111\].border.border-gray-800.rounded-xl {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+html.light .bg-\[\#111111\].border.border-gray-800.rounded-xl:hover {
+  border-color: #7c3aed33 !important;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.08) !important;
+}
+
+/* ===== PRICING PAGE ===== */
+html.light .bg-\[\#111111\]\/80 {
+  background-color: #ffffff !important;
+}
+html.light .bg-\[\#111111\]\/50 {
+  background-color: #fafafa !important;
+}
+
+/* Pricing popular card border glow — softer in light */
+html.light .border-violet-500\/50 {
+  border-color: #7c3aed !important;
+}
+
+/* ===== FEATURES PAGE ===== */
+html.light .bg-\[\#111111\]\/30 {
+  background-color: #fafafa !important;
+}
+html.light .bg-\[\#111111\]\/50.border.border-gray-800 {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ===== GREEN/SECURITY BADGES in light ===== */
+html.light .bg-green-500\/10 {
+  background-color: rgba(22, 163, 74, 0.08) !important;
+}
+html.light .border-green-500\/20 {
+  border-color: rgba(22, 163, 74, 0.2) !important;
+}
+html.light .text-green-400 {
+  color: #16a34a !important;
+}
+html.light .bg-green-500\/20 {
+  background-color: rgba(22, 163, 74, 0.12) !important;
+}
+
+/* ===== VIOLET BADGES ===== */
+html.light .bg-violet-500\/10 {
+  background-color: rgba(124, 58, 237, 0.06) !important;
+}
+html.light .bg-violet-500\/20 {
+  background-color: rgba(124, 58, 237, 0.08) !important;
+}
+html.light .border-violet-500\/30 {
+  border-color: rgba(124, 58, 237, 0.25) !important;
+}
+
+/* Big step numbers */
+html.light .text-gray-800\/50 {
+  color: rgba(229, 231, 235, 0.7) !important;
+}
+
+/* CTA section */
+html.light .bg-gradient-to-r.from-violet-900\/20 {
+  background: linear-gradient(to right, rgba(124, 58, 237, 0.04), rgba(147, 51, 234, 0.04)) !important;
+}
+
+/* Mobile menu in light */
+html.light .md\:hidden.bg-\[\#0f0f0f\] {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+html.light .md\:hidden.bg-\[\#0f0f0f\] .text-gray-300 {
+  color: #374151 !important;
+}
+html.light .md\:hidden.bg-\[\#0f0f0f\] .hover\:bg-white\/5:hover {
+  background-color: #f3f4f6 !important;
+}
+
 /* ===== NAVBAR — White in light mode ===== */
 html.light nav {
   background-color: rgba(255, 255, 255, 0.95) !important;
