@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { Download, Lock, Image, Film, Music, FileText, File } from "lucide-react";
+import { Download, Lock, Image, Film, Music, FileText, File, Copy, Share2, Clock, HardDrive, FileType, User, CheckCircle } from "lucide-react";
 
 interface FileData {
   type: "file" | "folder";
@@ -181,25 +181,91 @@ export default function PublicGalleryPage() {
                   </div>
                 )}
 
-                {/* File info + download */}
-                <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 flex flex-wrap items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-xl font-semibold text-white truncate">{data.name}</h2>
-                    <p className="text-sm text-gray-400 mt-1">
-                      {data.fileSize ? formatFileSize(data.fileSize) : "Unknown size"}
-                      {" · "}
-                      {data.mimeType || "Unknown type"}
-                    </p>
+                {/* File Info Card - Professional Layout */}
+                <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+                  {/* File name header */}
+                  <div className="px-6 py-5 border-b border-gray-800">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center shrink-0">
+                        <FileIcon mimeType={data.mimeType} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h2 className="text-lg font-semibold text-white truncate">{data.name}</h2>
+                        <p className="text-sm text-gray-500 mt-0.5">Shared by {data.owner}</p>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* File details grid */}
+                  <div className="px-6 py-4 grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3">
+                      <HardDrive className="w-4 h-4 text-gray-500" />
+                      <div>
+                        <p className="text-xs text-gray-500">Size</p>
+                        <p className="text-sm text-gray-200">{data.fileSize ? formatFileSize(data.fileSize) : "Unknown"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <FileType className="w-4 h-4 text-gray-500" />
+                      <div>
+                        <p className="text-xs text-gray-500">Type</p>
+                        <p className="text-sm text-gray-200 truncate">{data.mimeType?.split('/')[1]?.toUpperCase() || "Unknown"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-4 h-4 text-gray-500" />
+                      <div>
+                        <p className="text-xs text-gray-500">Shared</p>
+                        <p className="text-sm text-gray-200">{new Date(data.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <User className="w-4 h-4 text-gray-500" />
+                      <div>
+                        <p className="text-xs text-gray-500">Owner</p>
+                        <p className="text-sm text-gray-200">{data.owner}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Share link */}
+                  <div className="px-6 py-4 border-t border-gray-800">
+                    <p className="text-xs text-gray-500 mb-2 flex items-center gap-1.5"><Share2 className="w-3.5 h-3.5" /> Share this file</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={typeof window !== 'undefined' ? window.location.href : `https://fii.one/s/${token}`}
+                        className="flex-1 min-w-0 px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-gray-300 focus:outline-none"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(window.location.href);
+                          const btn = document.getElementById('copy-btn');
+                          if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 2000); }
+                        }}
+                        id="copy-btn"
+                        className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl text-sm text-gray-300 font-medium transition-colors flex items-center gap-1.5 shrink-0"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Download button */}
                   {data.allowDownload && data.url && (
-                    <a
-                      href={data.url}
-                      download={data.name}
-                      className="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
-                    >
-                      <Download className="w-4 h-4" />
-                      Download
-                    </a>
+                    <div className="px-6 py-4 border-t border-gray-800 bg-gray-900/50">
+                      <a
+                        href={data.url}
+                        download={data.name}
+                        className="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-6 py-3.5 rounded-xl font-medium transition-all shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30"
+                      >
+                        <Download className="w-5 h-5" />
+                        Download File
+                        <span className="text-white/60 text-sm ml-1">({data.fileSize ? formatFileSize(data.fileSize) : ""})</span>
+                      </a>
+                    </div>
                   )}
                 </div>
               </div>
