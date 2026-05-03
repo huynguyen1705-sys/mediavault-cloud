@@ -226,6 +226,8 @@ const GridFileCard = memo(function GridFileCard({
         // Skip if touch already handled (mobile)
         if (touchHandledRef.current) {
           touchHandledRef.current = false;
+          e.preventDefault();
+          e.stopPropagation();
           return;
         }
         onClick();
@@ -233,6 +235,7 @@ const GridFileCard = memo(function GridFileCard({
       onContextMenu={(e) => { e.preventDefault(); setMenuOpen(true); }}
       onTouchStart={(e) => {
         touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        touchHandledRef.current = false;
       }}
       onTouchEnd={(e) => {
         if (touchStartRef.current) {
@@ -240,6 +243,7 @@ const GridFileCard = memo(function GridFileCard({
           const diffY = Math.abs(e.changedTouches[0].clientY - touchStartRef.current.y);
           // Only open mobile sheet if it's a tap (minimal movement)
           if (diffX < 10 && diffY < 10) {
+            e.preventDefault();
             touchHandledRef.current = true;
             onMobileSheet();
           }
@@ -480,6 +484,7 @@ export default function FilesPage() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileItem } | null>(null);
   const [recentActions, setRecentActions] = useState<{ action: string; fileId: string; fileName: string; timestamp: number }[]>([]);
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
+  const listTouchHandledRef = useRef(false);
   const [showMobileSheet, setShowMobileSheet] = useState(false);
   const [trashMode, setTrashMode] = useState(false);
   const [trashFiles, setTrashFiles] = useState<any[]>([]);
@@ -2523,6 +2528,10 @@ const handleDelete = async (fileId: string) => {
                     onDragStart={(e) => handleDragStart(e, file)}
                     onDragEnd={handleDragEnd}
                     onClick={() => {
+                      if (listTouchHandledRef.current) {
+                        listTouchHandledRef.current = false;
+                        return;
+                      }
                       if (selectMode) {
                         toggleFileSelection(file.id);
                       } else {
@@ -2533,12 +2542,15 @@ const handleDelete = async (fileId: string) => {
                     onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, file }); }}
                     onTouchStart={(e) => {
                       setTouchStartPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+                      listTouchHandledRef.current = false;
                     }}
                     onTouchEnd={(e) => {
                       if (touchStartPos) {
                         const diffX = Math.abs(e.changedTouches[0].clientX - touchStartPos.x);
                         const diffY = Math.abs(e.changedTouches[0].clientY - touchStartPos.y);
                         if (diffX < 10 && diffY < 10) {
+                          e.preventDefault();
+                          listTouchHandledRef.current = true;
                           setSelectedFile(file);
                           setShowMobileSheet(true);
                         }
