@@ -1,4 +1,4 @@
-import { Sparkles, CreditCard, Users, Mail } from "lucide-react";
+import { Sparkles, CreditCard, Users, Mail, Code } from "lucide-react";
 
 export default function PublicHeader() {
   return (
@@ -19,13 +19,13 @@ export default function PublicHeader() {
             <CreditCard className="w-4 h-4 text-emerald-400" />
             Pricing
           </a>
+          <a href="/developers" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors">
+            <Code className="w-4 h-4 text-cyan-400" />
+            API
+          </a>
           <a href="/about" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors">
             <Users className="w-4 h-4 text-blue-400" />
             About
-          </a>
-          <a href="/contact" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors">
-            <Mail className="w-4 h-4 text-violet-400" />
-            Contact
           </a>
         </nav>
         <div className="flex items-center gap-3">

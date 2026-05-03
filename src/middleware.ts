@@ -23,12 +23,15 @@ const isPublicRoute = createRouteMatcher([
   "/privacy",
   "/contact",
   "/refund",
+  "/developers",
   "/public/:path*",
   "/s/:path*",
   "/api/files/:path*/proxy",
   "/api/share/:path*/download",
   "/api/share/:token",
   "/api/plans",
+  "/api/v1/upload",
+  "/api/v1/files/:path*",
   // /api/share/[token] GET is now in public routes
   // Do NOT add /api/share here - POST needs Clerk session
   "/api/settings/theme",
