@@ -1885,7 +1885,7 @@ const handleDelete = async (fileId: string) => {
           </button>
           <button
             onClick={() => document.getElementById('file-input')?.click()}
-            className="pointer-events-auto flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 rounded-full shadow-lg shadow-violet-500/30"
+            className="pointer-events-auto flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 rounded-full shadow-lg shadow-violet-500/40 animate-glow-pulse"
           >
             <Upload className="w-4 h-4 text-white" />
             <span className="text-sm text-white font-medium">Upload</span>

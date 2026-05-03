@@ -238,3 +238,16 @@ html {
   }
   html { scroll-behavior: auto; }
 }
+
+/* ===== Glow Pulse - Floating Upload Button ===== */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(124, 58, 237, 0.4), 0 0 20px rgba(124, 58, 237, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(124, 58, 237, 0.6), 0 0 40px rgba(124, 58, 237, 0.3), 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+}
+.animate-glow-pulse {
+  animation: glowPulse 2.5s ease-in-out infinite;
+}
