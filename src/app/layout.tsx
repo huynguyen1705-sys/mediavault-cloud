@@ -17,8 +17,29 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "fii.one - Secure Cloud Storage",
-  description: "Store, share, and manage your media files securely",
+  title: {
+    default: "fii.one - Secure Cloud Storage",
+    template: "%s | fii.one",
+  },
+  description: "Upload, store, and share your media files securely. Fast cloud storage with short share links, password protection, and instant previews.",
+  keywords: ["cloud storage", "file sharing", "secure upload", "media hosting", "share files"],
+  metadataBase: new URL("https://fii.one"),
+  openGraph: {
+    title: "fii.one - Secure Cloud Storage",
+    description: "Upload, store, and share your media files securely with short links.",
+    url: "https://fii.one",
+    siteName: "fii.one",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "fii.one - Secure Cloud Storage",
+    description: "Upload, store, and share your media files securely.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 // Inline script to read localStorage BEFORE React hydrates — prevents flash
@@ -48,6 +69,11 @@ export default async function RootLayout({
       <ThemeProvider>
         <html lang="en" className={initialTheme}>
           <head>
+            {/* Preconnect to external services for faster loading */}
+            <link rel="preconnect" href="https://clerk.fii.one" />
+            <link rel="dns-prefetch" href="https://pub-2971f994a6ac2fdadd4842209a20496e.r2.dev" />
+            <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+            <meta name="theme-color" content="#0a0a0a" />
             {/* Inline script prevents theme flash — runs before React hydration */}
             <script dangerouslySetInnerHTML={{ __html: themeScript }} />
           </head>

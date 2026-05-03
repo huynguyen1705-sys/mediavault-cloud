@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import Link from "next/link";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
@@ -112,11 +111,7 @@ export default function FeaturesPage() {
       {/* Hero */}
       <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+          <div className="animate-fadeIn">
             <div className="inline-flex items-center gap-2 bg-violet-500/20 text-violet-300 border border-violet-500/30 px-4 py-1 rounded-full mb-6">
               <Zap className="w-3 h-3" />
               <span className="text-sm">Packed with Features</span>
@@ -128,7 +123,7 @@ export default function FeaturesPage() {
               fii.one combines powerful storage, beautiful previews, and seamless sharing
               in one platform designed for creators and teams.
             </p>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -138,14 +133,12 @@ export default function FeaturesPage() {
           <h2 className="text-3xl font-bold text-center mb-12">Core Features</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
-              <motion.div
+              <div
                 key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                viewport={{ once: true }}
+                className="animate-fadeIn"
+                style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
               >
-                <div className="bg-[#111111]/50 border border-gray-800 hover:border-gray-700 transition-colors rounded-2xl p-6 h-full">
+                <div className="bg-[#111111]/50 border border-gray-800 hover:border-violet-500/40 hover:-translate-y-1 transition-all duration-300 rounded-2xl p-6 h-full">
                   <div
                     className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4`}
                   >
@@ -154,7 +147,7 @@ export default function FeaturesPage() {
                   <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
                   <p className="text-gray-400 text-sm">{feature.description}</p>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
