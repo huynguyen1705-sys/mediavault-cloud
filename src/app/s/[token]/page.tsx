@@ -271,7 +271,11 @@ export default function PublicGalleryPage() {
                           try {
                             const btn = document.getElementById('dl-btn');
                             if (btn) btn.textContent = 'Downloading...';
-                            const res = await fetch(data.url!);
+                            const dlUrl = password
+                              ? `/api/share/${token}/download?password=${encodeURIComponent(password)}`
+                              : `/api/share/${token}/download`;
+                            const res = await fetch(dlUrl);
+                            if (!res.ok) throw new Error('Download failed');
                             const blob = await res.blob();
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement('a');
