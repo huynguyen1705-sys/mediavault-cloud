@@ -446,6 +446,7 @@ export default function FilesPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false);
+  const [closingModal, setClosingModal] = useState<string | null>(null); // track which modal is animating out
   const [zoom, setZoom] = useState(1);
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
   const [pdfPages, setPdfPages] = useState<string[]>([]);
@@ -632,6 +633,15 @@ export default function FilesPage() {
     }
   }, [isLoaded, user]);
 
+  // Animated close helper — sets closingModal, waits for animation, then actually hides
+  const animatedClose = useCallback((modalName: string, closeFn: () => void, duration = 250) => {
+    setClosingModal(modalName);
+    setTimeout(() => {
+      closeFn();
+      setClosingModal(null);
+    }, duration);
+  }, []);
+
   // Fetch files
   // Batch fetch presigned URLs for visible files (updates cache only, single re-render at end)
   const fetchUrlsForFiles = useCallback(async (fileList: FileItem[]) => {
@@ -786,7 +796,7 @@ export default function FilesPage() {
 
       // Escape - Close preview
       if (key === "escape") {
-        setShowPreview(false);
+        if (showPreview) animatedClose('preview', () => setShowPreview(false));
         if (showDetails) setShowDetails(false);
         if (contextMenuRef.current) setContextMenu(null);
         if (folderContextMenuRef.current) setFolderContextMenu(null);
@@ -2654,8 +2664,8 @@ const handleDelete = async (fileId: string) => {
       {/* Mobile Bottom Sheet Menu */}
       {showMobileSheet && selectedFile && (
         <>
-          <div className="fixed inset-0 bg-black/60 z-40" onClick={() => setShowMobileSheet(false)} />
-          <div className="fixed inset-x-0 bottom-0 z-50 bg-[#0f0f0f] rounded-t-2xl shadow-2xl border-t border-gray-800 animate-slideUp md:hidden">
+          <div className={`fixed inset-0 bg-black/60 z-40 ${closingModal === 'sheet' ? 'animate-backdrop-out' : 'animate-backdrop-in'}`} onClick={() => animatedClose('sheet', () => setShowMobileSheet(false))} />
+          <div className={`fixed inset-x-0 bottom-0 z-50 bg-[#0f0f0f] rounded-t-2xl shadow-2xl border-t border-gray-800 md:hidden ${closingModal === 'sheet' ? 'animate-sheet-out' : 'animate-sheet-in'}`}>
             {/* Handle bar */}
             <div className="flex justify-center py-3">
               <div className="w-10 h-1 bg-gray-600 rounded-full" />
@@ -2673,7 +2683,7 @@ const handleDelete = async (fileId: string) => {
                 <p className="font-medium truncate">{selectedFile.name}</p>
                 <p className="text-sm text-gray-500">{formatBytes(Number(selectedFile.fileSize))}</p>
               </div>
-              <button onClick={() => setShowMobileSheet(false)} className="p-2 hover:bg-gray-800 rounded-full">
+              <button onClick={() => animatedClose('sheet', () => setShowMobileSheet(false))} className="p-2 hover:bg-gray-800 rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2817,7 +2827,7 @@ const handleDelete = async (fileId: string) => {
       {/* Preview Modal - Mobile Optimized */}
       {showPreview && selectedFile && (
         <div
-          className="fixed inset-0 z-50 flex flex-col md:flex-row"
+          className={`fixed inset-0 z-50 flex flex-col md:flex-row ${closingModal === 'preview' ? 'animate-preview-out' : 'animate-preview-in'}`}
           style={{ backgroundColor: isLight ? 'rgba(255,255,255,0.97)' : 'rgba(0,0,0,0.95)' }}
         >
           {/* Top bar - Close and Info buttons */}
@@ -2835,7 +2845,7 @@ const handleDelete = async (fileId: string) => {
             </button>
             {/* Close button */}
             <button
-              onClick={() => setShowPreview(false)}
+              onClick={() => animatedClose('preview', () => setShowPreview(false))}
               className={`p-3 rounded-full transition-colors border ${
                 isLight
                   ? 'bg-white hover:bg-gray-100 border-gray-300 hover:border-gray-400 text-gray-800'
@@ -3048,13 +3058,13 @@ const handleDelete = async (fileId: string) => {
       {/* Mobile Details Panel - Fullscreen Bottom Sheet */}
       {showPreview && selectedFile && mobileDetailsOpen && (
         <div
-          className="fixed inset-0 z-[60] flex flex-col"
+          className={`fixed inset-0 z-[60] flex flex-col ${closingModal === 'mobileDetails' ? 'animate-slideup-out' : 'animate-slideup-in'}`}
           style={{ backgroundColor: 'rgba(0,0,0,0.98)' }}
         >
           {/* Header */}
           <div className="p-4 border-b border-gray-800 flex items-center justify-between">
             <h3 className="font-semibold text-lg">File Details</h3>
-            <button onClick={() => setMobileDetailsOpen(false)} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+            <button onClick={() => animatedClose('mobileDetails', () => setMobileDetailsOpen(false))} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -3277,11 +3287,11 @@ const handleDelete = async (fileId: string) => {
 
       {/* Share Modal */}
       {showShareModal && selectedFile && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setShowShareModal(false); setShareToken(null); setShareError(null); setSharePassword(''); }}>
-          <div className="bg-[#111111] rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
+        <div className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 ${closingModal === 'share' ? 'animate-backdrop-out' : 'animate-backdrop-in'}`} onClick={() => animatedClose('share', () => { setShowShareModal(false); setShareToken(null); setShareError(null); setSharePassword(''); })}>
+          <div className={`bg-[#111111] rounded-2xl p-6 w-full max-w-md border border-gray-800 ${closingModal === 'share' ? 'animate-modal-out' : 'animate-modal-in'}`} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Share File</h2>
-              <button onClick={() => { setShowShareModal(false); setShareToken(null); setShareError(null); }} className="p-2 hover:bg-gray-800 rounded-lg"><X className="w-5 h-5" /></button>
+              <button onClick={() => animatedClose('share', () => { setShowShareModal(false); setShareToken(null); setShareError(null); })} className="p-2 hover:bg-gray-800 rounded-lg"><X className="w-5 h-5" /></button>
             </div>
 
             {!shareToken ? (

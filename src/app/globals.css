@@ -82,3 +82,85 @@ html.light body {
 }
 
 /* Light mode styles are in light-mode.css — do not duplicate here */
+
+/* ===== Apple-style Modal Animations ===== */
+@keyframes modalBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modalBackdropOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes modalScaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes modalScaleOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.92); }
+}
+@keyframes modalSlideUpIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes modalSlideUpOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(20px) scale(0.96); }
+}
+@keyframes sheetSlideIn {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes sheetSlideOut {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+@keyframes previewFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes previewFadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.95); }
+}
+
+/* Backdrop */
+.animate-backdrop-in {
+  animation: modalBackdropIn 0.25s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+.animate-backdrop-out {
+  animation: modalBackdropOut 0.2s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+/* Modal (centered dialogs) */
+.animate-modal-in {
+  animation: modalScaleIn 0.3s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+.animate-modal-out {
+  animation: modalScaleOut 0.2s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+/* Slide-up modals */
+.animate-slideup-in {
+  animation: modalSlideUpIn 0.35s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+.animate-slideup-out {
+  animation: modalSlideUpOut 0.25s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+/* Bottom sheet */
+.animate-sheet-in {
+  animation: sheetSlideIn 0.35s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+.animate-sheet-out {
+  animation: sheetSlideOut 0.25s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+/* Preview/Lightbox */
+.animate-preview-in {
+  animation: previewFadeIn 0.3s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+.animate-preview-out {
+  animation: previewFadeOut 0.2s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
