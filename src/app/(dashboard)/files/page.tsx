@@ -170,7 +170,7 @@ const GridFileCard = memo(function GridFileCard({
         <div className="aspect-square rounded-lg bg-gray-800 overflow-hidden relative">
           <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
           <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={(e) => { e.stopPropagation(); window.location.href = `/api/files/${file.id}/proxy?download=1`; }} className="p-1.5 bg-black/60 hover:bg-black/80 rounded text-white" title="Download"><Download className="w-3.5 h-3.5" /></button>
+            <button onClick={(e) => { e.stopPropagation(); const a = document.createElement('a'); a.href = `/api/files/${file.id}/proxy?download=1`; a.download = file.name || 'download'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }} className="p-1.5 bg-black/60 hover:bg-black/80 rounded text-white" title="Download"><Download className="w-3.5 h-3.5" /></button>
             <button onClick={(e) => { e.stopPropagation(); onShare(); }} className="p-1.5 bg-black/60 hover:bg-black/80 rounded text-white" title="Share"><Share2 className="w-3.5 h-3.5" /></button>
           </div>
         </div>
@@ -287,7 +287,7 @@ const GridFileCard = memo(function GridFileCard({
               <button className={itemCls} onClick={() => { setMenuOpen(false); onRename(); }}><Edit className="w-3.5 h-3.5 text-gray-500" /> Rename</button>
               <button className={itemCls} onClick={() => { setMenuOpen(false); onCopyLink(); }}><Copy className="w-3.5 h-3.5 text-gray-500" /> Copy Link</button>
               {file.url && (
-                <a href={`/api/files/${file.id}/proxy?download=1`} className={itemCls} onClick={() => setMenuOpen(false)}><Download className="w-3.5 h-3.5 text-blue-400" /> Download</a>
+                <a href={`/api/files/${file.id}/proxy?download=1`} download={file.name} className={itemCls} onClick={() => setMenuOpen(false)}><Download className="w-3.5 h-3.5 text-blue-400" /> Download</a>
               )}
               <hr className="my-1 border-t border-white/5" />
               {trashMode ? (
@@ -830,7 +830,7 @@ export default function FilesPage() {
           e.preventDefault();
           // Download
           if (selectedFile) {
-            window.location.href = `/api/files/${selectedFile.id}/proxy?download=1`;
+            const a = document.createElement('a'); a.href = `/api/files/${selectedFile.id}/proxy?download=1`; a.download = selectedFile.name || 'download'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
             showToastMessage('Downloading...');
           }
         }
@@ -1589,7 +1589,7 @@ const handleDelete = async (fileId: string) => {
           {/* Quick actions on hover */}
           <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
-              onClick={(e) => { e.stopPropagation(); window.location.href = `/api/files/${file.id}/proxy?download=1`; }}
+              onClick={(e) => { e.stopPropagation(); const a = document.createElement('a'); a.href = `/api/files/${file.id}/proxy?download=1`; a.download = file.name || 'download'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }}
               className="p-1.5 bg-black/60 hover:bg-black/80 rounded text-white"
               title="Download"
             >
@@ -2603,7 +2603,7 @@ const handleDelete = async (fileId: string) => {
                       <button
                         title="Download"
                         className="hidden md:block p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-700/60 opacity-0 group-hover:opacity-100 transition-all duration-150"
-                        onClick={(e) => { e.stopPropagation(); window.location.href = `/api/files/${file.id}/proxy?download=1`; }}
+                        onClick={(e) => { e.stopPropagation(); const a = document.createElement('a'); a.href = `/api/files/${file.id}/proxy?download=1`; a.download = file.name || 'download'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }}
                       >
                         <Download className="w-3.5 h-3.5" />
                       </button>
@@ -2718,7 +2718,7 @@ const handleDelete = async (fileId: string) => {
                 <span className="text-xs text-gray-400">Share</span>
               </button>
               {selectedFile.url && (
-                <a href={`/api/files/${selectedFile.id}/proxy?download=1`} onClick={() => setShowMobileSheet(false)} className="flex flex-col items-center gap-2 p-3 hover:bg-gray-800 rounded-xl transition-colors">
+                <a href={`/api/files/${selectedFile.id}/proxy?download=1`} download={selectedFile.name} onClick={() => setShowMobileSheet(false)} className="flex flex-col items-center gap-2 p-3 hover:bg-gray-800 rounded-xl transition-colors">
                   <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center">
                     <Download className="w-5 h-5 text-amber-400" />
                   </div>
@@ -3033,6 +3033,7 @@ const handleDelete = async (fileId: string) => {
                 {selectedFile.url && (
                   <a
                     href={`/api/files/${selectedFile.id}/proxy?download=1`}
+                    download={selectedFile.name}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
                   >
                     <Download className="w-4 h-4" /> Download
@@ -3147,6 +3148,7 @@ const handleDelete = async (fileId: string) => {
               {selectedFile.url && (
                 <a
                   href={`/api/files/${selectedFile.id}/proxy?download=1`}
+                  download={selectedFile.name}
                   className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gray-800 hover:bg-gray-700 rounded-2xl text-base font-medium transition-colors"
                 >
                   <Download className="w-6 h-6" /> Download
@@ -3256,6 +3258,7 @@ const handleDelete = async (fileId: string) => {
               {selectedFile.url && (
                 <a
                   href={`/api/files/${selectedFile.id}/proxy?download=1`}
+                  download={selectedFile.name}
                   className="w-full flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"
                 >
                   <Download className="w-4 h-4" /> Download
