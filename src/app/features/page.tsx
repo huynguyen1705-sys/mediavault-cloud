@@ -151,8 +151,8 @@ export default function FeaturesPage() {
             <div className="md:col-span-2 flex gap-4 justify-center">
               <div className="w-[45%] md:w-[55%] rounded-2xl overflow-hidden shadow-xl border border-gray-800 animate-float">
                 <img
-                  src="/screenshots/mobile-dark.jpg"
-                  alt="fii.one Mobile Dark"
+                  src="/screenshots/mobile-dark-upload.jpg"
+                  alt="fii.one Mobile Dark Upload"
                   className="w-full h-auto dark-screenshot"
                   loading="lazy"
                 />
@@ -165,8 +165,8 @@ export default function FeaturesPage() {
               </div>
               <div className="w-[45%] md:w-[55%] rounded-2xl overflow-hidden shadow-xl border border-gray-800 animate-float mt-8" style={{ animationDelay: '1s' }}>
                 <img
-                  src="/screenshots/mobile-light.jpg"
-                  alt="fii.one Mobile Light Mode"
+                  src="/screenshots/mobile-dark-files.jpg"
+                  alt="fii.one Mobile Dark Files"
                   className="w-full h-auto dark-screenshot"
                   loading="lazy"
                 />
