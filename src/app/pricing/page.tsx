@@ -8,7 +8,6 @@ import {
   X,
   Zap,
   Crown,
-  Building,
   CreditCard,
   ChevronDown,
   ChevronUp,
@@ -22,17 +21,16 @@ const plans = [
     icon: Zap,
     price: 0,
     priceLabel: "Free",
-    description: "Perfect for getting started with basic file storage.",
+    description: "Perfect for getting started with cloud storage.",
     features: [
-      { text: "1 GB Storage", included: true },
-      { text: "100 MB Max File Size", included: true },
-      { text: "5 GB Bandwidth/mo", included: true },
+      { text: "5 GB Storage", included: true },
+      { text: "200 MB Max File Size", included: true },
+      { text: "10 GB Bandwidth/mo", included: true },
       { text: "7-day file retention", included: true },
       { text: "Basic sharing", included: true },
       { text: "Download enabled", included: true },
       { text: "Embed support", included: false },
       { text: "Priority support", included: false },
-      { text: "Custom branding", included: false },
     ],
     popular: false,
     cta: "Get Started",
@@ -41,32 +39,11 @@ const plans = [
     id: "pro",
     name: "Pro",
     icon: Crown,
-    price: 9.99,
-    priceLabel: "$9.99/mo",
+    price: 4.99,
+    priceLabel: "$4.99/mo",
     description: "For power users who need more storage and features.",
     features: [
-      { text: "50 GB Storage", included: true },
-      { text: "500 MB Max File Size", included: true },
-      { text: "100 GB Bandwidth/mo", included: true },
-      { text: "Permanent storage", included: true },
-      { text: "Advanced sharing & passwords", included: true },
-      { text: "Download & embed enabled", included: true },
-      { text: "Embed support", included: true },
-      { text: "Priority support", included: true },
-      { text: "Custom branding", included: false },
-    ],
-    popular: true,
-    cta: "Upgrade to Pro",
-  },
-  {
-    id: "business",
-    name: "Business",
-    icon: Building,
-    price: 29.99,
-    priceLabel: "$29.99/mo",
-    description: "For teams and businesses with advanced needs.",
-    features: [
-      { text: "200 GB Storage", included: true },
+      { text: "100 GB Storage", included: true },
       { text: "2 GB Max File Size", included: true },
       { text: "500 GB Bandwidth/mo", included: true },
       { text: "Permanent storage", included: true },
@@ -74,10 +51,9 @@ const plans = [
       { text: "Download & embed enabled", included: true },
       { text: "Embed support", included: true },
       { text: "Priority support", included: true },
-      { text: "Custom branding", included: true },
     ],
-    popular: false,
-    cta: "Get Business Plan",
+    popular: true,
+    cta: "Upgrade to Pro",
   },
 ];
 
@@ -104,7 +80,7 @@ const faqs = [
   },
   {
     question: "Can I embed files on my website?",
-    answer: "Pro and Business plans support embedding. You can whitelist your domains to allow your media files to be embedded on your own websites.",
+    answer: "The Pro plan supports embedding. You can whitelist your domains to allow your media files to be embedded on your own websites.",
   },
 ];
 
@@ -137,7 +113,7 @@ export default function PricingPage() {
 
       {/* Pricing Cards */}
       <div className="max-w-6xl mx-auto px-4 -mt-8 pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {plans.map((plan) => (
             <div
               key={plan.id}
