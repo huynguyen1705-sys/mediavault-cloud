@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 import {
   Shield,
   Zap,
@@ -105,7 +107,8 @@ const techStack = [
 
 export default function FeaturesPage() {
   return (
-    <div className="min-h-screen bg-black text-white pt-20 pb-20">
+    <div className="min-h-screen bg-black text-white">
+      <PublicHeader />
       {/* Hero */}
       <section className="py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
@@ -201,6 +204,7 @@ export default function FeaturesPage() {
           </div>
         </div>
       </section>
+      <PublicFooter />
     </div>
   );
 }
