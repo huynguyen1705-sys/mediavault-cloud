@@ -1,4 +1,3 @@
-import Link from "next/link";
 import Navbar from "@/components/layout/navbar";
 import HomeUpload from "@/components/HomeUpload";
 import PublicFooter from "@/components/PublicFooter";
@@ -110,18 +109,18 @@ export default function HomePage() {
 
           {/* Buttons - 2 columns on mobile */}
           <div className="grid grid-cols-2 gap-3 md:gap-4 max-w-md mx-auto px-4 mb-8 md:mb-0">
-            <Link
+            <a
               href="/register"
               className="px-4 py-2.5 md:px-6 md:py-3 bg-violet-600 hover:bg-violet-500 text-white text-sm md:text-base font-medium rounded-lg flex items-center justify-center gap-1.5 transition-all btn-press hover:shadow-lg hover:shadow-violet-500/25"
             >
               Start Free <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
+            </a>
+            <a
               href="/pricing"
               className="px-4 py-2.5 md:px-6 md:py-3 bg-gray-800 hover:bg-gray-700 text-white text-sm md:text-base font-medium rounded-lg transition-all"
             >
               View Pricing
-            </Link>
+            </a>
           </div>
 
           {/* Upload Component */}
@@ -467,7 +466,7 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <Link
+                <a
                   href="/register"
                   className={`block text-center px-4 md:px-6 py-2.5 md:py-3 rounded-lg md:rounded-xl font-medium md:font-semibold transition-colors ${
                     plan.popular
@@ -476,7 +475,7 @@ export default function HomePage() {
                   }`}
                 >
                   {plan.cta}
-                </Link>
+                </a>
               </div>
             ))}
           </div>
@@ -490,12 +489,12 @@ export default function HomePage() {
           <p className="text-gray-400 text-sm md:text-lg mb-6 md:mb-8">
             Join thousands of users who trust fii.one.
           </p>
-          <Link
+          <a
             href="/register"
             className="inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white text-sm md:text-base font-semibold rounded-xl transition-all btn-press hover:shadow-lg hover:shadow-violet-500/25"
           >
             Create Free Account <ArrowRight className="w-4 h-4" />
-          </Link>
+          </a>
         </div>
       </section>
 

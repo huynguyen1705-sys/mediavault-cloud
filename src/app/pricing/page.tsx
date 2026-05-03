@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import {
@@ -263,13 +262,13 @@ export default function PricingPage() {
           <p className="text-gray-400 mb-6">
             Our team is here to help. Contact us anytime and we'll get back to you as soon as possible.
           </p>
-          <Link
+          <a
             href="/dashboard"
             className="inline-flex items-center gap-2 px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-colors"
           >
             <CreditCard className="w-5 h-5" />
             Get Started Now
-          </Link>
+          </a>
         </div>
       </div>
 

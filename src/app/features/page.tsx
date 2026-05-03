@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import {
@@ -182,18 +181,18 @@ export default function FeaturesPage() {
             Join thousands of creators who trust fii.one for their media storage
           </p>
           <div className="flex items-center justify-center gap-4">
-            <Link
+            <a
               href="/register"
               className="px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-colors"
             >
               Start Free Trial
-            </Link>
-            <Link
+            </a>
+            <a
               href="/pricing"
               className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-xl transition-colors"
             >
               View Pricing
-            </Link>
+            </a>
           </div>
         </div>
       </section>

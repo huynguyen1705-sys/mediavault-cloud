@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { Cloud, Menu, X, Sun, Moon, LayoutDashboard, FolderOpen, BarChart3, Settings, ScrollText, Home, Sparkles, CreditCard, Shield } from "lucide-react";
@@ -17,7 +16,6 @@ export default function Navbar() {
 
   useEffect(() => {
     if (isSignedIn && user) {
-      // Check admin status
       fetch("/api/admin/check")
         .then(r => r.json())
         .then(data => {
@@ -29,8 +27,6 @@ export default function Navbar() {
       setLoading(false);
     }
   }, [isSignedIn, user]);
-
-  // Theme is managed by ThemeProvider — no local tracking needed
 
   const isActive = (path: string) => pathname === path;
 
@@ -63,14 +59,14 @@ export default function Navbar() {
           </button>
 
           {/* Logo - center on mobile */}
-          <Link href="/" className="absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:translate-x-0 flex items-center gap-2">
+          <a href="/" className="absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:translate-x-0 flex items-center gap-2">
             <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg md:rounded-xl flex items-center justify-center">
               <Cloud className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
             <span className="text-lg md:text-xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
               fii.one
             </span>
-          </Link>
+          </a>
 
           {/* Desktop Nav - hidden on mobile */}
           <div className="hidden md:flex items-center gap-6">
@@ -78,7 +74,7 @@ export default function Navbar() {
               guestLinks.map((link) => {
                 const Icon = link.icon;
                 return (
-                  <Link
+                  <a
                     key={link.href}
                     href={link.href}
                     className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
@@ -89,7 +85,7 @@ export default function Navbar() {
                   >
                     <Icon className={`w-4 h-4 ${isActive(link.href) ? "text-violet-400" : link.color}`} />
                     {link.label}
-                  </Link>
+                  </a>
                 );
               })
             ) : (
@@ -97,7 +93,7 @@ export default function Navbar() {
                 const Icon = link.icon;
                 const active = pathname.startsWith(link.href);
                 return (
-                  <Link
+                  <a
                     key={link.href}
                     href={link.href}
                     className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
@@ -106,12 +102,12 @@ export default function Navbar() {
                   >
                     <Icon className={`w-4 h-4 ${active ? "text-violet-400" : link.color}`} />
                     {link.label}
-                  </Link>
+                  </a>
                 );
               })
             )}
             {isSignedIn && !loading && isAdmin && (
-              <Link
+              <a
                 href="/admin"
                 className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${
                   pathname.startsWith("/admin")
@@ -121,7 +117,7 @@ export default function Navbar() {
               >
                 <Shield className={`w-4 h-4 ${pathname.startsWith("/admin") ? "text-violet-400" : "text-red-400"}`} />
                 Admin
-              </Link>
+              </a>
             )}
           </div>
 
@@ -129,18 +125,18 @@ export default function Navbar() {
           <div className="flex items-center gap-2 md:gap-4">
             {!isSignedIn ? (
               <>
-                <Link
+                <a
                   href="/login"
                   className="hidden md:inline text-sm font-medium text-gray-400 hover:text-white transition-colors"
                 >
                   Sign In
-                </Link>
-                <Link
+                </a>
+                <a
                   href="/register"
-                  className="px-3 py-1.5 md:px-4 md:py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs md:text-sm font-medium rounded-lg transition-colors"
+                  className="px-3 py-1.5 md:px-4 md:py-2 bg-violet-600 hover:bg-violet-500 text-white text-xs md:text-sm font-medium rounded-lg transition-colors btn-press"
                 >
                   Get Started
-                </Link>
+                </a>
               </>
             ) : (
               <div className="flex items-center gap-3">
@@ -163,7 +159,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu - always dark regardless of theme */}
+      {/* Mobile Menu */}
       {mobileOpen && (
         <div className="md:hidden bg-[#0f0f0f] border-b border-gray-800 ">
           <div className="px-4 py-3 space-y-1">
@@ -171,17 +167,16 @@ export default function Navbar() {
               guestLinks.map((link) => {
                 const Icon = link.icon;
                 return (
-                  <Link
+                  <a
                     key={link.href}
                     href={link.href}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                       isActive(link.href) ? "bg-violet-500/10 text-white" : "text-gray-300 hover:bg-white/5"
                     }`}
-                    onClick={() => setMobileOpen(false)}
                   >
                     <Icon className={`w-5 h-5 ${isActive(link.href) ? "text-violet-400" : link.color}`} />
                     {link.label}
-                  </Link>
+                  </a>
                 );
               })
             ) : (
@@ -190,30 +185,28 @@ export default function Navbar() {
                   const Icon = link.icon;
                   const active = pathname.startsWith(link.href);
                   return (
-                    <Link
+                    <a
                       key={link.href}
                       href={link.href}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                         active ? "bg-violet-500/10 text-white" : "text-gray-300 hover:bg-white/5"
                       }`}
-                      onClick={() => setMobileOpen(false)}
                     >
                       <Icon className={`w-5 h-5 ${active ? "text-violet-400" : link.color}`} />
                       {link.label}
-                    </Link>
+                    </a>
                   );
                 })}
                 {isAdmin && (
-                  <Link
+                  <a
                     href="/admin"
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                       pathname.startsWith("/admin") ? "bg-violet-500/10 text-white" : "text-gray-300 hover:bg-white/5"
                     }`}
-                    onClick={() => setMobileOpen(false)}
                   >
                     <Shield className={`w-5 h-5 ${pathname.startsWith("/admin") ? "text-violet-400" : "text-red-400"}`} />
                     Admin
-                  </Link>
+                  </a>
                 )}
               </>
             )}
