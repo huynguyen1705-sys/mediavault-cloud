@@ -157,8 +157,8 @@ export default function FeaturesPage() {
                   loading="lazy"
                 />
                 <img
-                  src="/screenshots/mobile-light.jpg"
-                  alt="fii.one Mobile Light"
+                  src="/screenshots/mobile-light-upload.jpg"
+                  alt="fii.one Mobile Upload"
                   className="w-full h-auto light-screenshot"
                   loading="lazy"
                 />
@@ -171,8 +171,8 @@ export default function FeaturesPage() {
                   loading="lazy"
                 />
                 <img
-                  src="/screenshots/mobile-dark.jpg"
-                  alt="fii.one Mobile Dark Mode"
+                  src="/screenshots/mobile-light-files.jpg"
+                  alt="fii.one Mobile Files"
                   className="w-full h-auto light-screenshot"
                   loading="lazy"
                 />
