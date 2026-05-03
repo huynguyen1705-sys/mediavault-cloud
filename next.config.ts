@@ -4,12 +4,11 @@ const nextConfig: NextConfig = {
   output: "standalone",
   compress: true,
   poweredByHeader: false,
-  reactStrictMode: true,
   experimental: {
     serverActions: {
       bodySizeLimit: '500mb',
     },
-    optimizePackageImports: ['lucide-react', 'recharts', '@clerk/nextjs'],
+    optimizePackageImports: ['lucide-react', 'recharts'],
   },
   serverExternalPackages: ['@prisma/client'],
   images: {

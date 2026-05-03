@@ -72,7 +72,6 @@ export default async function RootLayout({
             {/* Preconnect to external services for faster loading */}
             <link rel="preconnect" href="https://clerk.fii.one" />
             <link rel="dns-prefetch" href="https://pub-2971f994a6ac2fdadd4842209a20496e.r2.dev" />
-            <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
             <meta name="theme-color" content="#0a0a0a" />
             {/* Inline script prevents theme flash — runs before React hydration */}
             <script dangerouslySetInnerHTML={{ __html: themeScript }} />
