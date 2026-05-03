@@ -461,6 +461,11 @@ export default function FilesPage() {
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
+  const [sharePassword, setSharePassword] = useState("");
+  const [shareExpireHours, setShareExpireHours] = useState<number>(0);
+  const [shareAllowDownload, setShareAllowDownload] = useState(true);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileItem } | null>(null);
   const [recentActions, setRecentActions] = useState<{ action: string; fileId: string; fileName: string; timestamp: number }[]>([]);
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
@@ -3186,7 +3191,111 @@ const handleDelete = async (fileId: string) => {
 
       {/* Share Modal */}
       {showShareModal && selectedFile && (
-        <ShareModal />
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setShowShareModal(false); setShareToken(null); setShareError(null); setSharePassword(''); }}>
+          <div className="bg-[#111111] rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Share File</h2>
+              <button onClick={() => { setShowShareModal(false); setShareToken(null); setShareError(null); }} className="p-2 hover:bg-gray-800 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+
+            {!shareToken ? (
+              <>
+                <div className="mb-4">
+                  <label className="text-sm text-gray-400 mb-2 block">Password (optional)</label>
+                  <input
+                    type="password"
+                    placeholder="Leave empty for no password"
+                    value={sharePassword}
+                    onChange={(e) => setSharePassword(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:border-violet-500"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="text-sm text-gray-400 mb-2 block">Expires in</label>
+                  <select
+                    value={shareExpireHours}
+                    onChange={(e) => setShareExpireHours(Number(e.target.value))}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:border-violet-500"
+                  >
+                    <option value={0}>Never</option>
+                    <option value={24}>24 hours</option>
+                    <option value={168}>7 days</option>
+                    <option value={720}>30 days</option>
+                  </select>
+                </div>
+                <label className="flex items-center gap-3 mb-6 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={shareAllowDownload}
+                    onChange={(e) => setShareAllowDownload(e.target.checked)}
+                    className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-violet-500 focus:ring-violet-500"
+                  />
+                  <span className="text-sm">Allow downloads</span>
+                </label>
+                <button
+                  onClick={async () => {
+                    if (!selectedFile) return;
+                    setShareError(null);
+                    setShareLoading(true);
+                    try {
+                      const res = await fetch("/api/share", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          fileId: selectedFile.id,
+                          password: sharePassword || undefined,
+                          expiresIn: shareExpireHours > 0 ? shareExpireHours : undefined,
+                          allowDownload: shareAllowDownload
+                        }),
+                      });
+                      const data = await res.json();
+                      if (res.ok && data.share?.url) {
+                        setShareToken(data.share.url);
+                        setRecentActions(prev => [{ action: "Shared", fileId: selectedFile.id, fileName: selectedFile.name, timestamp: Date.now() }, ...prev.slice(0, 2)]);
+                      } else {
+                        setShareError(data.error || "Failed to create share link");
+                      }
+                    } catch (err) {
+                      setShareError("Network error. Please try again.");
+                    } finally {
+                      setShareLoading(false);
+                    }
+                  }}
+                  disabled={shareLoading}
+                  className="w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-60 disabled:cursor-not-allowed rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {shareLoading ? (
+                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Creating...</>
+                  ) : "Create Share Link"}
+                </button>
+                {shareError && (
+                  <p className="text-red-400 text-sm text-center mt-2">{shareError}</p>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <label className="text-sm text-gray-400 mb-2 block">Share URL</label>
+                  <div className="flex gap-2">
+                    <input type="text" value={`${typeof window !== 'undefined' ? window.location.origin : ''}${shareToken}`} readOnly className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-sm" />
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${shareToken}`); showToastMessage("Copied!"); }}
+                      className="px-4 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setShowShareModal(false); setShareToken(null); setSelectedFile(null); }}
+                  className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors"
+                >
+                  Done
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {/* New Folder Modal */}
@@ -3318,136 +3427,4 @@ const handleDelete = async (fileId: string) => {
     </div>
   );
 
-
-  // Share Modal Component
-  function ShareModal() {
-    const [shareToken, setShareTokenLocal] = useState<string | null>(null);
-    const [sharePassword, setSharePasswordLocal] = useState("");
-    const [shareExpireHours, setShareExpireHoursLocal] = useState<number>(0);
-    const [shareAllowDownload, setShareAllowDownloadLocal] = useState(true);
-    const [shareError, setShareError] = useState<string | null>(null);
-    const [shareLoading, setShareLoading] = useState(false);
-    // Use ref to keep selectedFile stable across re-renders
-    const fileRef = useRef(selectedFile);
-    useEffect(() => { fileRef.current = selectedFile; }, []);
-
-    const handleShare = async () => {
-      const file = fileRef.current;
-      if (!file) return;
-      setShareError(null);
-      setShareLoading(true);
-      try {
-        const res = await fetch("/api/share", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fileId: file.id,
-            password: sharePassword || undefined,
-            expiresIn: shareExpireHours > 0 ? shareExpireHours : undefined,
-            allowDownload: shareAllowDownload
-          }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setShareTokenLocal(data.share?.url);
-          setRecentActions(prev => [{
-            action: "Shared",
-            fileId: file.id,
-            fileName: file.name,
-            timestamp: Date.now()
-          }, ...prev.slice(0, 2)]);
-        } else {
-          setShareError(data.error || "Failed to create share link");
-        }
-      } catch (error) {
-        console.error("Share error:", error);
-        setShareError("Network error. Please try again.");
-      } finally {
-        setShareLoading(false);
-      }
-    };
-
-    const shareUrl = shareToken ? `${window.location.origin}${shareToken}` : "";
-
-    return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowShareModal(false)}>
-        <div className="bg-[#111111] rounded-2xl p-6 w-full max-w-md border border-gray-800" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Share File</h2>
-            <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-gray-800 rounded-lg"><X className="w-5 h-5" /></button>
-          </div>
-
-          {!shareToken ? (
-            <>
-              <div className="mb-4">
-                <label className="text-sm text-gray-400 mb-2 block">Password (optional)</label>
-                <input
-                  type="password"
-                  placeholder="Leave empty for no password"
-                  value={sharePassword}
-                  onChange={(e) => setSharePasswordLocal(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:border-violet-500"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="text-sm text-gray-400 mb-2 block">Expires in</label>
-                <select
-                  value={shareExpireHours}
-                  onChange={(e) => setShareExpireHoursLocal(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:border-violet-500"
-                >
-                  <option value={0}>Never</option>
-                  <option value={24}>24 hours</option>
-                  <option value={168}>7 days</option>
-                  <option value={720}>30 days</option>
-                </select>
-              </div>
-              <label className="flex items-center gap-3 mb-6 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={shareAllowDownload}
-                  onChange={(e) => setShareAllowDownloadLocal(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-violet-500 focus:ring-violet-500"
-                />
-                <span className="text-sm">Allow downloads</span>
-              </label>
-              <button
-                onClick={handleShare}
-                disabled={shareLoading}
-                className="w-full px-4 py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-60 disabled:cursor-not-allowed rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                {shareLoading ? (
-                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Creating...</>
-                ) : "Create Share Link"}
-              </button>
-              {shareError && (
-                <p className="text-red-400 text-sm text-center mt-2">{shareError}</p>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="mb-4">
-                <label className="text-sm text-gray-400 mb-2 block">Share URL</label>
-                <div className="flex gap-2">
-                  <input type="text" value={shareUrl} readOnly className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-sm" />
-                  <button
-                    onClick={() => { navigator.clipboard.writeText(shareUrl); showToastMessage("Copied!"); }}
-                    className="px-4 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <button
-                onClick={() => { setShowShareModal(false); setSelectedFile(null); }}
-                className="w-full px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors"
-              >
-                Done
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
 }
