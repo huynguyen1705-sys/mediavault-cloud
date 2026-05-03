@@ -172,7 +172,7 @@ const GridFileCard = memo(function GridFileCard({
           <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
           <div className="absolute bottom-2 right-2 flex gap-1">
             <button onClick={(e) => { e.stopPropagation(); const a = document.createElement('a'); a.href = `/api/files/${file.id}/proxy?download=1`; a.download = file.name || 'download'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }} className="p-1.5 bg-white/90 hover:bg-white rounded-md text-gray-700 shadow-sm" title="Download"><Download className="w-3.5 h-3.5" /></button>
-            <button onClick={(e) => { e.stopPropagation(); onShare(); }} className="p-1.5 bg-white/90 hover:bg-white rounded-md text-gray-700 shadow-sm" title="Share"><Share2 className="w-3.5 h-3.5" /></button>
+            <button onClick={(e) => { e.stopPropagation(); onCopyLink(); }} className="p-1.5 bg-white/90 hover:bg-white rounded-md text-gray-700 shadow-sm" title="Copy Link"><Copy className="w-3.5 h-3.5" /></button>
           </div>
         </div>
       );
@@ -1620,11 +1620,11 @@ const handleDelete = async (fileId: string) => {
               <Download className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); setSelectedFile(file); setShowShareModal(true); }}
+              onClick={(e) => { e.stopPropagation(); if (file.shareUrl) { navigator.clipboard.writeText(`${window.location.origin}${file.shareUrl}`); showToastMessage("Link copied!"); } }}
               className="p-1.5 bg-black/60 hover:bg-black/80 rounded text-white"
-              title="Share"
+              title="Copy Link"
             >
-              <Share2 className="w-3.5 h-3.5" />
+              <Copy className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -2434,7 +2434,7 @@ const handleDelete = async (fileId: string) => {
                     onDetails={() => { setSelectedFile(file); setShowDetails(true); }}
                     onMove={() => { setMovingFile(file); setShowMoveModal(true); }}
                     onRename={() => { setRenamingItem({ type: "file", item: file }); setNewName(file.name); setShowRenameModal(true); }}
-                    onCopyLink={() => { navigator.clipboard.writeText(window.location.origin + "/api/files/" + file.id); showToastMessage("Link copied!"); }}
+                    onCopyLink={() => { navigator.clipboard.writeText(file.shareUrl ? `${window.location.origin}${file.shareUrl}` : `${window.location.origin}/api/files/${file.id}`); showToastMessage("Link copied!"); }}
                     onDelete={() => handleDelete(file.id)}
                     trashMode={trashMode}
                     onRestore={() => handleRestore(file.id)}
@@ -2639,11 +2639,11 @@ const handleDelete = async (fileId: string) => {
                         <Download className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        title="Share"
+                        title="Copy Link"
                         className="hidden md:block p-1.5 rounded-lg text-gray-500 hover:text-violet-400 hover:bg-violet-500/10 opacity-0 group-hover:opacity-100 transition-all duration-150"
-                        onClick={(e) => { e.stopPropagation(); setSelectedFile(file); setShowShareModal(true); }}
+                        onClick={(e) => { e.stopPropagation(); if (file.shareUrl) { navigator.clipboard.writeText(`${window.location.origin}${file.shareUrl}`); showToastMessage("Link copied!"); } }}
                       >
-                        <Share2 className="w-3.5 h-3.5" />
+                        <Copy className="w-3.5 h-3.5" />
                       </button>
                       <button
                         title="More"
@@ -2674,7 +2674,7 @@ const handleDelete = async (fileId: string) => {
           onShare={() => { setSelectedFile(contextMenu.file); setShowShareModal(true); setContextMenu(null); }}
           onMove={() => { setMovingFile(contextMenu.file); setShowMoveModal(true); setContextMenu(null); }}
           onRename={() => { setRenamingItem({ type: "file", item: contextMenu.file }); setNewName(contextMenu.file.name); setShowRenameModal(true); setContextMenu(null); }}
-          onCopyLink={() => { navigator.clipboard.writeText(window.location.origin + "/api/files/" + contextMenu.file.id); showToastMessage("Link copied!"); setContextMenu(null); }}
+          onCopyLink={() => { navigator.clipboard.writeText(contextMenu.file.shareUrl ? `${window.location.origin}${contextMenu.file.shareUrl}` : `${window.location.origin}/api/files/${contextMenu.file.id}`); showToastMessage("Link copied!"); setContextMenu(null); }}
           onDelete={() => handleDelete(contextMenu.file.id)}
           onRestore={() => handleRestore(contextMenu.file.id)}
           onPermanentDelete={() => handlePermanentDelete(contextMenu.file.id)}
