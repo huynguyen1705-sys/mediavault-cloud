@@ -143,6 +143,7 @@ const GridFileCard = memo(function GridFileCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const touchHandledRef = useRef(false);
   const btnRef = useRef<HTMLButtonElement>(null);
 
   // Close menu on outside click
@@ -169,9 +170,9 @@ const GridFileCard = memo(function GridFileCard({
       return (
         <div className="aspect-square rounded-lg bg-gray-800 overflow-hidden relative">
           <img src={file.thumbnailUrl} alt={file.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
-          <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={(e) => { e.stopPropagation(); const a = document.createElement('a'); a.href = `/api/files/${file.id}/proxy?download=1`; a.download = file.name || 'download'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }} className="p-1.5 bg-black/60 hover:bg-black/80 rounded text-white" title="Download"><Download className="w-3.5 h-3.5" /></button>
-            <button onClick={(e) => { e.stopPropagation(); onShare(); }} className="p-1.5 bg-black/60 hover:bg-black/80 rounded text-white" title="Share"><Share2 className="w-3.5 h-3.5" /></button>
+          <div className="absolute bottom-2 right-2 flex gap-1">
+            <button onClick={(e) => { e.stopPropagation(); const a = document.createElement('a'); a.href = `/api/files/${file.id}/proxy?download=1`; a.download = file.name || 'download'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }} className="p-1.5 bg-white/90 hover:bg-white rounded-md text-gray-700 shadow-sm" title="Download"><Download className="w-3.5 h-3.5" /></button>
+            <button onClick={(e) => { e.stopPropagation(); onShare(); }} className="p-1.5 bg-white/90 hover:bg-white rounded-md text-gray-700 shadow-sm" title="Share"><Share2 className="w-3.5 h-3.5" /></button>
           </div>
         </div>
       );
@@ -221,7 +222,14 @@ const GridFileCard = memo(function GridFileCard({
       draggable={true}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      onClick={onClick}
+      onClick={(e) => {
+        // Skip if touch already handled (mobile)
+        if (touchHandledRef.current) {
+          touchHandledRef.current = false;
+          return;
+        }
+        onClick();
+      }}
       onContextMenu={(e) => { e.preventDefault(); setMenuOpen(true); }}
       onTouchStart={(e) => {
         touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -232,6 +240,7 @@ const GridFileCard = memo(function GridFileCard({
           const diffY = Math.abs(e.changedTouches[0].clientY - touchStartRef.current.y);
           // Only open mobile sheet if it's a tap (minimal movement)
           if (diffX < 10 && diffY < 10) {
+            touchHandledRef.current = true;
             onMobileSheet();
           }
           touchStartRef.current = null;
