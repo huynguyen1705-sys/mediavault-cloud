@@ -564,6 +564,14 @@ html.light .animate-glow-pulse .text-sm.text-white {
   color: #ffffff !important;
 }
 
+/* ===== SCREENSHOT SHOWCASE ===== */
+html.light .shadow-violet-500\/10 {
+  box-shadow: 0 25px 50px -12px rgba(124, 58, 237, 0.08) !important;
+}
+html.light .animate-float {
+  border-color: #e5e7eb !important;
+}
+
 /* ===== GRADIENT HERO TEXT — Keep visible in light ===== */
 html.light .bg-gradient-to-r.from-white {
   --tw-gradient-from: #111827 !important;

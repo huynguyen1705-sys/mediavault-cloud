@@ -142,24 +142,59 @@ export default async function HomePage() {
           {/* Upload Component */}
           <HomeUpload />
 
-          {/* Mock Preview - Hide on small mobile */}
-          <div className="mt-10 md:mt-16 relative hidden sm:block">
-            <div className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-2xl p-1">
-              <div className="bg-[#111111] rounded-xl p-4 md:p-6">
-                <div className="flex items-center gap-4 mb-4 md:mb-6">
-                  <div className="flex gap-2">
-                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-500" />
-                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-500" />
-                    <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-500" />
-                  </div>
-                  <span className="text-xs md:text-sm text-gray-500">fii.one</span>
+          {/* Product Screenshots Showcase */}
+          <div className="mt-10 md:mt-16 relative">
+            {/* Desktop Screenshot - Main */}
+            <div className="hidden md:block relative">
+              <div className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-2xl p-1 shadow-2xl shadow-violet-500/10">
+                <div className="rounded-xl overflow-hidden">
+                  <img
+                    src="/screenshots/desktop-dark.jpg"
+                    alt="fii.one Dashboard - Dark Mode"
+                    className="w-full h-auto block dark-screenshot"
+                    loading="eager"
+                  />
+                  <img
+                    src="/screenshots/desktop-light.jpg"
+                    alt="fii.one Dashboard - Light Mode"
+                    className="w-full h-auto hidden light-screenshot"
+                    loading="eager"
+                  />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="aspect-square bg-gray-800 rounded-lg md:rounded-xl overflow-hidden">
-                      <div className="w-full h-full bg-gradient-to-br from-violet-500/20 to-purple-500/20 animate-pulse" />
-                    </div>
-                  ))}
+              </div>
+              {/* Mobile floating overlay */}
+              <div className="absolute -bottom-8 -right-4 w-[140px] lg:w-[180px] animate-float shadow-2xl rounded-2xl overflow-hidden border-4 border-gray-900 dark:border-gray-900">
+                <img
+                  src="/screenshots/mobile-dark.jpg"
+                  alt="fii.one Mobile - Dark Mode"
+                  className="w-full h-auto block dark-screenshot"
+                  loading="eager"
+                />
+                <img
+                  src="/screenshots/mobile-light.jpg"
+                  alt="fii.one Mobile - Light Mode"
+                  className="w-full h-auto hidden light-screenshot"
+                  loading="eager"
+                />
+              </div>
+            </div>
+
+            {/* Mobile Screenshot - Shown on small screens */}
+            <div className="md:hidden">
+              <div className="flex gap-3 justify-center items-end">
+                <div className="w-[55%] rounded-xl overflow-hidden shadow-xl border border-gray-800">
+                  <img
+                    src="/screenshots/mobile-dark.jpg"
+                    alt="fii.one Mobile - Dark Mode"
+                    className="w-full h-auto block dark-screenshot"
+                    loading="eager"
+                  />
+                  <img
+                    src="/screenshots/mobile-light.jpg"
+                    alt="fii.one Mobile - Light Mode"
+                    className="w-full h-auto hidden light-screenshot"
+                    loading="eager"
+                  />
                 </div>
               </div>
             </div>
@@ -214,6 +249,53 @@ export default async function HomePage() {
                 <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Block 1.5: See It In Action - Desktop + Mobile side by side */}
+      <section className="py-16 md:py-24 px-4 overflow-hidden">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-4xl font-bold mb-3">See It In Action</h2>
+            <p className="text-gray-400 text-sm md:text-lg">A beautiful interface on every device and theme</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6 items-center">
+            {/* Mobile - Dark */}
+            <div className="hidden md:block">
+              <div className="w-[70%] mx-auto rounded-2xl overflow-hidden shadow-2xl border border-gray-800 animate-float">
+                <img src="/screenshots/mobile-dark.jpg" alt="Mobile Dark Mode" className="w-full h-auto dark-screenshot" loading="lazy" />
+                <img src="/screenshots/mobile-light.jpg" alt="Mobile Light Mode" className="w-full h-auto light-screenshot" loading="lazy" />
+              </div>
+              <p className="text-center text-xs text-gray-500 mt-4">Mobile App</p>
+            </div>
+            {/* Desktop - Center, larger */}
+            <div className="md:col-span-1">
+              <div className="rounded-2xl overflow-hidden shadow-2xl shadow-violet-500/10 border border-gray-800">
+                <img src="/screenshots/desktop-dark.jpg" alt="Desktop Dark Mode" className="w-full h-auto dark-screenshot" loading="lazy" />
+                <img src="/screenshots/desktop-light.jpg" alt="Desktop Light Mode" className="w-full h-auto light-screenshot" loading="lazy" />
+              </div>
+              <p className="text-center text-xs text-gray-500 mt-4">Desktop Dashboard</p>
+            </div>
+            {/* Mobile - Light (shown as contrast) */}
+            <div className="hidden md:block">
+              <div className="w-[70%] mx-auto rounded-2xl overflow-hidden shadow-2xl border border-gray-800 animate-float" style={{ animationDelay: '1.5s' }}>
+                <img src="/screenshots/mobile-light.jpg" alt="Mobile Light Mode" className="w-full h-auto dark-screenshot" loading="lazy" />
+                <img src="/screenshots/mobile-dark.jpg" alt="Mobile Dark Mode" className="w-full h-auto light-screenshot" loading="lazy" />
+              </div>
+              <p className="text-center text-xs text-gray-500 mt-4">Light Mode</p>
+            </div>
+          </div>
+          {/* Mobile view: show both side by side */}
+          <div className="md:hidden mt-8 flex gap-3 justify-center">
+            <div className="w-[40%] rounded-xl overflow-hidden shadow-lg border border-gray-800">
+              <img src="/screenshots/mobile-dark.jpg" alt="Dark Mode" className="w-full h-auto dark-screenshot" loading="lazy" />
+              <img src="/screenshots/mobile-light.jpg" alt="Light Mode" className="w-full h-auto light-screenshot" loading="lazy" />
+            </div>
+            <div className="w-[40%] rounded-xl overflow-hidden shadow-lg border border-gray-800">
+              <img src="/screenshots/mobile-light.jpg" alt="Light Mode" className="w-full h-auto dark-screenshot" loading="lazy" />
+              <img src="/screenshots/mobile-dark.jpg" alt="Dark Mode" className="w-full h-auto light-screenshot" loading="lazy" />
+            </div>
           </div>
         </div>
       </section>

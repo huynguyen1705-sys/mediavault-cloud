@@ -251,3 +251,18 @@ html {
 .animate-glow-pulse {
   animation: glowPulse 2.5s ease-in-out infinite;
 }
+
+/* ===== Float Animation - Mobile Phone Overlay ===== */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ===== Theme-aware Screenshots ===== */
+.dark-screenshot { display: block; }
+.light-screenshot { display: none; }
+html.light .dark-screenshot { display: none; }
+html.light .light-screenshot { display: block; }

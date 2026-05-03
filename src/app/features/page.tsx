@@ -126,6 +126,63 @@ export default function FeaturesPage() {
         </div>
       </section>
 
+      {/* Product Showcase - Desktop & Mobile */}
+      <section className="py-12 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-5 gap-8 items-center">
+            {/* Desktop screenshot */}
+            <div className="md:col-span-3 relative">
+              <div className="rounded-2xl overflow-hidden shadow-2xl shadow-violet-500/10 border border-gray-800">
+                <img
+                  src="/screenshots/desktop-dark.jpg"
+                  alt="fii.one Desktop Dashboard"
+                  className="w-full h-auto dark-screenshot"
+                  loading="lazy"
+                />
+                <img
+                  src="/screenshots/desktop-light.jpg"
+                  alt="fii.one Desktop Dashboard"
+                  className="w-full h-auto light-screenshot"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+            {/* Mobile screenshots stacked */}
+            <div className="md:col-span-2 flex gap-4 justify-center">
+              <div className="w-[45%] md:w-[55%] rounded-2xl overflow-hidden shadow-xl border border-gray-800 animate-float">
+                <img
+                  src="/screenshots/mobile-dark.jpg"
+                  alt="fii.one Mobile Dark"
+                  className="w-full h-auto dark-screenshot"
+                  loading="lazy"
+                />
+                <img
+                  src="/screenshots/mobile-light.jpg"
+                  alt="fii.one Mobile Light"
+                  className="w-full h-auto light-screenshot"
+                  loading="lazy"
+                />
+              </div>
+              <div className="w-[45%] md:w-[55%] rounded-2xl overflow-hidden shadow-xl border border-gray-800 animate-float mt-8" style={{ animationDelay: '1s' }}>
+                <img
+                  src="/screenshots/mobile-light.jpg"
+                  alt="fii.one Mobile Light Mode"
+                  className="w-full h-auto dark-screenshot"
+                  loading="lazy"
+                />
+                <img
+                  src="/screenshots/mobile-dark.jpg"
+                  alt="fii.one Mobile Dark Mode"
+                  className="w-full h-auto light-screenshot"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          </div>
+          <p className="text-center text-sm text-gray-500 mt-8">Beautiful on every device — desktop, tablet, and mobile</p>
+        </div>
+      </section>
+
       {/* Features Grid */}
       <section className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
