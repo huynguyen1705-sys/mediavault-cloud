@@ -212,7 +212,9 @@ const GridFileCard = memo(function GridFileCard({
 
   return (
     <div
-      className={`group bg-[#111111] border rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer ${
+      className={`group bg-[#111111] border rounded-xl p-4 hover:border-gray-700 transition-all cursor-pointer relative ${
+        menuOpen ? "z-50" : "z-0"
+      } ${
         isDragging ? "opacity-50" : ""
       } ${
         isSelected ? "border-violet-500 bg-violet-500/10" :
