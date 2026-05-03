@@ -80,9 +80,14 @@ export default function PublicGalleryPage() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showPasswordInput, setShowPasswordInput] = useState(false);
   const [unlocked, setUnlocked] = useState(false); // for fade-out animation
+  const [submitting, setSubmitting] = useState(false); // password check loading (doesn't hide modal)
 
   const fetchData = async (pwd?: string) => {
-    setLoading(true);
+    if (pwd) {
+      setSubmitting(true); // only show button loading, don't hide modal
+    } else {
+      setLoading(true); // initial page load
+    }
     setError(null);
     setPasswordError(null);
     try {
@@ -94,6 +99,7 @@ export default function PublicGalleryPage() {
         setRequiresPassword(true);
         setShowPasswordInput(true);
         setLoading(false);
+        setSubmitting(false);
         return;
       }
 
@@ -101,12 +107,13 @@ export default function PublicGalleryPage() {
         // Wrong password
         setPasswordError(json.error || "Invalid password");
         setLoading(false);
+        setSubmitting(false);
         return;
       }
 
-      if (res.status === 404) { setError("Share not found or has expired."); setLoading(false); return; }
-      if (res.status === 410) { setError("This share link has expired."); setLoading(false); return; }
-      if (!res.ok) { setError(json.error || "Failed to load shared content."); setLoading(false); return; }
+      if (res.status === 404) { setError("Share not found or has expired."); setLoading(false); setSubmitting(false); return; }
+      if (res.status === 410) { setError("This share link has expired."); setLoading(false); setSubmitting(false); return; }
+      if (!res.ok) { setError(json.error || "Failed to load shared content."); setLoading(false); setSubmitting(false); return; }
 
       setData(json);
       setRequiresPassword(false);
@@ -122,6 +129,7 @@ export default function PublicGalleryPage() {
       setError("Failed to connect. Please try again.");
     }
     setLoading(false);
+    setSubmitting(false);
   };
 
   useEffect(() => {
@@ -256,15 +264,34 @@ export default function PublicGalleryPage() {
                   {/* Download button */}
                   {data.allowDownload && data.url && (
                     <div className="px-6 py-4 border-t border-gray-800 bg-gray-900/50">
-                      <a
-                        href={data.url}
-                        download={data.name}
+                      <button
+                        onClick={async () => {
+                          try {
+                            const btn = document.getElementById('dl-btn');
+                            if (btn) btn.textContent = 'Downloading...';
+                            const res = await fetch(data.url!);
+                            const blob = await res.blob();
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = data.name;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            if (btn) btn.textContent = 'Downloaded ✓';
+                            setTimeout(() => { if (btn) btn.textContent = 'Download File'; }, 2000);
+                          } catch {
+                            alert('Download failed. Please try again.');
+                          }
+                        }}
+                        id="dl-btn"
                         className="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-6 py-3.5 rounded-xl font-medium transition-all shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30"
                       >
                         <Download className="w-5 h-5" />
                         Download File
                         <span className="text-white/60 text-sm ml-1">({data.fileSize ? formatFileSize(data.fileSize) : ""})</span>
-                      </a>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -361,10 +388,10 @@ export default function PublicGalleryPage() {
                   <div className="flex gap-3">
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={submitting}
                       className="flex-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-60 text-white py-3 rounded-xl font-medium transition-colors"
                     >
-                      {loading ? 'Checking...' : 'Unlock'}
+                      {submitting ? 'Checking...' : 'Unlock'}
                     </button>
                     <button
                       type="button"
