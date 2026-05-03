@@ -1,6 +1,7 @@
 import Navbar from "@/components/layout/navbar";
 import HomeUpload from "@/components/HomeUpload";
 import PublicFooter from "@/components/PublicFooter";
+import prisma from "@/lib/db";
 import {
   Cloud,
   Shield,
@@ -24,7 +25,7 @@ import {
   Smartphone,
 } from "lucide-react";
 
-export default function HomePage() {
+export default async function HomePage() {
   const features = [
     {
       icon: Image,
@@ -58,24 +59,39 @@ export default function HomePage() {
     },
   ];
 
-  const plans = [
-    {
-      name: "Free",
-      price: "$0",
-      period: "forever",
-      features: ["5 GB Storage", "200 MB max file size", "10 GB Bandwidth/mo", "Basic sharing", "7 day file retention"],
-      cta: "Get Started",
-      popular: false,
-    },
-    {
-      name: "Pro",
-      price: "$4.99",
-      period: "/month",
-      features: ["100 GB Storage", "2 GB max file size", "500 GB Bandwidth/mo", "Permanent storage", "Advanced sharing & passwords", "Priority support", "No ads"],
-      cta: "Upgrade to Pro",
-      popular: true,
-    },
-  ];
+  // Fetch plans from database (dynamic)
+  const dbPlans = await prisma.plan.findMany({
+    where: { isActive: true },
+    orderBy: { priceMonthly: "asc" },
+  });
+
+  const plans = dbPlans.map((p) => {
+    const price = Number(p.priceMonthly);
+    const features: string[] = [];
+    features.push(`${p.storageGb} GB Storage`);
+    if (p.maxFileSizeMb >= 1024) {
+      features.push(`${(p.maxFileSizeMb / 1024).toFixed(0)} GB max file size`);
+    } else {
+      features.push(`${p.maxFileSizeMb} MB max file size`);
+    }
+    features.push(`${p.bandwidthGb} GB Bandwidth/mo`);
+    if (p.fileRetentionDays > 0 && p.fileRetentionDays < 9999) {
+      features.push(`${p.fileRetentionDays} day file retention`);
+    } else {
+      features.push("Permanent storage");
+    }
+    if (p.allowShare) features.push(price > 0 ? "Advanced sharing \& passwords" : "Basic sharing");
+    if (price > 0) features.push("Priority support", "No ads");
+
+    return {
+      name: p.displayName,
+      price: price === 0 ? "$0" : `$${price}`,
+      period: price === 0 ? "forever" : "/month",
+      features,
+      cta: price === 0 ? "Get Started" : `Upgrade to ${p.displayName}`,
+      popular: price > 0,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">

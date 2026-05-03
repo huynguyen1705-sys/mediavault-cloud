@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import {
@@ -13,49 +13,6 @@ import {
   ChevronUp,
   Loader2,
 } from "lucide-react";
-
-const plans = [
-  {
-    id: "free",
-    name: "Free",
-    icon: Zap,
-    price: 0,
-    priceLabel: "Free",
-    description: "Perfect for getting started with cloud storage.",
-    features: [
-      { text: "5 GB Storage", included: true },
-      { text: "200 MB Max File Size", included: true },
-      { text: "10 GB Bandwidth/mo", included: true },
-      { text: "7-day file retention", included: true },
-      { text: "Basic sharing", included: true },
-      { text: "Download enabled", included: true },
-      { text: "Embed support", included: false },
-      { text: "Priority support", included: false },
-    ],
-    popular: false,
-    cta: "Get Started",
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    icon: Crown,
-    price: 4.99,
-    priceLabel: "$4.99/mo",
-    description: "For power users who need more storage and features.",
-    features: [
-      { text: "100 GB Storage", included: true },
-      { text: "2 GB Max File Size", included: true },
-      { text: "500 GB Bandwidth/mo", included: true },
-      { text: "Permanent storage", included: true },
-      { text: "Advanced sharing & passwords", included: true },
-      { text: "Download & embed enabled", included: true },
-      { text: "Embed support", included: true },
-      { text: "Priority support", included: true },
-    ],
-    popular: true,
-    cta: "Upgrade to Pro",
-  },
-];
 
 const faqs = [
   {
@@ -84,9 +41,63 @@ const faqs = [
   },
 ];
 
+interface PlanFeature {
+  text: string;
+  included: boolean;
+}
+
+interface PlanData {
+  id: string;
+  name: string;
+  icon: typeof Zap;
+  price: number;
+  priceLabel: string;
+  description: string;
+  features: PlanFeature[];
+  popular: boolean;
+  cta: string;
+}
+
 export default function PricingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
+  const [plans, setPlans] = useState<PlanData[]>([]);
+
+  // Fetch plans from API
+  useEffect(() => {
+    fetch('/api/plans')
+      .then(r => r.json())
+      .then(data => {
+        if (data.plans) {
+          const mapped = data.plans.map((p: any, i: number) => {
+            const price = Number(p.priceMonthly);
+            const features: PlanFeature[] = [
+              { text: `${p.storageGb} GB Storage`, included: true },
+              { text: p.maxFileSizeMb >= 1024 ? `${(p.maxFileSizeMb / 1024).toFixed(0)} GB Max File Size` : `${p.maxFileSizeMb} MB Max File Size`, included: true },
+              { text: `${p.bandwidthGb} GB Bandwidth/mo`, included: true },
+              { text: p.fileRetentionDays > 0 && p.fileRetentionDays < 9999 ? `${p.fileRetentionDays}-day file retention` : 'Permanent storage', included: true },
+              { text: price > 0 ? 'Advanced sharing & passwords' : 'Basic sharing', included: true },
+              { text: 'Download enabled', included: p.allowDownload },
+              { text: 'Embed support', included: p.allowEmbed },
+              { text: 'Priority support', included: price > 0 },
+            ];
+            return {
+              id: p.name,
+              name: p.displayName,
+              icon: price === 0 ? Zap : Crown,
+              price,
+              priceLabel: price === 0 ? 'Free' : `$${price}/mo`,
+              description: p.description || (price === 0 ? 'Perfect for getting started.' : 'For power users.'),
+              features,
+              popular: price > 0,
+              cta: price === 0 ? 'Get Started' : `Upgrade to ${p.displayName}`,
+            };
+          });
+          setPlans(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubscribe = async (planId: string) => {
     setLoading(planId);
