@@ -103,6 +103,7 @@ export async function GET(request: NextRequest) {
           createdAt: true,
           updatedAt: true,
           folder: { select: { id: true, name: true } },
+          shares: { select: { shareToken: true }, take: 1 },
         },
       }),
       prisma.file.count({ where }),
@@ -127,6 +128,7 @@ export async function GET(request: NextRequest) {
       expiresAt: file.expiresAt?.toISOString() || null,
       createdAt: file.createdAt.toISOString(),
       updatedAt: file.updatedAt.toISOString(),
+      shareUrl: file.shares?.[0]?.shareToken ? `/s/${file.shares[0].shareToken}` : null,
     }));
 
     // Fetch folders

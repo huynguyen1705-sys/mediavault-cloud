@@ -7,8 +7,20 @@ import { promisify } from "util";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
+import crypto from "crypto";
 
 const execAsync = promisify(exec);
+
+// Short share token generator (6 chars base62)
+const BASE62 = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+function generateShareToken(): string {
+  let result = '';
+  const bytes = crypto.randomBytes(6);
+  for (let i = 0; i < 6; i++) {
+    result += BASE62[bytes[i] % 62];
+  }
+  return result;
+}
 
 /**
  * POST /api/upload/confirm
@@ -87,6 +99,33 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Auto-create share link (no password, never expires)
+    let shareUrl: string | null = null;
+    try {
+      let shareToken = '';
+      for (let attempt = 0; attempt < 5; attempt++) {
+        shareToken = generateShareToken();
+        try {
+          await prisma.share.create({
+            data: {
+              fileId: newFile.id,
+              userId: userProfile.id,
+              shareToken,
+              allowDownload: true,
+            },
+          });
+          shareUrl = `/s/${shareToken}`;
+          break;
+        } catch (e: any) {
+          if (e.code === 'P2002') continue;
+          throw e;
+        }
+      }
+    } catch (err) {
+      // Non-fatal - share link creation is optional
+      console.error("Auto-share creation failed:", err);
+    }
+
     // Generate thumbnail asynchronously (don't block response)
     if (needsThumbnail) {
       generateThumbnailAsync(newFile.id, fileKey, mimeType).catch(err => {
@@ -108,6 +147,7 @@ export async function POST(request: NextRequest) {
         thumbnailUrl: mimeType.startsWith("image/") ? presignedUrl : null,
         thumbnailStatus,
         expiresAt: expiresAt?.toISOString() || null,
+        shareUrl,
       },
     });
   } catch (error) {

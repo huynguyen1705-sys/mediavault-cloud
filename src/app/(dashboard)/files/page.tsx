@@ -85,6 +85,7 @@ interface FileItem {
   expiresAt: string | null;
   createdAt: string;
   updatedAt: string;
+  shareUrl?: string | null;
 }
 
 interface FolderItem {
@@ -3069,6 +3070,23 @@ const handleDelete = async (fileId: string) => {
                   </div>
                 </div>
               )}
+
+              {/* Share Link - quick copy (mobile) */}
+              {selectedFile.shareUrl && (
+                <div className="flex items-center gap-4">
+                  <Share2 className="w-6 h-6 text-gray-400 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-gray-400">Share Link</div>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${selectedFile.shareUrl}`); showToastMessage("Link copied!"); }}
+                      className="flex items-center gap-2 text-base text-violet-400 hover:text-violet-300"
+                    >
+                      <span className="truncate">{`${window.location.origin}${selectedFile.shareUrl}`}</span>
+                      <Copy className="w-4 h-4 shrink-0" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -3156,6 +3174,26 @@ const handleDelete = async (fileId: string) => {
                     <a href={selectedFile.url} target="_blank" rel="noopener noreferrer" className="text-sm text-violet-400 hover:text-violet-300 truncate block">
                       Open
                     </a>
+                  </div>
+                </div>
+              )}
+
+              {/* Share Link - quick copy */}
+              {selectedFile.shareUrl && (
+                <div className="flex items-start gap-3">
+                  <Share2 className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs text-gray-400">Share Link</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-violet-400 truncate">{`${typeof window !== 'undefined' ? window.location.origin : ''}${selectedFile.shareUrl}`}</span>
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${selectedFile.shareUrl}`); showToastMessage("Link copied!"); }}
+                        className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors shrink-0"
+                        title="Copy link"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
