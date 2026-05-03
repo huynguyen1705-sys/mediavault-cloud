@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Navbar from "@/components/layout/navbar";
 import HomeUpload from "@/components/HomeUpload";
+import PublicFooter from "@/components/PublicFooter";
 import {
   Cloud,
   Shield,
@@ -236,18 +237,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-4 border-t border-gray-800">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <a href="https://fii.one" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <Cloud className="w-5 h-5 text-violet-400" />
-            <span className="font-semibold">fii.one</span>
-          </a>
-          <p className="text-gray-500 text-sm">
-            © 2024 fii.one. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
