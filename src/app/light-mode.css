@@ -412,3 +412,59 @@ html.light .border-emerald-500\/60.bg-emerald-500\/5 {
   background-color: rgba(5, 150, 105, 0.04) !important;
   border-color: #059669 !important;
 }
+
+/* ===== FILE DETAILS PANEL (Desktop sidebar) ===== */
+html.light .bg-\[\#0f0f0f\].border-l.border-gray-800 {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+html.light .bg-\[\#0f0f0f\].border-l .border-b.border-gray-800 {
+  border-color: #e5e7eb !important;
+}
+html.light .bg-\[\#0f0f0f\].border-l .bg-gray-800 {
+  background-color: #f3f4f6 !important;
+}
+
+/* ===== MOBILE DETAILS PANEL (Fullscreen) ===== */
+html.light [style*="rgba(0,0,0,0.98)"] {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+}
+html.light [style*="rgba(0,0,0,0.98)"] .border-gray-800 {
+  border-color: #e5e7eb !important;
+}
+html.light [style*="rgba(0,0,0,0.98)"] .hover\:bg-gray-800:hover {
+  background-color: #f3f4f6 !important;
+}
+html.light [style*="rgba(0,0,0,0.98)"] .bg-gray-800 {
+  background-color: #f3f4f6 !important;
+}
+html.light [style*="rgba(0,0,0,0.98)"] .text-gray-400 {
+  color: #6b7280 !important;
+}
+
+/* ===== MOBILE BOTTOM SHEET ===== */
+html.light .bg-\[\#0f0f0f\].rounded-t-2xl {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+html.light .bg-\[\#0f0f0f\].rounded-t-2xl .hover\:bg-gray-800:hover {
+  background-color: #f3f4f6 !important;
+}
+html.light .bg-\[\#0f0f0f\].rounded-t-2xl .text-gray-400 {
+  color: #6b7280 !important;
+}
+html.light .bg-\[\#0f0f0f\].rounded-t-2xl .border-gray-800 {
+  border-color: #e5e7eb !important;
+}
+
+/* ===== ZOOM CONTROLS BAR ===== */
+html.light .bg-\[\#141414\]\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e5e7eb !important;
+}
+html.light .bg-\[\#141414\]\/95 .text-gray-300 {
+  color: #374151 !important;
+}
+html.light .bg-\[\#141414\]\/95 .hover\:bg-gray-800:hover {
+  background-color: #f3f4f6 !important;
+}
