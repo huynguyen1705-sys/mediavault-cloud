@@ -239,10 +239,10 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="py-8 px-4 border-t border-gray-800">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <a href="https://fii.one" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <Cloud className="w-5 h-5 text-violet-400" />
             <span className="font-semibold">fii.one</span>
-          </div>
+          </a>
           <p className="text-gray-500 text-sm">
             © 2024 fii.one. All rights reserved.
           </p>

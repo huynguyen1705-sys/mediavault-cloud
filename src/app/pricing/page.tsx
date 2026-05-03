@@ -274,14 +274,14 @@ export default function PricingPage() {
       {/* Footer */}
       <div className="border-t border-gray-800 py-8">
         <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <a href="https://fii.one" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
             <span className="font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
               fii.one
             </span>
-          </div>
+          </a>
           <div className="text-gray-500 text-sm">
             © 2024 fii.one. All rights reserved.
           </div>

@@ -149,10 +149,12 @@ export default function PublicGalleryPage() {
       {/* Header */}
       <header className="border-b border-gray-800 bg-gray-900/80 backdrop-blur">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center text-sm font-bold">
-            M
-          </div>
-          <span className="text-lg font-semibold text-white">fii.one</span>
+          <a href="https://fii.one" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center text-sm font-bold">
+              F
+            </div>
+            <span className="text-lg font-semibold text-white">fii.one</span>
+          </a>
           {data && (
             <span className="ml-auto text-sm text-gray-400">
               Shared by {data.owner}
