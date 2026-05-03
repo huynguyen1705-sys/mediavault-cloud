@@ -2830,19 +2830,8 @@ const handleDelete = async (fileId: string) => {
           className={`fixed inset-0 z-50 flex flex-col md:flex-row ${closingModal === 'preview' ? 'animate-preview-out' : 'animate-preview-in'}`}
           style={{ backgroundColor: isLight ? 'rgba(255,255,255,0.97)' : 'rgba(0,0,0,0.95)' }}
         >
-          {/* Top bar - Close and Info buttons */}
+          {/* Top bar - Close button */}
           <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
-            {/* Info button for mobile */}
-            <button
-              onClick={() => setMobileDetailsOpen(true)}
-              className={`p-3 rounded-full transition-colors backdrop-blur-sm md:hidden ${
-                isLight
-                  ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                  : 'bg-black/50 hover:bg-black/70 text-white'
-              }`}
-            >
-              <Info className="w-6 h-6" />
-            </button>
             {/* Close button */}
             <button
               onClick={() => animatedClose('preview', () => setShowPreview(false))}
@@ -2932,36 +2921,6 @@ const handleDelete = async (fileId: string) => {
             </div>
           </div>
 
-          {/* Share Link Bar - Below preview, above zoom (mobile visible) */}
-          {selectedFile.shareUrl && (
-            <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-md md:hidden">
-              <div className={`flex items-center gap-2 px-3 py-2 rounded-xl backdrop-blur-md shadow-lg border ${
-                isLight
-                  ? 'bg-white/90 border-gray-200'
-                  : 'bg-[#1a1a1a]/95 border-gray-700'
-              }`}>
-                <Share2 className={`w-4 h-4 shrink-0 ${isLight ? 'text-gray-500' : 'text-gray-400'}`} />
-                <input
-                  type="text"
-                  readOnly
-                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}${selectedFile.shareUrl}`}
-                  className={`flex-1 min-w-0 px-2 py-1 rounded-lg text-xs border ${
-                    isLight
-                      ? 'bg-gray-100 border-gray-200 text-gray-700'
-                      : 'bg-gray-800 border-gray-600 text-gray-300'
-                  }`}
-                />
-                <button
-                  onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${selectedFile.shareUrl}`); showToastMessage("Link copied!"); }}
-                  className="p-2 bg-violet-600 hover:bg-violet-500 rounded-lg transition-colors shrink-0"
-                >
-                  <Copy className="w-4 h-4 text-white" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Zoom controls - Fixed position */}
           {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-[#141414]/95 backdrop-blur px-4 py-2 rounded-full shadow-xl border border-gray-800">
               <button onClick={() => { setZoom((z) => Math.max(0.5, z - 0.25)); setDragPos({ x: 0, y: 0 }); }} className="p-2 hover:bg-gray-800 rounded-full transition-colors">

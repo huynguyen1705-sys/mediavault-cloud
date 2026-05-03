@@ -1,3 +1,5 @@
+import { Sparkles, CreditCard, Users, Mail } from "lucide-react";
+
 export default function PublicHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-gray-800 bg-black/80 backdrop-blur-xl">
@@ -9,14 +11,26 @@ export default function PublicHeader() {
           <span className="text-lg font-semibold text-white">fii.one</span>
         </a>
         <nav className="hidden md:flex items-center gap-6">
-          <a href="/features" className="text-sm text-gray-400 hover:text-white transition-colors">Features</a>
-          <a href="/pricing" className="text-sm text-gray-400 hover:text-white transition-colors">Pricing</a>
-          <a href="/about" className="text-sm text-gray-400 hover:text-white transition-colors">About</a>
-          <a href="/contact" className="text-sm text-gray-400 hover:text-white transition-colors">Contact</a>
+          <a href="/features" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors">
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            Features
+          </a>
+          <a href="/pricing" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors">
+            <CreditCard className="w-4 h-4 text-emerald-400" />
+            Pricing
+          </a>
+          <a href="/about" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors">
+            <Users className="w-4 h-4 text-blue-400" />
+            About
+          </a>
+          <a href="/contact" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors">
+            <Mail className="w-4 h-4 text-violet-400" />
+            Contact
+          </a>
         </nav>
         <div className="flex items-center gap-3">
           <a href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">Sign in</a>
-          <a href="/register" className="text-sm bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+          <a href="/register" className="text-sm bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-lg font-medium transition-colors btn-press">
             Get Started
           </a>
         </div>
