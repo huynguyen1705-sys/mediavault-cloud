@@ -15,6 +15,9 @@ import {
   CheckCircle,
   ExternalLink,
   Copy,
+  Key,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import Link from "next/link";
 import { formatBytes } from "@/lib/utils";
@@ -45,20 +48,42 @@ interface EmbedDomain {
   createdAt: string;
 }
 
+interface ApiKeyData {
+  id: string;
+  name: string;
+  key_preview: string;
+  key_full: string;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  isActive: boolean;
+  permissions: string[];
+  createdAt: string;
+}
+
 export default function SettingsPage() {
   const { user, isLoaded } = useUser();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [embedDomains, setEmbedDomains] = useState<EmbedDomain[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"profile" | "storage" | "security" | "domains">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "storage" | "security" | "domains" | "api">("profile");
   const [newDomain, setNewDomain] = useState("");
   const [addingDomain, setAddingDomain] = useState(false);
   const [deletingDomain, setDeletingDomain] = useState<string | null>(null);
+
+  // API Keys state
+  const [apiKeys, setApiKeys] = useState<ApiKeyData[]>([]);
+  const [newKeyName, setNewKeyName] = useState("");
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
+  const [showFullKey, setShowFullKey] = useState<string | null>(null);
+  const [deletingKey, setDeletingKey] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoaded && user) {
       fetchUserData();
       fetchEmbedDomains();
+      fetchApiKeys();
     }
   }, [isLoaded, user]);
 
@@ -123,6 +148,58 @@ export default function SettingsPage() {
     }
   };
 
+  // API Keys functions
+  const fetchApiKeys = async () => {
+    try {
+      const res = await fetch("/api/v1/keys");
+      if (res.ok) {
+        const data = await res.json();
+        setApiKeys(data.keys || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleCreateKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newKeyName.trim()) return;
+    setCreatingKey(true);
+    try {
+      const res = await fetch("/api/v1/keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newKeyName.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNewlyCreatedKey(data.key.key);
+        setNewKeyName("");
+        fetchApiKeys();
+      }
+    } finally {
+      setCreatingKey(false);
+    }
+  };
+
+  const handleDeleteKey = async (keyId: string) => {
+    setDeletingKey(keyId);
+    try {
+      const res = await fetch(`/api/v1/keys?id=${keyId}`, { method: "DELETE" });
+      if (res.ok) {
+        setApiKeys(apiKeys.filter((k) => k.id !== keyId));
+      }
+    } finally {
+      setDeletingKey(null);
+    }
+  };
+
+  const copyToClipboard = async (text: string, id: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedKey(id);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
   if (!isLoaded || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -150,6 +227,7 @@ export default function SettingsPage() {
         {[
           { id: "profile", icon: User, label: "Profile" },
           { id: "storage", icon: HardDrive, label: "Storage" },
+          { id: "api", icon: Key, label: "API Keys" },
           { id: "security", icon: Shield, label: "Security" },
           { id: "domains", icon: Globe, label: "Embed Domains" },
         ].map((tab) => (
@@ -312,6 +390,131 @@ export default function SettingsPage() {
               <button className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors">
                 Enable 2FA
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* API Keys Tab */}
+      {activeTab === "api" && (
+        <div className="space-y-6">
+          <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white">API Keys</h2>
+                <p className="text-sm text-gray-400 mt-1">Create keys to access the fii.one API from your applications.</p>
+              </div>
+              <a href="/developers" className="text-sm text-violet-400 hover:text-violet-300 flex items-center gap-1">
+                <ExternalLink className="w-3.5 h-3.5" /> Docs
+              </a>
+            </div>
+
+            {/* Newly created key alert */}
+            {newlyCreatedKey && (
+              <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm font-medium text-emerald-400">API Key Created!</span>
+                </div>
+                <p className="text-xs text-gray-400 mb-2">Copy your key now — you won't be able to see it again.</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-gray-800 px-3 py-2 rounded text-sm font-mono text-white break-all">{newlyCreatedKey}</code>
+                  <button
+                    onClick={() => { copyToClipboard(newlyCreatedKey, "new"); }}
+                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+                  >
+                    {copiedKey === "new" ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-gray-300" />}
+                  </button>
+                </div>
+                <button onClick={() => setNewlyCreatedKey(null)} className="text-xs text-gray-500 hover:text-gray-400 mt-2">Dismiss</button>
+              </div>
+            )}
+
+            {/* Create Key Form */}
+            <form onSubmit={handleCreateKey} className="flex gap-2 mb-6">
+              <input
+                type="text"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                placeholder="Key name (e.g., My App, WordPress site)"
+                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 text-sm"
+              />
+              <button
+                type="submit"
+                disabled={creatingKey || !newKeyName.trim()}
+                className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {creatingKey ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Create Key
+              </button>
+            </form>
+
+            {/* Keys List */}
+            <div className="space-y-3">
+              {apiKeys.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Key className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p>No API keys yet</p>
+                  <p className="text-xs mt-1">Create a key to start using the API</p>
+                </div>
+              ) : (
+                apiKeys.map((key) => (
+                  <div key={key.id} className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Key className="w-4 h-4 text-violet-400 shrink-0" />
+                        <span className="font-medium text-sm text-white truncate">{key.name}</span>
+                        {!key.isActive && <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-xs rounded">Disabled</span>}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <code className="text-xs text-gray-400 font-mono">
+                          {showFullKey === key.id ? key.key_full : key.key_preview}
+                        </code>
+                        <button onClick={() => setShowFullKey(showFullKey === key.id ? null : key.id)} className="p-0.5">
+                          {showFullKey === key.id ? <EyeOff className="w-3 h-3 text-gray-500" /> : <Eye className="w-3 h-3 text-gray-500" />}
+                        </button>
+                        <button
+                          onClick={() => copyToClipboard(key.key_full, key.id)}
+                          className="p-0.5"
+                        >
+                          {copiedKey === key.id ? <CheckCircle className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-gray-500" />}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
+                        <span>Created {new Date(key.createdAt).toLocaleDateString()}</span>
+                        {key.lastUsedAt && <span>Last used {new Date(key.lastUsedAt).toLocaleDateString()}</span>}
+                        {key.expiresAt && <span className="text-amber-400">Expires {new Date(key.expiresAt).toLocaleDateString()}</span>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteKey(key.id)}
+                      disabled={deletingKey === key.id}
+                      className="p-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors disabled:opacity-50 shrink-0 ml-3"
+                    >
+                      {deletingKey === key.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Permissions info */}
+          <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-6">
+            <h3 className="text-sm font-semibold text-white mb-3">Default Permissions</h3>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 bg-gray-800/50 rounded-lg text-center">
+                <div className="text-emerald-400 font-medium text-sm">Upload</div>
+                <div className="text-xs text-gray-500 mt-1">Upload & edit files</div>
+              </div>
+              <div className="p-3 bg-gray-800/50 rounded-lg text-center">
+                <div className="text-blue-400 font-medium text-sm">Read</div>
+                <div className="text-xs text-gray-500 mt-1">List & view files</div>
+              </div>
+              <div className="p-3 bg-gray-800/50 rounded-lg text-center">
+                <div className="text-red-400 font-medium text-sm">Delete</div>
+                <div className="text-xs text-gray-500 mt-1">Remove files</div>
+              </div>
             </div>
           </div>
         </div>
