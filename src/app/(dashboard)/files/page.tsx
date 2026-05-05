@@ -2680,15 +2680,15 @@ const handleDelete = async (fileId: string) => {
                         <div className="flex items-center gap-2 mt-0.5">
                           {result.fileSize && <span className="text-[10px] text-gray-600">{formatBytes(Number(result.fileSize))}</span>}
                           {result.createdAt && <span className="text-[10px] text-gray-600">{new Date(result.createdAt).toLocaleDateString()}</span>}
-                          <span className="text-[10px] font-medium" style={{ color: result.score >= 25 ? '#a78bfa' : result.score >= 15 ? '#9ca3af' : '#6b7280' }}>
-                            {result.score >= 25 ? '⭐ High match' : result.score >= 15 ? '🔵 Related' : '⚪ Similar'}
+                          <span className="text-[9px] font-medium shrink-0" style={{ color: result.score >= 25 ? '#a78bfa' : result.score >= 15 ? '#94a3b8' : '#6b7280' }}>
+                            {result.score >= 25 ? '● High match' : result.score >= 15 ? '◐ Related' : '○ Similar'}
                           </span>
                         </div>
                       </div>
-                      {/* Score bar - desktop only */}
-                      <div className="hidden md:block w-14 shrink-0">
-                        <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${result.score >= 25 ? 'bg-violet-500' : result.score >= 15 ? 'bg-blue-500' : 'bg-gray-500'}`} style={{ width: `${Math.min(result.score * 3, 100)}%` }} />
+                      {/* Score indicator - desktop only */}
+                      <div className="hidden md:block w-10 shrink-0">
+                        <div className="w-full h-[3px] bg-gray-800/50 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${result.score >= 25 ? 'bg-violet-400' : result.score >= 15 ? 'bg-slate-400' : 'bg-gray-600'}`} style={{ width: `${Math.min(result.score * 3, 100)}%` }} />
                         </div>
                       </div>
                     </div>
