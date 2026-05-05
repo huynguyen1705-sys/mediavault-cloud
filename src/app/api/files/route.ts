@@ -96,6 +96,7 @@ export async function GET(request: NextRequest) {
           storagePath: true,
           thumbnailPath: true,
           thumbnailStatus: true,
+          metadata: true,
           folderId: true,
           isPublic: true,
           downloadEnabled: true,
@@ -119,6 +120,7 @@ export async function GET(request: NextRequest) {
       storagePath: file.storagePath,
       thumbnailPath: file.thumbnailPath,
       thumbnailStatus: file.thumbnailStatus,
+      metadata: file.metadata || null,
       url: null, // Generated on demand
       thumbnailUrl: null, // Generated on demand
       folderId: file.folderId,

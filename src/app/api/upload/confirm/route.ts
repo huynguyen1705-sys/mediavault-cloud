@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
 import { getPresignedUrl, uploadToR2 } from "@/lib/r2";
+import { extractMetadata } from "@/lib/metadata";
 import { exec } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs";
@@ -126,12 +127,17 @@ export async function POST(request: NextRequest) {
       console.error("Auto-share creation failed:", err);
     }
 
-    // Generate thumbnail asynchronously (don't block response)
+    // Generate thumbnail + extract metadata asynchronously (don't block response)
     if (needsThumbnail) {
       generateThumbnailAsync(newFile.id, fileKey, mimeType).catch(err => {
         console.error("Thumbnail generation failed:", err?.message);
       });
     }
+
+    // Extract metadata in background (for ALL file types)
+    extractMetadataAsync(newFile.id, fileKey, mimeType).catch(err => {
+      console.error("Metadata extraction failed:", err?.message);
+    });
 
     // Generate presigned URL for immediate display
     const presignedUrl = await getPresignedUrl(fileKey, 3600);
@@ -214,5 +220,40 @@ async function generateThumbnailAsync(fileId: string, fileKey: string, mimeType:
     // Clean up temp files
     if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
     if (fs.existsSync(tempThumb)) fs.unlinkSync(tempThumb);
+  }
+}
+
+/**
+ * Background metadata extraction.
+ * Downloads file from R2, extracts all possible metadata, updates DB.
+ */
+async function extractMetadataAsync(fileId: string, fileKey: string, mimeType: string) {
+  const tempDir = os.tmpdir();
+  const ext = path.extname(fileKey) || ".tmp";
+  const tempFile = path.join(tempDir, `meta_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
+
+  try {
+    // Download file from R2
+    const downloadUrl = await getPresignedUrl(fileKey, 300);
+    const response = await fetch(downloadUrl);
+    if (!response.ok) throw new Error("Failed to download file from R2");
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    fs.writeFileSync(tempFile, buffer);
+
+    // Extract metadata
+    const metadata = await extractMetadata(tempFile, mimeType);
+
+    // Update DB with metadata
+    if (Object.keys(metadata).length > 0) {
+      await prisma.file.update({
+        where: { id: fileId },
+        data: { metadata: metadata as any },
+      });
+    }
+  } catch (error) {
+    console.error(`Metadata extraction failed for ${fileId}:`, error);
+  } finally {
+    if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
   }
 }
