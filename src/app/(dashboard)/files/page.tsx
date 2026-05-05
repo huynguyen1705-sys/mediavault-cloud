@@ -2167,11 +2167,21 @@ const handleDelete = async (fileId: string) => {
 
       {/* Mobile floating buttons */}
       {!sidebarOpen && (
-        <div className="md:hidden fixed bottom-6 left-4 right-4 z-30 flex justify-between pointer-events-none">
+        <div className="md:hidden fixed bottom-6 left-4 right-4 z-30 flex justify-between items-center pointer-events-none">
           <button onClick={() => setSidebarOpen(true)} className="pointer-events-auto flex items-center gap-2 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-full border border-gray-700 shadow-lg shadow-black/30">
             <Folder className="w-4 h-4 text-violet-400" />
             <span className="text-sm text-gray-300 font-medium">Folders</span>
           </button>
+          {/* Clear search button — only visible when AI search active */}
+          {aiSearchResults && aiSearchResults.length > 0 && (
+            <button
+              onClick={() => { setAiSearchResults(null); setSearchQuery(''); }}
+              className="pointer-events-auto flex items-center gap-2 px-4 py-2.5 bg-red-600/90 hover:bg-red-500 rounded-full shadow-lg shadow-red-500/30 border border-red-500/50"
+            >
+              <X className="w-4 h-4 text-white" />
+              <span className="text-sm text-white font-medium">Clear</span>
+            </button>
+          )}
           <button
             onClick={() => document.getElementById('file-input')?.click()}
             className="pointer-events-auto flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 rounded-full shadow-lg shadow-violet-500/40 animate-glow-pulse"
