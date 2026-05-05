@@ -2375,7 +2375,7 @@ const handleDelete = async (fileId: string) => {
                     fetchFiles();
                   }
                 }}
-                className={`w-full pl-10 pr-24 py-2.5 bg-[#111111] border rounded-xl text-[16px] md:text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition-all ${aiSearchMode ? 'border-violet-500/50 focus:border-violet-400' : 'border-gray-700 focus:border-violet-500'}`}
+                className={`w-full pl-10 pr-16 py-2.5 bg-[#0a0a0a] border rounded-xl text-[16px] md:text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition-all ${aiSearchMode ? 'border-violet-500/60 focus:border-violet-400' : 'border-gray-600 focus:border-violet-500'}`}
               />
               {/* AI Toggle Button — no separate X needed */}
               <button
