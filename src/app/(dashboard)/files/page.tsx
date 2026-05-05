@@ -3099,22 +3099,9 @@ const handleDelete = async (fileId: string) => {
                 </div>
                 <div className="text-center font-medium truncate">{selectedFile.name}</div>
               </div>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <FileText className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-xs text-gray-400">Type</div>
-                    <div className="text-sm truncate">{selectedFile.mimeType || "Unknown"}</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Download className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-                  <div>
-                    <div className="text-xs text-gray-400">Size</div>
-                    <div className="text-sm">{formatBytes(Number(selectedFile.fileSize))}</div>
-                  </div>
-                </div>
-                {/* Share Link with copy */}
+              <div className="space-y-3">
+                <DetailRow icon={<FileText className="w-4 h-4" />} label="Type" value={selectedFile.mimeType || "Unknown"} />
+                <DetailRow icon={<Download className="w-4 h-4" />} label="Size" value={formatBytes(Number(selectedFile.fileSize))} />
                 {selectedFile.shareUrl && (
                   <div className="flex items-start gap-3">
                     <Share2 className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
@@ -3139,6 +3126,60 @@ const handleDelete = async (fileId: string) => {
                   </div>
                 )}
               </div>
+
+              {/* Metadata in Preview Sidebar */}
+              {selectedFile.metadata && (() => {
+                const m = selectedFile.metadata;
+                return (
+                  <div className="mt-3 space-y-3">
+                    {(m.width || m.height) && (
+                      <MetadataSection title="📐 Dimensions">
+                        <MetaItem label="Resolution" value={`${m.width} × ${m.height} px`} />
+                        {m.dpi && <MetaItem label="DPI" value={String(m.dpi)} />}
+                        {m.colorSpace && <MetaItem label="Color Space" value={m.colorSpace} />}
+                      </MetadataSection>
+                    )}
+                    {(m.camera || m.lens || m.iso) && (
+                      <MetadataSection title="📷 Camera">
+                        {m.camera && <MetaItem label="Device" value={m.camera} />}
+                        {m.lens && <MetaItem label="Lens" value={m.lens} />}
+                        {m.iso && <MetaItem label="ISO" value={String(m.iso)} />}
+                        {m.shutterSpeed && <MetaItem label="Shutter" value={m.shutterSpeed} />}
+                        {m.aperture && <MetaItem label="Aperture" value={m.aperture} />}
+                        {m.focalLength && <MetaItem label="Focal" value={m.focalLength} />}
+                      </MetadataSection>
+                    )}
+                    {m.gps && (
+                      <MetadataSection title="📍 Location">
+                        <MetaItem label="GPS" value={`${m.gps.lat.toFixed(4)}°, ${m.gps.lng.toFixed(4)}°`} />
+                        <a href={`https://maps.google.com/?q=${m.gps.lat},${m.gps.lng}`} target="_blank" rel="noopener noreferrer" className="text-xs text-violet-400 hover:text-violet-300 block">Open Maps →</a>
+                      </MetadataSection>
+                    )}
+                    {(m.duration && selectedFile.mimeType?.startsWith("video/")) && (
+                      <MetadataSection title="🎬 Video">
+                        <MetaItem label="Duration" value={formatDuration(m.duration)} />
+                        {m.fps && <MetaItem label="FPS" value={`${m.fps}`} />}
+                        {m.videoCodec && <MetaItem label="Codec" value={m.videoCodec} />}
+                        {m.videoBitrate && <MetaItem label="Bitrate" value={formatBitrate(m.videoBitrate)} />}
+                      </MetadataSection>
+                    )}
+                    {(m.duration && selectedFile.mimeType?.startsWith("audio/")) && (
+                      <MetadataSection title="🎵 Audio">
+                        <MetaItem label="Duration" value={formatDuration(m.duration)} />
+                        {m.title && <MetaItem label="Title" value={m.title} />}
+                        {m.albumArtist && <MetaItem label="Artist" value={m.albumArtist} />}
+                        {m.album && <MetaItem label="Album" value={m.album} />}
+                      </MetadataSection>
+                    )}
+                    {(m.hash) && (
+                      <MetadataSection title="🔐 Integrity">
+                        <MetaItem label="SHA-256" value={m.hash.slice(0, 12) + "..."} copyValue={m.hash} onCopy={() => showToastMessage("Hash copied!")} />
+                      </MetadataSection>
+                    )}
+                  </div>
+                );
+              })()}
+
               <div className="mt-6 pt-4 border-t border-gray-800 space-y-2">
                 <button
                   onClick={() => { setShowPreview(false); setShowShareModal(true); }}
@@ -3190,68 +3231,83 @@ const handleDelete = async (fileId: string) => {
             </div>
 
             {/* Details */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <FileText className="w-6 h-6 text-gray-400 shrink-0" />
-                <div>
-                  <div className="text-sm text-gray-400">Type</div>
-                  <div className="text-base">{selectedFile.mimeType || "Unknown"}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <Download className="w-6 h-6 text-gray-400 shrink-0" />
-                <div>
-                  <div className="text-sm text-gray-400">Size</div>
-                  <div className="text-base">{formatBytes(Number(selectedFile.fileSize))}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <Calendar className="w-6 h-6 text-gray-400 shrink-0" />
-                <div>
-                  <div className="text-sm text-gray-400">Created</div>
-                  <div className="text-base">{new Date(selectedFile.createdAt).toLocaleDateString()}</div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <RefreshCw className="w-6 h-6 text-gray-400 shrink-0" />
-                <div>
-                  <div className="text-sm text-gray-400">Modified</div>
-                  <div className="text-base">{new Date(selectedFile.updatedAt).toLocaleDateString()}</div>
-                </div>
-              </div>
-
-              {selectedFile.url && (
-                <div className="flex items-center gap-4">
-                  <ExternalLink className="w-6 h-6 text-gray-400 shrink-0" />
-                  <div className="flex-1">
-                    <div className="text-sm text-gray-400">URL</div>
-                    <a href={selectedFile.url} target="_blank" rel="noopener noreferrer" className="text-base text-violet-400 hover:text-violet-300">
-                      Open in browser
-                    </a>
-                  </div>
-                </div>
-              )}
+            <div className="space-y-4">
+              <DetailRow icon={<FileText className="w-4 h-4" />} label="Type" value={selectedFile.mimeType || "Unknown"} />
+              <DetailRow icon={<Download className="w-4 h-4" />} label="Size" value={formatBytes(Number(selectedFile.fileSize))} />
+              <DetailRow icon={<Calendar className="w-4 h-4" />} label="Created" value={new Date(selectedFile.createdAt).toLocaleString()} />
+              <DetailRow icon={<RefreshCw className="w-4 h-4" />} label="Modified" value={new Date(selectedFile.updatedAt).toLocaleString()} />
 
               {/* Share Link - quick copy (mobile) */}
               {selectedFile.shareUrl && (
                 <div className="flex items-center gap-4">
-                  <Share2 className="w-6 h-6 text-gray-400 shrink-0" />
+                  <Share2 className="w-4 h-4 text-gray-400 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-gray-400">Share Link</div>
+                    <div className="text-xs text-gray-400">Share Link</div>
                     <button
                       onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${selectedFile.shareUrl}`); showToastMessage("Link copied!"); }}
-                      className="flex items-center gap-2 text-base text-violet-400 hover:text-violet-300"
+                      className="flex items-center gap-2 text-sm text-violet-400 hover:text-violet-300"
                     >
                       <span className="truncate">{`${window.location.origin}${selectedFile.shareUrl}`}</span>
-                      <Copy className="w-4 h-4 shrink-0" />
+                      <Copy className="w-3.5 h-3.5 shrink-0" />
                     </button>
                   </div>
                 </div>
               )}
             </div>
+
+            {/* Metadata in Mobile Details */}
+            {selectedFile.metadata && (() => {
+              const m = selectedFile.metadata;
+              return (
+                <div className="mt-4 space-y-4">
+                  {(m.width || m.height) && (
+                    <MetadataSection title="📐 Dimensions">
+                      <MetaItem label="Resolution" value={`${m.width} × ${m.height} px`} />
+                      {m.dpi && <MetaItem label="DPI" value={String(m.dpi)} />}
+                      {m.colorSpace && <MetaItem label="Color Space" value={m.colorSpace} />}
+                      {m.colorProfile && <MetaItem label="Profile" value={m.colorProfile} />}
+                    </MetadataSection>
+                  )}
+                  {(m.camera || m.lens || m.iso) && (
+                    <MetadataSection title="📷 Camera">
+                      {m.camera && <MetaItem label="Device" value={m.camera} />}
+                      {m.lens && <MetaItem label="Lens" value={m.lens} />}
+                      {m.iso && <MetaItem label="ISO" value={String(m.iso)} />}
+                      {m.shutterSpeed && <MetaItem label="Shutter" value={m.shutterSpeed} />}
+                      {m.aperture && <MetaItem label="Aperture" value={m.aperture} />}
+                      {m.focalLength && <MetaItem label="Focal" value={m.focalLength} />}
+                      {m.dateTaken && <MetaItem label="Date" value={m.dateTaken} />}
+                    </MetadataSection>
+                  )}
+                  {m.gps && (
+                    <MetadataSection title="📍 Location">
+                      <MetaItem label="GPS" value={`${m.gps.lat.toFixed(4)}°, ${m.gps.lng.toFixed(4)}°`} />
+                      <a href={`https://maps.google.com/?q=${m.gps.lat},${m.gps.lng}`} target="_blank" rel="noopener noreferrer" className="text-xs text-violet-400">Open Maps →</a>
+                    </MetadataSection>
+                  )}
+                  {(m.duration && selectedFile.mimeType?.startsWith("video/")) && (
+                    <MetadataSection title="🎬 Video">
+                      <MetaItem label="Duration" value={formatDuration(m.duration)} />
+                      {m.fps && <MetaItem label="FPS" value={`${m.fps}`} />}
+                      {m.videoCodec && <MetaItem label="Codec" value={m.videoCodec} />}
+                      {m.videoBitrate && <MetaItem label="Bitrate" value={formatBitrate(m.videoBitrate)} />}
+                    </MetadataSection>
+                  )}
+                  {(m.duration && selectedFile.mimeType?.startsWith("audio/")) && (
+                    <MetadataSection title="🎵 Audio">
+                      <MetaItem label="Duration" value={formatDuration(m.duration)} />
+                      {m.title && <MetaItem label="Title" value={m.title} />}
+                      {m.albumArtist && <MetaItem label="Artist" value={m.albumArtist} />}
+                    </MetadataSection>
+                  )}
+                  {(m.hash) && (
+                    <MetadataSection title="🔐 File">
+                      <MetaItem label="SHA-256" value={m.hash.slice(0, 12) + "..."} copyValue={m.hash} onCopy={() => showToastMessage("Copied!")} />
+                    </MetadataSection>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Actions */}
             <div className="mt-8 pt-6 border-t border-gray-800 space-y-3">
