@@ -570,6 +570,7 @@ export default function FilesPage() {
   const [aiSearchMode, setAiSearchMode] = useState(false);
   const [aiSearchResults, setAiSearchResults] = useState<any[] | null>(null);
   const [aiSearchLoading, setAiSearchLoading] = useState(false);
+  const [aiSearchTiming, setAiSearchTiming] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -872,7 +873,7 @@ export default function FilesPage() {
     }
   }, [isLoaded, currentFolderId, searchQuery, filterType, fetchUrlsForFiles]);
 
-  // AI Semantic Search
+  // AI Semantic Search — instant text, lazy thumbnails
   const aiSearchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const performAiSearch = useCallback(async (query: string) => {
     if (!query.trim()) { setAiSearchResults(null); setAiSearchLoading(false); return; }
@@ -886,37 +887,38 @@ export default function FilesPage() {
       if (res.ok) {
         const data = await res.json();
         const results = data.results || [];
-        // Load thumbnail URLs for results
+        setAiSearchTiming(data.timing || 0);
+        // Show text results IMMEDIATELY
+        setAiSearchResults(results);
+        setAiSearchLoading(false);
+        // Then lazy-load thumbnail URLs (non-blocking)
         if (results.length > 0) {
           const ids = results.map((r: any) => r.id);
-          try {
-            const urlRes = await fetch("/api/files/urls", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ ids }),
-            });
+          fetch("/api/files/urls", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids }),
+          }).then(async (urlRes) => {
             if (urlRes.ok) {
               const urlData = await urlRes.json();
               const urlMap = urlData.urls || {};
-              results.forEach((r: any) => {
-                if (urlMap[r.id]) {
-                  r.thumbnailUrl = urlMap[r.id].thumbnailUrl;
-                  r.url = urlMap[r.id].url;
-                }
-              });
+              setAiSearchResults((prev) => prev?.map(r => ({
+                ...r,
+                thumbnailUrl: urlMap[r.id]?.thumbnailUrl || r.thumbnailUrl,
+                url: urlMap[r.id]?.url || r.url,
+              })) || null);
             }
-          } catch {}
+          }).catch(() => {});
         }
-        setAiSearchResults(results);
       } else {
         const err = await res.json();
         showToastMessage(err.error || "AI search failed");
         setAiSearchResults(null);
+        setAiSearchLoading(false);
       }
     } catch {
       showToastMessage("AI search error");
       setAiSearchResults(null);
-    } finally {
       setAiSearchLoading(false);
     }
   }, []);
@@ -2524,38 +2526,61 @@ const handleDelete = async (fileId: string) => {
               </div>
             </div>
           )}
-          {/* AI Search Results */}
+          {/* AI Search Results — Google-style */}
           {aiSearchResults && aiSearchResults.length > 0 && (
             <div className="mb-4">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-sm font-medium text-violet-400">✨ AI Results</span>
-                <span className="text-xs text-gray-500">({aiSearchResults.length} matches)</span>
-                <button onClick={() => setAiSearchResults(null)} className="ml-auto text-xs text-gray-500 hover:text-white">Clear</button>
+              {/* Search header */}
+              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-800">
+                <span className="text-sm text-gray-400">✨ Found <span className="text-white font-medium">{aiSearchResults.length}</span> results for &ldquo;<span className="text-violet-400">{searchQuery}</span>&rdquo;</span>
+                <span className="text-[10px] text-gray-600 ml-1">({aiSearchTiming}ms)</span>
+                <button onClick={() => { setAiSearchResults(null); setSearchQuery(''); }} className="ml-auto text-xs text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-gray-800 transition-colors">✕ Clear</button>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {aiSearchResults.map((result: any) => {
+              {/* Results list - text first, thumbnails lazy */}
+              <div className="space-y-2">
+                {aiSearchResults.map((result: any, idx: number) => {
                   const matchedFile = files.find(f => f.id === result.id);
                   const thumbUrl = result.thumbnailUrl || matchedFile?.thumbnailUrl;
+                  const isImage = result.type === 'image';
+                  const isVideo = result.type === 'video';
+                  const isAudio = result.type === 'audio';
+                  const typeIcon = isImage ? '🖼️' : isVideo ? '🎬' : isAudio ? '🎵' : '📄';
                   return (
                     <div
-                      key={result.id + '-ai'}
+                      key={result.id + '-ai-' + idx}
                       onClick={() => {
                         if (matchedFile) { setSelectedFile(matchedFile); setShowPreview(true); }
                       }}
-                      className="relative bg-[#1a1a1a] border border-violet-500/30 rounded-xl p-2 cursor-pointer hover:border-violet-500/60 hover:bg-[#1f1f1f] transition-all group"
+                      className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#1a1a1a] cursor-pointer transition-all group border border-transparent hover:border-gray-800"
                     >
-                      <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center mb-2 overflow-hidden">
+                      {/* Thumbnail — loads lazy */}
+                      <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg bg-[#1a1a1a] flex items-center justify-center overflow-hidden shrink-0">
                         {thumbUrl ? (
-                          <img src={thumbUrl} alt={result.name} className="w-full h-full object-cover" />
+                          <img src={thumbUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
                         ) : (
-                          <FileText className="w-8 h-8 text-gray-600" />
+                          <span className="text-lg">{typeIcon}</span>
                         )}
                       </div>
-                      <div className="text-xs font-medium truncate">{result.name}</div>
-                      <div className="text-[10px] text-gray-500 mt-0.5">{Math.round(result.similarity * 100)}% match</div>
-                      {/* Similarity badge */}
-                      <div className="absolute top-1.5 right-1.5 bg-violet-600/90 text-[9px] text-white px-1.5 py-0.5 rounded-full font-medium">
-                        {Math.round(result.similarity * 100)}%
+                      {/* Text content — renders instantly */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate group-hover:text-violet-300 transition-colors">{result.name}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-600/20 text-violet-400 font-medium shrink-0">{result.score}%</span>
+                        </div>
+                        {result.snippet && (
+                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{result.snippet}</p>
+                        )}
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[10px] text-gray-600">{typeIcon} {result.mimeType?.split('/')[1] || 'file'}</span>
+                          {result.fileSize && <span className="text-[10px] text-gray-600">{formatBytes(Number(result.fileSize))}</span>}
+                          {result.createdAt && <span className="text-[10px] text-gray-600">{new Date(result.createdAt).toLocaleDateString()}</span>}
+                        </div>
+                      </div>
+                      {/* Score bar */}
+                      <div className="hidden md:flex flex-col items-end gap-0.5 shrink-0">
+                        <div className="w-16 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                          <div className="h-full bg-violet-500 rounded-full transition-all" style={{ width: `${Math.min(result.score, 100)}%` }} />
+                        </div>
+                        <span className="text-[9px] text-gray-600">{result.semanticScore || 0}% semantic</span>
                       </div>
                     </div>
                   );
@@ -2565,10 +2590,26 @@ const handleDelete = async (fileId: string) => {
           )}
 
           {aiSearchResults && aiSearchResults.length === 0 && !aiSearchLoading && (
-            <div className="text-center py-12">
-              <div className="text-4xl mb-3">🔍</div>
-              <div className="text-gray-400 text-sm">No AI matches found for &ldquo;{searchQuery}&rdquo;</div>
-              <div className="text-gray-600 text-xs mt-1">Try different keywords or embed your files first</div>
+            <div className="text-center py-16">
+              <div className="text-5xl mb-4 opacity-50">🔍</div>
+              <div className="text-gray-300 text-sm font-medium">No results for &ldquo;{searchQuery}&rdquo;</div>
+              <div className="text-gray-600 text-xs mt-2 max-w-sm mx-auto">Try different words, check spelling, or use more general terms</div>
+            </div>
+          )}
+
+          {/* AI Search Loading */}
+          {aiSearchLoading && !aiSearchResults && (
+            <div className="space-y-3 mb-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-start gap-3 p-3 animate-pulse">
+                  <div className="w-12 h-12 rounded-lg bg-gray-800" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-gray-800 rounded w-2/3" />
+                    <div className="h-2 bg-gray-800/60 rounded w-full" />
+                    <div className="h-2 bg-gray-800/40 rounded w-1/3" />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

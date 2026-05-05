@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
-import { generateEmbedding, buildFileText } from "@/lib/embeddings";
+import { generateEmbedding } from "@/lib/embeddings";
 
 const SYSTEM_API_KEY = process.env.OPENROUTER_API_KEY || "";
 
@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const startTime = Date.now();
     const body = await request.json();
     const { query, limit = 20, threshold = 0.05 } = body;
 
@@ -55,25 +56,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Hybrid search: vector similarity + keyword BM25-style scoring
+    const keywords = query.trim().toLowerCase().split(/\s+/).filter((w: string) => w.length > 1);
+    const keywordPattern = keywords.map((w: string) => `%${w}%`).join('|');
+
     const searchResults = await prisma.$queryRawUnsafe<any[]>(`
+      WITH semantic AS (
+        SELECT 
+          fe.file_id,
+          fe.content_text,
+          1 - (fe.embedding <=> $1::vector) as sem_score
+        FROM file_embeddings fe
+        JOIN files f ON f.id = fe.file_id
+        WHERE f.user_id = $2::uuid AND f.deleted_at IS NULL
+        ORDER BY fe.embedding <=> $1::vector
+        LIMIT 50
+      ),
+      keyword AS (
+        SELECT f.id as file_id, 
+          CASE WHEN LOWER(f.name) LIKE $5 THEN 0.3 ELSE 0 END +
+          CASE WHEN fe.content_text IS NOT NULL AND LOWER(fe.content_text) LIKE $5 THEN 0.2 ELSE 0 END
+          as kw_score
+        FROM files f
+        LEFT JOIN file_embeddings fe ON fe.file_id = f.id
+        WHERE f.user_id = $2::uuid AND f.deleted_at IS NULL
+          AND (LOWER(f.name) LIKE $5 OR (fe.content_text IS NOT NULL AND LOWER(fe.content_text) LIKE $5))
+      )
       SELECT 
-        f.id, f.name, f.mime_type as "mimeType", f.file_size as "fileSize", f.created_at as "createdAt",
-        f.storage_path as "storagePath", f.thumbnail_path as "thumbnailPath", f.thumbnail_status as "thumbnailStatus",
-        fe.content_text,
-        1 - (fe.embedding <=> $1::vector) as similarity
-      FROM file_embeddings fe
-      JOIN files f ON f.id = fe.file_id
-      WHERE f.user_id = $2::uuid
-        AND f.deleted_at IS NULL
-        AND (1 - (fe.embedding <=> $1::vector)) > $3
-      ORDER BY fe.embedding <=> $1::vector
+        f.id, f.name, f.mime_type as "mimeType", f.file_size as "fileSize", 
+        f.created_at as "createdAt", f.storage_path as "storagePath",
+        f.thumbnail_path as "thumbnailPath",
+        s.content_text, s.sem_score,
+        COALESCE(k.kw_score, 0) as kw_score,
+        (s.sem_score * 0.7 + COALESCE(k.kw_score, 0) * 0.3) as final_score
+      FROM semantic s
+      JOIN files f ON f.id = s.file_id
+      LEFT JOIN keyword k ON k.file_id = s.file_id
+      WHERE s.sem_score > $3 OR COALESCE(k.kw_score, 0) > 0
+      ORDER BY (s.sem_score * 0.7 + COALESCE(k.kw_score, 0) * 0.3) DESC
       LIMIT $4
-    `, queryVector, user.id, threshold, limit);
+    `, queryVector, user.id, threshold, limit, `%${keywords[0] || ''}%`);
+
+    // Extract AI snippet from content_text
+    const extractSnippet = (contentText: string | null): string | null => {
+      if (!contentText) return null;
+      const contentLine = contentText.split("\n").find((l: string) => l.startsWith("Content:"));
+      if (contentLine) return contentLine.slice(9).trim().slice(0, 120);
+      const descLine = contentText.split("\n").find((l: string) => l.startsWith("Description:"));
+      if (descLine) return descLine.slice(12).trim().slice(0, 80);
+      return null;
+    };
 
     return NextResponse.json({
       success: true,
       query,
       model: result.model,
+      timing: Date.now() - startTime,
       results: searchResults.map((r: any) => ({
         id: r.id,
         name: r.name,
@@ -81,12 +119,12 @@ export async function POST(request: NextRequest) {
         fileSize: r.fileSize?.toString(),
         storagePath: r.storagePath,
         thumbnailPath: r.thumbnailPath,
-        thumbnailStatus: r.thumbnailStatus,
         createdAt: r.createdAt,
-        similarity: Math.round(r.similarity * 100) / 100,
-        contentText: r.content_text,
-        url: null,   // Will be loaded via batch URL API
-        thumbnailUrl: null,
+        score: Math.round(Number(r.final_score) * 100),
+        semanticScore: Math.round(Number(r.sem_score) * 100),
+        keywordScore: Math.round(Number(r.kw_score) * 100),
+        snippet: extractSnippet(r.content_text),
+        type: r.mimeType?.split('/')[0] || 'file',
       })),
       count: searchResults.length,
     });
