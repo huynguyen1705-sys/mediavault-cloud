@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
     const searchResults = await prisma.$queryRawUnsafe<any[]>(`
       SELECT 
         f.id, f.name, f.mime_type as "mimeType", f.file_size as "fileSize", f.created_at as "createdAt",
+        f.storage_path as "storagePath", f.thumbnail_path as "thumbnailPath", f.thumbnail_status as "thumbnailStatus",
         fe.content_text,
         1 - (fe.embedding <=> $1::vector) as similarity
       FROM file_embeddings fe
@@ -78,9 +79,14 @@ export async function POST(request: NextRequest) {
         name: r.name,
         mimeType: r.mimeType,
         fileSize: r.fileSize?.toString(),
+        storagePath: r.storagePath,
+        thumbnailPath: r.thumbnailPath,
+        thumbnailStatus: r.thumbnailStatus,
         createdAt: r.createdAt,
         similarity: Math.round(r.similarity * 100) / 100,
         contentText: r.content_text,
+        url: null,   // Will be loaded via batch URL API
+        thumbnailUrl: null,
       })),
       count: searchResults.length,
     });

@@ -873,8 +873,9 @@ export default function FilesPage() {
   }, [isLoaded, currentFolderId, searchQuery, filterType, fetchUrlsForFiles]);
 
   // AI Semantic Search
+  const aiSearchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const performAiSearch = useCallback(async (query: string) => {
-    if (!query.trim()) { setAiSearchResults(null); return; }
+    if (!query.trim()) { setAiSearchResults(null); setAiSearchLoading(false); return; }
     setAiSearchLoading(true);
     try {
       const res = await fetch("/api/ai/search", {
@@ -884,7 +885,29 @@ export default function FilesPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setAiSearchResults(data.results || []);
+        const results = data.results || [];
+        // Load thumbnail URLs for results
+        if (results.length > 0) {
+          const ids = results.map((r: any) => r.id);
+          try {
+            const urlRes = await fetch("/api/files/urls", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ids }),
+            });
+            if (urlRes.ok) {
+              const urlData = await urlRes.json();
+              const urlMap = urlData.urls || {};
+              results.forEach((r: any) => {
+                if (urlMap[r.id]) {
+                  r.thumbnailUrl = urlMap[r.id].thumbnailUrl;
+                  r.url = urlMap[r.id].url;
+                }
+              });
+            }
+          } catch {}
+        }
+        setAiSearchResults(results);
       } else {
         const err = await res.json();
         showToastMessage(err.error || "AI search failed");
@@ -2201,15 +2224,28 @@ const handleDelete = async (fileId: string) => {
                 placeholder={aiSearchMode ? "AI: describe what you're looking for..." : "Search files..."}
                 value={searchQuery}
                 onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  if (!aiSearchMode) {
+                  const val = e.target.value;
+                  setSearchQuery(val);
+                  if (aiSearchMode) {
+                    // Debounced AI search (600ms after stop typing)
+                    if (aiSearchDebounceRef.current) clearTimeout(aiSearchDebounceRef.current);
+                    if (val.trim().length >= 2) {
+                      setAiSearchLoading(true);
+                      aiSearchDebounceRef.current = setTimeout(() => {
+                        performAiSearch(val);
+                      }, 600);
+                    } else {
+                      setAiSearchResults(null);
+                      setAiSearchLoading(false);
+                    }
+                  } else {
                     // Debounced normal search
                     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
                     searchDebounceRef.current = setTimeout(() => {
-                      if (e.target.value.trim()) {
+                      if (val.trim()) {
                         setSearchHistory(prev => {
-                          const filtered = prev.filter(h => h !== e.target.value.trim());
-                          return [e.target.value.trim(), ...filtered].slice(0, 5);
+                          const filtered = prev.filter(h => h !== val.trim());
+                          return [val.trim(), ...filtered].slice(0, 5);
                         });
                       }
                     }, 500);
@@ -2499,17 +2535,18 @@ const handleDelete = async (fileId: string) => {
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                 {aiSearchResults.map((result: any) => {
                   const matchedFile = files.find(f => f.id === result.id);
+                  const thumbUrl = result.thumbnailUrl || matchedFile?.thumbnailUrl;
                   return (
                     <div
-                      key={result.id}
+                      key={result.id + '-ai'}
                       onClick={() => {
                         if (matchedFile) { setSelectedFile(matchedFile); setShowPreview(true); }
                       }}
-                      className="relative bg-[#1a1a1a] border border-violet-500/30 rounded-xl p-3 cursor-pointer hover:border-violet-500/60 transition-all group"
+                      className="relative bg-[#1a1a1a] border border-violet-500/30 rounded-xl p-2 cursor-pointer hover:border-violet-500/60 hover:bg-[#1f1f1f] transition-all group"
                     >
                       <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center mb-2 overflow-hidden">
-                        {matchedFile?.thumbnailUrl ? (
-                          <img src={matchedFile.thumbnailUrl} alt={result.name} className="w-full h-full object-cover" />
+                        {thumbUrl ? (
+                          <img src={thumbUrl} alt={result.name} className="w-full h-full object-cover" />
                         ) : (
                           <FileText className="w-8 h-8 text-gray-600" />
                         )}
@@ -2517,7 +2554,7 @@ const handleDelete = async (fileId: string) => {
                       <div className="text-xs font-medium truncate">{result.name}</div>
                       <div className="text-[10px] text-gray-500 mt-0.5">{Math.round(result.similarity * 100)}% match</div>
                       {/* Similarity badge */}
-                      <div className="absolute top-1 right-1 bg-violet-600/80 text-[9px] text-white px-1.5 py-0.5 rounded-full">
+                      <div className="absolute top-1.5 right-1.5 bg-violet-600/90 text-[9px] text-white px-1.5 py-0.5 rounded-full font-medium">
                         {Math.round(result.similarity * 100)}%
                       </div>
                     </div>
