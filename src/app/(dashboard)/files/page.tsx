@@ -2613,25 +2613,42 @@ const handleDelete = async (fileId: string) => {
                   return (
                     <div
                       key={result.id + '-ai-' + idx}
-                      onClick={() => {
-                        // Open file preview/details
-                        if (matchedFile) {
-                          setSelectedFile(matchedFile);
+                      onClick={async () => {
+                        // Try to find file in current page first
+                        const existing = files.find(f => f.id === result.id);
+                        if (existing) {
+                          setSelectedFile(existing);
                           setShowPreview(true);
-                        } else {
-                          // File not in current page — fetch it and open details
-                          setSelectedFile({
-                            id: result.id,
-                            name: result.name,
-                            mimeType: result.mimeType,
-                            fileSize: result.fileSize,
-                            createdAt: result.createdAt,
-                            updatedAt: result.createdAt,
-                            thumbnailUrl: thumbUrl,
-                            url: null,
-                            shareUrl: null,
-                            metadata: null,
-                          } as any);
+                          return;
+                        }
+                        // Fetch full file data + URL for preview
+                        try {
+                          const [fileRes, urlRes] = await Promise.all([
+                            fetch(`/api/files/${result.id}`),
+                            fetch('/api/files/urls', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ ids: [result.id] }),
+                            }),
+                          ]);
+                          let fileData: any = { id: result.id, name: result.name, mimeType: result.mimeType, fileSize: result.fileSize, createdAt: result.createdAt, updatedAt: result.createdAt, thumbnailUrl: thumbUrl, url: null, shareUrl: null, metadata: null };
+                          if (fileRes.ok) {
+                            const fd = await fileRes.json();
+                            fileData = { ...fileData, ...fd };
+                          }
+                          if (urlRes.ok) {
+                            const urlData = await urlRes.json();
+                            const urls = urlData.urls?.[result.id];
+                            if (urls) {
+                              fileData.url = urls.url || fileData.url;
+                              fileData.thumbnailUrl = urls.thumbnailUrl || fileData.thumbnailUrl;
+                            }
+                          }
+                          setSelectedFile(fileData);
+                          setShowPreview(true);
+                        } catch {
+                          // Fallback: open with minimal data
+                          setSelectedFile({ id: result.id, name: result.name, mimeType: result.mimeType, fileSize: result.fileSize, createdAt: result.createdAt, updatedAt: result.createdAt, thumbnailUrl: thumbUrl, url: thumbUrl, shareUrl: null, metadata: null } as any);
                           setShowPreview(true);
                         }
                       }}

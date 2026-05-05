@@ -26,23 +26,37 @@ export async function GET(
 
     const file = await prisma.file.findFirst({
       where: { id, userId: userProfile.id },
+      select: {
+        id: true, name: true, mimeType: true, fileSize: true,
+        folderId: true, thumbnailStatus: true, thumbnailPath: true,
+        storagePath: true, metadata: true,
+        createdAt: true, updatedAt: true,
+      },
     });
 
     if (!file) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ 
-      file: {
-        id: file.id,
-        name: file.name,
-        mimeType: file.mimeType,
-        fileSize: String(file.fileSize),
-        folderId: file.folderId,
-        thumbnailStatus: file.thumbnailStatus,
-        createdAt: file.createdAt.toISOString(),
-        updatedAt: file.updatedAt.toISOString(),
-      }
+    // Get share token from Share table
+    const share = await prisma.share.findFirst({
+      where: { fileId: id, userId: userProfile.id },
+      select: { shareToken: true },
+    });
+
+    const cdnBase = process.env.R2_PUBLIC_URL || 'https://cdn.fii.one';
+    return NextResponse.json({
+      id: file.id,
+      name: file.name,
+      mimeType: file.mimeType,
+      fileSize: String(file.fileSize),
+      folderId: file.folderId,
+      thumbnailStatus: file.thumbnailStatus,
+      createdAt: file.createdAt.toISOString(),
+      updatedAt: file.updatedAt.toISOString(),
+      metadata: file.metadata || null,
+      shareUrl: share?.shareToken ? `/s/${share.shareToken}` : null,
+      thumbnailUrl: file.thumbnailPath ? `${cdnBase}/${file.thumbnailPath}` : null,
     });
   } catch (error) {
     console.error("Get file error:", error);
