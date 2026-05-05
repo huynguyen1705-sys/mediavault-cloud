@@ -54,16 +54,16 @@ export async function POST(request: NextRequest) {
       filesToEmbed = [file];
     } else if (all) {
       // Batch: find files without embeddings
-      filesToEmbed = await prisma.$queryRaw<any[]>`
-        SELECT f.id, f.name, f."mimeType", f.metadata
+      filesToEmbed = await prisma.$queryRawUnsafe<any[]>(`
+        SELECT f.id, f.name, f.mime_type as "mimeType", f.metadata
         FROM files f
         LEFT JOIN file_embeddings fe ON fe.file_id = f.id
-        WHERE f."userId" = ${user.id}::uuid
-          AND f."deletedAt" IS NULL
+        WHERE f.user_id = $1::uuid
+          AND f.deleted_at IS NULL
           AND fe.id IS NULL
-        ORDER BY f."createdAt" DESC
-        LIMIT ${limit}
-      `;
+        ORDER BY f.created_at DESC
+        LIMIT $2
+      `, user.id, limit);
     } else {
       return NextResponse.json({ error: "Provide fileId or all:true" }, { status: 400 });
     }
@@ -90,16 +90,16 @@ export async function POST(request: NextRequest) {
         const vecStr = `[${embResult.embedding.join(",")}]`;
 
         // Upsert embedding
-        await prisma.$executeRaw`
+        await prisma.$executeRawUnsafe(`
           INSERT INTO file_embeddings (id, file_id, embedding, content_text, model_used, token_count)
-          VALUES (gen_random_uuid(), ${file.id}::uuid, ${vecStr}::vector, ${text}, ${embResult.model}, ${embResult.tokenCount})
+          VALUES (gen_random_uuid(), $1::uuid, $2::vector, $3, $4, $5)
           ON CONFLICT (file_id) DO UPDATE SET
             embedding = EXCLUDED.embedding,
             content_text = EXCLUDED.content_text,
             model_used = EXCLUDED.model_used,
             token_count = EXCLUDED.token_count,
             updated_at = NOW()
-        `;
+        `, file.id, vecStr, text, embResult.model, embResult.tokenCount);
 
         embedded++;
         results.push({ name: file.name, status: "ok" });
@@ -110,11 +110,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Count remaining un-embedded files
-    const remaining = await prisma.$queryRaw<any[]>`
+    const remaining = await prisma.$queryRawUnsafe<any[]>(`
       SELECT COUNT(*) as count FROM files f
       LEFT JOIN file_embeddings fe ON fe.file_id = f.id
-      WHERE f."userId" = ${user.id}::uuid AND f."deletedAt" IS NULL AND fe.id IS NULL
-    `;
+      WHERE f.user_id = $1::uuid AND f.deleted_at IS NULL AND fe.id IS NULL
+    `, user.id);
 
     return NextResponse.json({
       success: true,

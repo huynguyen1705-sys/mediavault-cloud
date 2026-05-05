@@ -303,16 +303,16 @@ async function autoEmbedFile(fileId: string, clerkUserId: string) {
 
   const vecStr = `[${result.embedding.join(",")}]`;
 
-  await prisma.$executeRaw`
+  await prisma.$executeRawUnsafe(`
     INSERT INTO file_embeddings (id, file_id, embedding, content_text, model_used, token_count)
-    VALUES (gen_random_uuid(), ${fileId}::uuid, ${vecStr}::vector, ${text}, ${result.model}, ${result.tokenCount})
+    VALUES (gen_random_uuid(), $1::uuid, $2::vector, $3, $4, $5)
     ON CONFLICT (file_id) DO UPDATE SET
       embedding = EXCLUDED.embedding,
       content_text = EXCLUDED.content_text,
       model_used = EXCLUDED.model_used,
       token_count = EXCLUDED.token_count,
       updated_at = NOW()
-  `;
+  `, fileId, vecStr, text, result.model, result.tokenCount);
 
   console.log(`Embedded file ${file.name} (${result.model}, ${result.tokenCount} tokens)`);
 }

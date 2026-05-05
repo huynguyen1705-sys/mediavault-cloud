@@ -55,25 +55,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const searchResults = await prisma.$queryRaw<any[]>`
+    const searchResults = await prisma.$queryRawUnsafe<any[]>(`
       SELECT 
-        f.id, f.name, f."mimeType", f."fileSize", f."createdAt",
+        f.id, f.name, f.mime_type as "mimeType", f.file_size as "fileSize", f.created_at as "createdAt",
         fe.content_text,
-        1 - (fe.embedding <=> ${queryVector}::vector) as similarity
+        1 - (fe.embedding <=> $1::vector) as similarity
       FROM file_embeddings fe
       JOIN files f ON f.id = fe.file_id
-      WHERE f."userId" = ${user.id}::uuid
-        AND f."deletedAt" IS NULL
-        AND (1 - (fe.embedding <=> ${queryVector}::vector)) > ${threshold}
-      ORDER BY fe.embedding <=> ${queryVector}::vector
-      LIMIT ${limit}
-    `;
+      WHERE f.user_id = $2::uuid
+        AND f.deleted_at IS NULL
+        AND (1 - (fe.embedding <=> $1::vector)) > $3
+      ORDER BY fe.embedding <=> $1::vector
+      LIMIT $4
+    `, queryVector, user.id, threshold, limit);
 
     return NextResponse.json({
       success: true,
       query,
       model: result.model,
-      results: searchResults.map(r => ({
+      results: searchResults.map((r: any) => ({
         id: r.id,
         name: r.name,
         mimeType: r.mimeType,
