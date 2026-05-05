@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { getPresignedUrl } from "@/lib/r2";
 import { extractMetadata } from "@/lib/metadata";
 import * as fs from "fs";
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     // Find files without metadata
     const files = await prisma.file.findMany({
       where: {
-        metadata: { equals: null },
+        metadata: { equals: Prisma.DbNull },
         deletedAt: null,
         storagePath: { not: null },
       },
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     // Count remaining
     const remaining = await prisma.file.count({
-      where: { metadata: { equals: null }, deletedAt: null, storagePath: { not: null } },
+      where: { metadata: { equals: Prisma.DbNull }, deletedAt: null, storagePath: { not: null } },
     });
 
     return NextResponse.json({
