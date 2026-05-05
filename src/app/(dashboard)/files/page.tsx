@@ -2613,43 +2613,32 @@ const handleDelete = async (fileId: string) => {
                   return (
                     <div
                       key={result.id + '-ai-' + idx}
-                      onClick={async () => {
-                        // Try to find file in current page first
+                      onClick={() => {
+                        // Show sheet INSTANTLY with search data
                         const existing = files.find(f => f.id === result.id);
                         if (existing) {
                           setSelectedFile(existing);
                           setShowMobileSheet(true);
                           return;
                         }
-                        // Fetch full file data from API then show action sheet
-                        try {
-                          const [fileRes, urlRes] = await Promise.all([
-                            fetch(`/api/files/${result.id}`),
-                            fetch('/api/files/urls', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ ids: [result.id] }),
-                            }),
-                          ]);
-                          let fileData: any = { id: result.id, name: result.name, mimeType: result.mimeType, fileSize: result.fileSize, createdAt: result.createdAt, updatedAt: result.createdAt, thumbnailUrl: thumbUrl, url: thumbUrl, shareUrl: null, metadata: null };
-                          if (fileRes.ok) {
-                            const fd = await fileRes.json();
-                            fileData = { ...fileData, ...fd };
-                          }
-                          if (urlRes.ok) {
-                            const urlData = await urlRes.json();
-                            const urls = urlData.urls?.[result.id];
-                            if (urls) {
-                              fileData.url = urls.url || fileData.url;
-                              fileData.thumbnailUrl = urls.thumbnailUrl || fileData.thumbnailUrl;
-                            }
-                          }
-                          setSelectedFile(fileData);
-                          setShowMobileSheet(true);
-                        } catch {
-                          setSelectedFile({ id: result.id, name: result.name, mimeType: result.mimeType, fileSize: result.fileSize, createdAt: result.createdAt, updatedAt: result.createdAt, thumbnailUrl: thumbUrl, url: thumbUrl, shareUrl: null, metadata: null } as any);
-                          setShowMobileSheet(true);
-                        }
+                        // Use data from search result — no wait
+                        setSelectedFile({
+                          id: result.id,
+                          name: result.name,
+                          mimeType: result.mimeType,
+                          fileSize: result.fileSize,
+                          createdAt: result.createdAt,
+                          updatedAt: result.createdAt,
+                          thumbnailUrl: thumbUrl,
+                          url: thumbUrl,
+                          shareUrl: null,
+                          metadata: null,
+                        } as any);
+                        setShowMobileSheet(true);
+                        // Enrich in background (non-blocking)
+                        fetch(`/api/files/${result.id}`).then(r => r.ok ? r.json() : null).then(fd => {
+                          if (fd) setSelectedFile(prev => prev?.id === result.id ? { ...prev, ...fd } : prev);
+                        }).catch(() => {});
                       }}
                       className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#1a1a1a] cursor-pointer transition-all group"
                     >
