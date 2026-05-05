@@ -567,6 +567,9 @@ export default function FilesPage() {
   const [showFilters, setShowFilters] = useState(false); // Toggle filters on mobile
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [showSearchHistory, setShowSearchHistory] = useState(false);
+  const [aiSearchMode, setAiSearchMode] = useState(false);
+  const [aiSearchResults, setAiSearchResults] = useState<any[] | null>(null);
+  const [aiSearchLoading, setAiSearchLoading] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -868,6 +871,32 @@ export default function FilesPage() {
       setLoading(false);
     }
   }, [isLoaded, currentFolderId, searchQuery, filterType, fetchUrlsForFiles]);
+
+  // AI Semantic Search
+  const performAiSearch = useCallback(async (query: string) => {
+    if (!query.trim()) { setAiSearchResults(null); return; }
+    setAiSearchLoading(true);
+    try {
+      const res = await fetch("/api/ai/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: query.trim(), limit: 20 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiSearchResults(data.results || []);
+      } else {
+        const err = await res.json();
+        showToastMessage(err.error || "AI search failed");
+        setAiSearchResults(null);
+      }
+    } catch {
+      showToastMessage("AI search error");
+      setAiSearchResults(null);
+    } finally {
+      setAiSearchLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetchFiles();
@@ -2163,27 +2192,28 @@ const handleDelete = async (fileId: string) => {
 
           {/* Search & Filters - 1 row on all devices */}
           <div className="flex flex-wrap items-center gap-2 mt-4">
-            {/* Search Input with History */}
+            {/* Search Input with AI Toggle */}
             <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Search files..."
+                placeholder={aiSearchMode ? "AI: describe what you're looking for..." : "Search files..."}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  // Debounced search
-                  if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-                  searchDebounceRef.current = setTimeout(() => {
-                    if (e.target.value.trim()) {
-                      // Add to history (max 5 items)
-                      setSearchHistory(prev => {
-                        const filtered = prev.filter(h => h !== e.target.value.trim());
-                        return [e.target.value.trim(), ...filtered].slice(0, 5);
-                      });
-                    }
-                  }, 500);
+                  if (!aiSearchMode) {
+                    // Debounced normal search
+                    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                    searchDebounceRef.current = setTimeout(() => {
+                      if (e.target.value.trim()) {
+                        setSearchHistory(prev => {
+                          const filtered = prev.filter(h => h !== e.target.value.trim());
+                          return [e.target.value.trim(), ...filtered].slice(0, 5);
+                        });
+                      }
+                    }, 500);
+                  }
                 }}
                 onFocus={() => setShowSearchHistory(true)}
                 onBlur={() => setTimeout(() => setShowSearchHistory(false), 200)}
@@ -2193,15 +2223,29 @@ const handleDelete = async (fileId: string) => {
                       const filtered = prev.filter(h => h !== searchQuery.trim());
                       return [searchQuery.trim(), ...filtered].slice(0, 5);
                     });
-                    fetchFiles();
+                    if (aiSearchMode) {
+                      performAiSearch(searchQuery);
+                    } else {
+                      setAiSearchResults(null);
+                      fetchFiles();
+                    }
                   }
                   if (e.key === "Escape") {
                     setSearchQuery("");
+                    setAiSearchResults(null);
                     fetchFiles();
                   }
                 }}
-                className="w-full pl-10 pr-4 py-2 bg-[#111111] border border-gray-800 rounded-lg text-sm focus:outline-none focus:border-violet-500 transition-colors"
+                className={`w-full pl-10 pr-20 py-2 bg-[#111111] border rounded-lg text-sm focus:outline-none transition-colors ${aiSearchMode ? 'border-violet-500/50 focus:border-violet-400' : 'border-gray-800 focus:border-violet-500'}`}
               />
+              {/* AI Toggle Button */}
+              <button
+                onClick={() => { setAiSearchMode(!aiSearchMode); setAiSearchResults(null); }}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded text-xs font-medium transition-all ${aiSearchMode ? 'bg-violet-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+                title={aiSearchMode ? 'AI Search ON (semantic)' : 'Click for AI Search'}
+              >
+                {aiSearchLoading ? '...' : '✨ AI'}
+              </button>
               {/* Search History Dropdown */}
               {showSearchHistory && searchHistory.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-[#111111] border border-gray-800 rounded-lg shadow-xl z-50 overflow-hidden">
@@ -2444,8 +2488,55 @@ const handleDelete = async (fileId: string) => {
               </div>
             </div>
           )}
+          {/* AI Search Results */}
+          {aiSearchResults && aiSearchResults.length > 0 && (
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-sm font-medium text-violet-400">✨ AI Results</span>
+                <span className="text-xs text-gray-500">({aiSearchResults.length} matches)</span>
+                <button onClick={() => setAiSearchResults(null)} className="ml-auto text-xs text-gray-500 hover:text-white">Clear</button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {aiSearchResults.map((result: any) => {
+                  const matchedFile = files.find(f => f.id === result.id);
+                  return (
+                    <div
+                      key={result.id}
+                      onClick={() => {
+                        if (matchedFile) { setSelectedFile(matchedFile); setShowPreview(true); }
+                      }}
+                      className="relative bg-[#1a1a1a] border border-violet-500/30 rounded-xl p-3 cursor-pointer hover:border-violet-500/60 transition-all group"
+                    >
+                      <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center mb-2 overflow-hidden">
+                        {matchedFile?.thumbnailUrl ? (
+                          <img src={matchedFile.thumbnailUrl} alt={result.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <FileText className="w-8 h-8 text-gray-600" />
+                        )}
+                      </div>
+                      <div className="text-xs font-medium truncate">{result.name}</div>
+                      <div className="text-[10px] text-gray-500 mt-0.5">{Math.round(result.similarity * 100)}% match</div>
+                      {/* Similarity badge */}
+                      <div className="absolute top-1 right-1 bg-violet-600/80 text-[9px] text-white px-1.5 py-0.5 rounded-full">
+                        {Math.round(result.similarity * 100)}%
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {aiSearchResults && aiSearchResults.length === 0 && !aiSearchLoading && (
+            <div className="text-center py-12">
+              <div className="text-4xl mb-3">🔍</div>
+              <div className="text-gray-400 text-sm">No AI matches found for &ldquo;{searchQuery}&rdquo;</div>
+              <div className="text-gray-600 text-xs mt-1">Try different keywords or embed your files first</div>
+            </div>
+          )}
+
           {/* Empty State - Beautiful illustration */}
-          {!trashMode && files.length === 0 && !loading && (
+          {!trashMode && files.length === 0 && !loading && !aiSearchResults && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
