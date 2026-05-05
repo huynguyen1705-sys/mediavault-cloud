@@ -2618,15 +2618,10 @@ const handleDelete = async (fileId: string) => {
                         const existing = files.find(f => f.id === result.id);
                         if (existing) {
                           setSelectedFile(existing);
-                          if (window.innerWidth >= 768) {
-                            setShowDetails(true);
-                          } else {
-                            setShowPreview(true);
-                            setMobileDetailsOpen(true);
-                          }
+                          setShowMobileSheet(true);
                           return;
                         }
-                        // Fetch full file data + URL from API
+                        // Fetch full file data from API then show action sheet
                         try {
                           const [fileRes, urlRes] = await Promise.all([
                             fetch(`/api/files/${result.id}`),
@@ -2640,33 +2635,20 @@ const handleDelete = async (fileId: string) => {
                           if (fileRes.ok) {
                             const fd = await fileRes.json();
                             fileData = { ...fileData, ...fd };
-                            // Generate URLs for preview
-                            if (urlRes.ok) {
-                              const urlData = await urlRes.json();
-                              const urls = urlData.urls?.[result.id];
-                              if (urls) {
-                                fileData.url = urls.url || fileData.url;
-                                fileData.thumbnailUrl = urls.thumbnailUrl || fileData.thumbnailUrl;
-                              }
+                          }
+                          if (urlRes.ok) {
+                            const urlData = await urlRes.json();
+                            const urls = urlData.urls?.[result.id];
+                            if (urls) {
+                              fileData.url = urls.url || fileData.url;
+                              fileData.thumbnailUrl = urls.thumbnailUrl || fileData.thumbnailUrl;
                             }
                           }
                           setSelectedFile(fileData);
-                          // Desktop: sidebar details, Mobile: fullscreen details sheet
-                          if (window.innerWidth >= 768) {
-                            setShowDetails(true);
-                          } else {
-                            setShowPreview(true);
-                            setMobileDetailsOpen(true);
-                          }
+                          setShowMobileSheet(true);
                         } catch {
-                          // Fallback: open with minimal data
                           setSelectedFile({ id: result.id, name: result.name, mimeType: result.mimeType, fileSize: result.fileSize, createdAt: result.createdAt, updatedAt: result.createdAt, thumbnailUrl: thumbUrl, url: thumbUrl, shareUrl: null, metadata: null } as any);
-                          if (window.innerWidth >= 768) {
-                            setShowDetails(true);
-                          } else {
-                            setShowPreview(true);
-                            setMobileDetailsOpen(true);
-                          }
+                          setShowMobileSheet(true);
                         }
                       }}
                       className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#1a1a1a] cursor-pointer transition-all group"
