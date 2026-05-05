@@ -2176,10 +2176,10 @@ const handleDelete = async (fileId: string) => {
           {aiSearchResults && aiSearchResults.length > 0 && (
             <button
               onClick={() => { setAiSearchResults(null); setSearchQuery(''); }}
-              className="pointer-events-auto flex items-center gap-2 px-4 py-2.5 bg-red-600/90 hover:bg-red-500 rounded-full shadow-lg shadow-red-500/30 border border-red-500/50"
+              className="pointer-events-auto flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-100 rounded-full shadow-lg shadow-black/20 border border-gray-200"
             >
-              <X className="w-4 h-4 text-white" />
-              <span className="text-sm text-white font-medium">Clear</span>
+              <X className="w-4 h-4 text-gray-800" />
+              <span className="text-sm text-gray-800 font-medium">Clear</span>
             </button>
           )}
           <button
