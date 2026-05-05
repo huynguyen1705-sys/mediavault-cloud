@@ -56,9 +56,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Hybrid search: vector similarity + keyword BM25-style scoring
+    // Hybrid search: vector similarity + keyword scoring
     const keywords = query.trim().toLowerCase().split(/\s+/).filter((w: string) => w.length > 1);
-    const keywordPattern = keywords.map((w: string) => `%${w}%`).join('|');
+    // Build keyword LIKE conditions for each word (OR logic)
+    const kwLikeConditions = keywords.map((_, i) => 
+      `(LOWER(f.name) LIKE $${i + 5} OR (fe.content_text IS NOT NULL AND LOWER(fe.content_text) LIKE $${i + 5}))`
+    ).join(' OR ') || 'FALSE';
+    const kwScoreExpression = keywords.map((_, i) =>
+      `(CASE WHEN LOWER(f.name) LIKE $${i + 5} THEN 0.15 ELSE 0 END + CASE WHEN fe.content_text IS NOT NULL AND LOWER(fe.content_text) LIKE $${i + 5} THEN 0.1 ELSE 0 END)`
+    ).join(' + ') || '0';
 
     const searchResults = await prisma.$queryRawUnsafe<any[]>(`
       WITH semantic AS (
@@ -74,13 +80,11 @@ export async function POST(request: NextRequest) {
       ),
       keyword AS (
         SELECT f.id as file_id, 
-          CASE WHEN LOWER(f.name) LIKE $5 THEN 0.3 ELSE 0 END +
-          CASE WHEN fe.content_text IS NOT NULL AND LOWER(fe.content_text) LIKE $5 THEN 0.2 ELSE 0 END
-          as kw_score
+          ${kwScoreExpression} as kw_score
         FROM files f
         LEFT JOIN file_embeddings fe ON fe.file_id = f.id
         WHERE f.user_id = $2::uuid AND f.deleted_at IS NULL
-          AND (LOWER(f.name) LIKE $5 OR (fe.content_text IS NOT NULL AND LOWER(fe.content_text) LIKE $5))
+          AND (${kwLikeConditions})
       )
       SELECT 
         f.id, f.name, f.mime_type as "mimeType", f.file_size as "fileSize", 
@@ -95,7 +99,7 @@ export async function POST(request: NextRequest) {
       WHERE s.sem_score > $3 OR COALESCE(k.kw_score, 0) > 0
       ORDER BY (s.sem_score * 0.7 + COALESCE(k.kw_score, 0) * 0.3) DESC
       LIMIT $4
-    `, queryVector, user.id, threshold, limit, `%${keywords[0] || ''}%`);
+    `, queryVector, user.id, threshold, limit, ...keywords.map(w => `%${w}%`));
 
     // Extract AI snippet from content_text
     const extractSnippet = (contentText: string | null): string | null => {
@@ -112,20 +116,22 @@ export async function POST(request: NextRequest) {
       query,
       model: result.model,
       timing: Date.now() - startTime,
-      results: searchResults.map((r: any) => ({
-        id: r.id,
-        name: r.name,
-        mimeType: r.mimeType,
-        fileSize: r.fileSize?.toString(),
-        storagePath: r.storagePath,
-        thumbnailPath: r.thumbnailPath,
-        createdAt: r.createdAt,
-        score: Math.round(Number(r.final_score) * 100),
-        semanticScore: Math.round(Number(r.sem_score) * 100),
-        keywordScore: Math.round(Number(r.kw_score) * 100),
-        snippet: extractSnippet(r.content_text),
-        type: r.mimeType?.split('/')[0] || 'file',
-      })),
+      results: searchResults.map((r: any) => {
+        const cdnBase = process.env.R2_PUBLIC_URL || 'https://cdn.fii.one';
+        return {
+          id: r.id,
+          name: r.name,
+          mimeType: r.mimeType,
+          fileSize: r.fileSize?.toString(),
+          createdAt: r.createdAt,
+          score: Math.round(Number(r.final_score) * 100),
+          semanticScore: Math.round(Number(r.sem_score) * 100),
+          keywordScore: Math.round(Number(r.kw_score) * 100),
+          snippet: extractSnippet(r.content_text),
+          type: r.mimeType?.split('/')[0] || 'file',
+          thumbnailUrl: r.thumbnailPath ? `${cdnBase}/${r.thumbnailPath}` : null,
+        };
+      }),
       count: searchResults.length,
     });
   } catch (error: any) {

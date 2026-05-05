@@ -690,8 +690,7 @@ export default function FilesPage() {
   const [filterDate, setFilterDate] = useState<string>("all"); // all, today, week, month
   const [filterSize, setFilterSize] = useState<string>("all"); // all, small, medium, large
   const [showFilters, setShowFilters] = useState(false); // Toggle filters on mobile
-  const [searchHistory, setSearchHistory] = useState<string[]>([]);
-  const [showSearchHistory, setShowSearchHistory] = useState(false);
+  // Search history disabled for cleaner UX
   const [aiSearchMode, setAiSearchMode] = useState(false);
   const [aiSearchResults, setAiSearchResults] = useState<any[] | null>(null);
   const [aiSearchLoading, setAiSearchLoading] = useState(false);
@@ -1013,28 +1012,9 @@ export default function FilesPage() {
         const data = await res.json();
         const results = data.results || [];
         setAiSearchTiming(data.timing || 0);
-        // Show text results IMMEDIATELY
+        // Results include thumbnailUrl from CDN — render immediately
         setAiSearchResults(results);
         setAiSearchLoading(false);
-        // Then lazy-load thumbnail URLs (non-blocking)
-        if (results.length > 0) {
-          const ids = results.map((r: any) => r.id);
-          fetch("/api/files/urls", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ids }),
-          }).then(async (urlRes) => {
-            if (urlRes.ok) {
-              const urlData = await urlRes.json();
-              const urlMap = urlData.urls || {};
-              setAiSearchResults((prev) => prev?.map(r => ({
-                ...r,
-                thumbnailUrl: urlMap[r.id]?.thumbnailUrl || r.thumbnailUrl,
-                url: urlMap[r.id]?.url || r.url,
-              })) || null);
-            }
-          }).catch(() => {});
-        }
       } else {
         const err = await res.json();
         showToastMessage(err.error || "AI search failed");
@@ -2370,22 +2350,14 @@ const handleDelete = async (fileId: string) => {
                     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
                     searchDebounceRef.current = setTimeout(() => {
                       if (val.trim()) {
-                        setSearchHistory(prev => {
-                          const filtered = prev.filter(h => h !== val.trim());
-                          return [val.trim(), ...filtered].slice(0, 5);
-                        });
+                        // search triggered
                       }
                     }, 500);
                   }
                 }}
-                onFocus={() => setShowSearchHistory(true)}
-                onBlur={() => setTimeout(() => setShowSearchHistory(false), 200)}
+
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && searchQuery.trim()) {
-                    setSearchHistory(prev => {
-                      const filtered = prev.filter(h => h !== searchQuery.trim());
-                      return [searchQuery.trim(), ...filtered].slice(0, 5);
-                    });
                     if (aiSearchMode) {
                       performAiSearch(searchQuery);
                     } else {
@@ -2399,48 +2371,25 @@ const handleDelete = async (fileId: string) => {
                     fetchFiles();
                   }
                 }}
-                className={`w-full pl-10 pr-20 py-2 bg-[#111111] border rounded-lg text-sm focus:outline-none transition-colors ${aiSearchMode ? 'border-violet-500/50 focus:border-violet-400' : 'border-gray-800 focus:border-violet-500'}`}
+                className={`w-full pl-10 pr-24 py-2.5 bg-[#111111] border rounded-xl text-[16px] md:text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition-all ${aiSearchMode ? 'border-violet-500/50 focus:border-violet-400' : 'border-gray-700 focus:border-violet-500'}`}
               />
-              {/* AI Toggle Button */}
-              <button
-                onClick={() => { setAiSearchMode(!aiSearchMode); setAiSearchResults(null); }}
-                className={`absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded text-xs font-medium transition-all ${aiSearchMode ? 'bg-violet-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
-                title={aiSearchMode ? 'AI Search ON (semantic)' : 'Click for AI Search'}
-              >
-                {aiSearchLoading ? '...' : '✨ AI'}
-              </button>
-              {/* Search History Dropdown */}
-              {showSearchHistory && searchHistory.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-[#111111] border border-gray-800 rounded-lg shadow-xl z-50 overflow-hidden">
-                  <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-800">Recent searches</div>
-                  {searchHistory.map((item, idx) => (
-                    <button
-                      key={idx}
-                      onMouseDown={() => {
-                        setSearchQuery(item);
-                        setShowSearchHistory(false);
-                        fetchFiles();
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-800 flex items-center gap-2"
-                    >
-                      <Clock className="w-3 h-3" />
-                      {item}
-                      <X className="w-3 h-3 ml-auto opacity-50" onClick={(e) => {
-                        e.stopPropagation();
-                        setSearchHistory(prev => prev.filter(h => h !== item));
-                      }} />
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Clear button */}
               {searchQuery && (
                 <button
-                  onClick={() => { setSearchQuery(""); fetchFiles(); }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                  onClick={() => { setSearchQuery(""); setAiSearchResults(null); fetchFiles(); }}
+                  className="absolute right-12 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1"
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
+              {/* AI Toggle Button */}
+              <button
+                onClick={() => { setAiSearchMode(!aiSearchMode); setAiSearchResults(null); }}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${aiSearchMode ? 'bg-violet-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
+                title={aiSearchMode ? 'AI Search ON (semantic)' : 'Click for AI Search'}
+              >
+                {aiSearchLoading ? '...' : '✨ AI'}
+              </button>
             </div>
 
             {/* Filter button - toggle on mobile */}
@@ -2653,59 +2602,55 @@ const handleDelete = async (fileId: string) => {
           )}
           {/* AI Search Results — Google-style */}
           {aiSearchResults && aiSearchResults.length > 0 && (
-            <div className="mb-4">
+            <div className="mb-4 overflow-hidden">
               {/* Search header */}
-              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-800">
-                <span className="text-sm text-gray-400">✨ Found <span className="text-white font-medium">{aiSearchResults.length}</span> results for &ldquo;<span className="text-violet-400">{searchQuery}</span>&rdquo;</span>
-                <span className="text-[10px] text-gray-600 ml-1">({aiSearchTiming}ms)</span>
-                <button onClick={() => { setAiSearchResults(null); setSearchQuery(''); }} className="ml-auto text-xs text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-gray-800 transition-colors">✕ Clear</button>
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-800">
+                <span className="text-sm text-gray-400 truncate">✨ <span className="text-white font-medium">{aiSearchResults.length}</span> results &middot; <span className="text-gray-600">{aiSearchTiming}ms</span></span>
+                <button onClick={() => { setAiSearchResults(null); setSearchQuery(''); }} className="ml-auto text-xs text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-gray-800 transition-colors shrink-0">✕</button>
               </div>
-              {/* Results list - text first, thumbnails lazy */}
-              <div className="space-y-2">
+              {/* Results list */}
+              <div className="space-y-1">
                 {aiSearchResults.map((result: any, idx: number) => {
                   const matchedFile = files.find(f => f.id === result.id);
                   const thumbUrl = result.thumbnailUrl || matchedFile?.thumbnailUrl;
-                  const isImage = result.type === 'image';
-                  const isVideo = result.type === 'video';
-                  const isAudio = result.type === 'audio';
-                  const typeIcon = isImage ? '🖼️' : isVideo ? '🎬' : isAudio ? '🎵' : '📄';
+                  const ext = result.name?.split('.').pop()?.toLowerCase() || '';
+                  const typeTag = ext.length <= 5 ? ext : (result.mimeType?.split('/')[1]?.split('+')[0] || 'file');
                   return (
                     <div
                       key={result.id + '-ai-' + idx}
                       onClick={() => {
                         if (matchedFile) { setSelectedFile(matchedFile); setShowPreview(true); }
                       }}
-                      className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#1a1a1a] cursor-pointer transition-all group border border-transparent hover:border-gray-800"
+                      className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#1a1a1a] cursor-pointer transition-all group"
                     >
-                      {/* Thumbnail — loads lazy */}
-                      <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg bg-[#1a1a1a] flex items-center justify-center overflow-hidden shrink-0">
+                      {/* Thumbnail */}
+                      <div className="w-11 h-11 md:w-12 md:h-12 rounded-lg bg-[#1a1a1a] flex items-center justify-center overflow-hidden shrink-0 border border-gray-800">
                         {thumbUrl ? (
                           <img src={thumbUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
                         ) : (
-                          <span className="text-lg">{typeIcon}</span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase">{typeTag}</span>
                         )}
                       </div>
-                      {/* Text content — renders instantly */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                      {/* Text content */}
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <div className="flex items-center gap-1.5">
                           <span className="text-sm font-medium truncate group-hover:text-violet-300 transition-colors">{result.name}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-600/20 text-violet-400 font-medium shrink-0">{result.score}%</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-gray-800 text-gray-400 uppercase font-medium shrink-0">{typeTag}</span>
                         </div>
                         {result.snippet && (
-                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{result.snippet}</p>
+                          <p className="text-xs text-gray-500 mt-0.5 truncate">{result.snippet}</p>
                         )}
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[10px] text-gray-600">{typeIcon} {result.mimeType?.split('/')[1] || 'file'}</span>
+                        <div className="flex items-center gap-2 mt-0.5">
                           {result.fileSize && <span className="text-[10px] text-gray-600">{formatBytes(Number(result.fileSize))}</span>}
                           {result.createdAt && <span className="text-[10px] text-gray-600">{new Date(result.createdAt).toLocaleDateString()}</span>}
+                          <span className="text-[10px] text-violet-400/70 font-medium">{result.score}%</span>
                         </div>
                       </div>
-                      {/* Score bar */}
-                      <div className="hidden md:flex flex-col items-end gap-0.5 shrink-0">
-                        <div className="w-16 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                          <div className="h-full bg-violet-500 rounded-full transition-all" style={{ width: `${Math.min(result.score, 100)}%` }} />
+                      {/* Score bar - desktop only */}
+                      <div className="hidden md:block w-14 shrink-0">
+                        <div className="w-full h-1 bg-gray-800 rounded-full overflow-hidden">
+                          <div className="h-full bg-violet-500 rounded-full" style={{ width: `${Math.min(result.score * 2, 100)}%` }} />
                         </div>
-                        <span className="text-[9px] text-gray-600">{result.semanticScore || 0}% semantic</span>
                       </div>
                     </div>
                   );
