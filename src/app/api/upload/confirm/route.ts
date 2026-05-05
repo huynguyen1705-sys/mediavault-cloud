@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
 import { getPresignedUrl, uploadToR2 } from "@/lib/r2";
 import { extractMetadata } from "@/lib/metadata";
+import { generateEmbedding, buildFileText } from "@/lib/embeddings";
 import { exec } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs";
@@ -135,7 +136,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract metadata in background (for ALL file types)
-    extractMetadataAsync(newFile.id, fileKey, mimeType).catch(err => {
+    extractMetadataAsync(newFile.id, fileKey, mimeType).then(() => {
+      // After metadata extraction, auto-embed for AI search
+      autoEmbedFile(newFile.id, userId).catch(err => {
+        console.error("Auto-embed failed:", err?.message);
+      });
+    }).catch(err => {
       console.error("Metadata extraction failed:", err?.message);
     });
 
@@ -256,4 +262,57 @@ async function extractMetadataAsync(fileId: string, fileKey: string, mimeType: s
   } finally {
     if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
   }
+}
+
+/**
+ * Auto-embed file for AI semantic search after metadata extraction.
+ */
+async function autoEmbedFile(fileId: string, clerkUserId: string) {
+  const SYSTEM_API_KEY = process.env.OPENROUTER_API_KEY || "";
+
+  // Get user's AI settings
+  const aiSettings = await prisma.$queryRaw<any[]>`
+    SELECT openrouter_api_key, embedding_model, embedding_dimension, fallback_models, is_enabled
+    FROM ai_settings WHERE user_id = ${clerkUserId}
+  `;
+  const settings = aiSettings?.[0];
+  const apiKey = settings?.openrouter_api_key || SYSTEM_API_KEY;
+
+  if (!apiKey) return; // No API key, skip
+  if (settings && !settings.is_enabled) return; // Disabled
+
+  // Get file with metadata
+  const file = await prisma.file.findUnique({
+    where: { id: fileId },
+    select: { id: true, name: true, mimeType: true, metadata: true },
+  });
+  if (!file) return;
+
+  const text = buildFileText({
+    name: file.name,
+    mimeType: file.mimeType,
+    metadata: file.metadata as any,
+  });
+
+  const result = await generateEmbedding(text, {
+    apiKey,
+    model: settings?.embedding_model || "nvidia/llama-nemotron-embed-vl-1b-v2",
+    dimensions: settings?.embedding_dimension || 1536,
+    fallbackModels: settings?.fallback_models || undefined,
+  });
+
+  const vecStr = `[${result.embedding.join(",")}]`;
+
+  await prisma.$executeRaw`
+    INSERT INTO file_embeddings (id, file_id, embedding, content_text, model_used, token_count)
+    VALUES (gen_random_uuid(), ${fileId}::uuid, ${vecStr}::vector, ${text}, ${result.model}, ${result.tokenCount})
+    ON CONFLICT (file_id) DO UPDATE SET
+      embedding = EXCLUDED.embedding,
+      content_text = EXCLUDED.content_text,
+      model_used = EXCLUDED.model_used,
+      token_count = EXCLUDED.token_count,
+      updated_at = NOW()
+  `;
+
+  console.log(`Embedded file ${file.name} (${result.model}, ${result.tokenCount} tokens)`);
 }
