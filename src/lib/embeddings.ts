@@ -181,7 +181,24 @@ export function buildFileText(file: {
     if (m.width && m.height) parts.push(`Size: ${m.width}x${m.height} pixels`);
     
     // Camera/photo info
-    if (m.camera) parts.push(`Camera: ${m.camera}`);
+    if (m.camera) {
+      parts.push(`Camera: ${m.camera}`);
+      // Add common aliases for better search matching
+      const cam = m.camera.toLowerCase();
+      if (cam.includes('ilce-7m4') || cam.includes('a7iv') || cam.includes('a7 iv')) parts.push('Alias: Sony A7IV Sony A7 Mark IV Sony Alpha 7 IV');
+      if (cam.includes('ilce-7m3') || cam.includes('a7iii')) parts.push('Alias: Sony A7III Sony A7 Mark III Sony Alpha 7 III');
+      if (cam.includes('ilce-7rm') || cam.includes('a7r')) parts.push('Alias: Sony A7R Sony Alpha 7R');
+      if (cam.includes('ilce-7sm') || cam.includes('a7s')) parts.push('Alias: Sony A7S Sony Alpha 7S');
+      if (cam.includes('ilce-6') || cam.includes('a6')) parts.push('Alias: Sony A6000 A6100 A6400 A6600 Alpha 6000');
+      if (cam.includes('canon eos')) parts.push('Alias: Canon EOS DSLR');
+      if (cam.includes('nikon')) parts.push('Alias: Nikon DSLR mirrorless');
+      if (cam.includes('iphone')) parts.push('Alias: Apple iPhone mobile phone');
+      if (cam.includes('pixel')) parts.push('Alias: Google Pixel phone');
+      if (cam.includes('samsung')) parts.push('Alias: Samsung Galaxy phone');
+      if (cam.includes('fuji')) parts.push('Alias: Fujifilm Fuji mirrorless');
+      // Generic Sony match
+      if (cam.includes('sony') || cam.includes('ilce')) parts.push('Alias: Sony mirrorless camera');
+    }
     if (m.lens) parts.push(`Lens: ${m.lens}`);
     if (m.dateTaken) parts.push(`Date taken: ${m.dateTaken}`);
     if (m.iso) parts.push(`ISO: ${m.iso}`);

@@ -218,6 +218,131 @@ function MetadataSection({ title, children }: { title: string; children: React.R
   );
 }
 
+/**
+ * Unified metadata display — used in Preview Sidebar, Desktop Details, Mobile Details
+ */
+function FileMetadataDisplay({ metadata, mimeType, onCopy }: { metadata: FileMetadata; mimeType?: string | null; onCopy?: (msg: string) => void }) {
+  const m = metadata;
+  const copyFn = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    onCopy?.(label + " copied!");
+  };
+  return (
+    <div className="space-y-4">
+      {/* Dimensions */}
+      {(m.width || m.height) && (
+        <MetadataSection title="📐 Dimensions">
+          <MetaItem label="Resolution" value={`${m.width} × ${m.height} px`} />
+          {m.aspectRatio && <MetaItem label="Aspect Ratio" value={m.aspectRatio} />}
+          {m.dpi && <MetaItem label="DPI" value={String(m.dpi)} />}
+          {m.bitDepth && <MetaItem label="Bit Depth" value={`${m.bitDepth}-bit`} />}
+          {m.colorSpace && <MetaItem label="Color Space" value={m.colorSpace} />}
+          {m.colorProfile && <MetaItem label="Color Profile" value={m.colorProfile} />}
+          {m.orientation && <MetaItem label="Orientation" value={m.orientation} />}
+          {m.hdr && <MetaItem label="HDR" value={m.hdrFormat || "Yes"} />}
+        </MetadataSection>
+      )}
+
+      {/* Camera */}
+      {(m.camera || m.lens || m.iso) && (
+        <MetadataSection title="📷 Camera">
+          {m.camera && <MetaItem label="Device" value={m.camera} />}
+          {m.lens && <MetaItem label="Lens" value={m.lens} />}
+          {m.focalLength && <MetaItem label="Focal Length" value={m.focalLength35mm ? `${m.focalLength} (${m.focalLength35mm} eq.)` : m.focalLength} />}
+          {m.iso && <MetaItem label="ISO" value={String(m.iso)} />}
+          {m.shutterSpeed && <MetaItem label="Shutter" value={m.shutterSpeed} />}
+          {m.aperture && <MetaItem label="Aperture" value={m.aperture} />}
+          {m.exposureMode && <MetaItem label="Exposure" value={m.exposureMode} />}
+          {m.meteringMode && <MetaItem label="Metering" value={m.meteringMode} />}
+          {m.whiteBalance && <MetaItem label="White Balance" value={m.whiteBalance} />}
+          {m.flash && <MetaItem label="Flash" value={m.flash} />}
+          {m.focusMode && <MetaItem label="Focus" value={m.focusMode} />}
+          {m.dateTaken && <MetaItem label="Date Taken" value={new Date(m.dateTaken).toLocaleString()} />}
+        </MetadataSection>
+      )}
+
+      {/* GPS */}
+      {m.gps && (
+        <MetadataSection title="📍 Location">
+          <MetaItem label="Coordinates" value={`${m.gps.lat.toFixed(6)}°, ${m.gps.lng.toFixed(6)}°`} />
+          {m.gps.altitude && <MetaItem label="Altitude" value={`${m.gps.altitude.toFixed(1)}m`} />}
+          <a href={`https://maps.google.com/?q=${m.gps.lat},${m.gps.lng}`} target="_blank" rel="noopener noreferrer" className="text-xs text-violet-400 hover:text-violet-300 mt-1 block">Open in Maps →</a>
+        </MetadataSection>
+      )}
+
+      {/* Video */}
+      {(m.duration && (mimeType?.startsWith("video/") || m.videoCodec)) && (
+        <MetadataSection title="🎬 Video">
+          <MetaItem label="Duration" value={formatDuration(m.duration)} />
+          {m.fps && <MetaItem label="Frame Rate" value={`${m.fps} fps`} />}
+          {m.videoCodec && <MetaItem label="Codec" value={`${m.videoCodec}${m.videoProfile ? ` (${m.videoProfile})` : ""}`} />}
+          {m.videoBitrate && <MetaItem label="Bitrate" value={formatBitrate(m.videoBitrate)} />}
+          {m.containerFormat && <MetaItem label="Container" value={m.containerFormat} />}
+          {m.rotation && <MetaItem label="Rotation" value={`${m.rotation}°`} />}
+          {m.audioCodec && <MetaItem label="Audio" value={`${m.audioCodec.toUpperCase()}${m.audioChannels ? ` ${m.audioChannels === 2 ? "Stereo" : m.audioChannels === 1 ? "Mono" : `${m.audioChannels}ch`}` : ""}${m.audioSampleRate ? ` ${m.audioSampleRate / 1000}kHz` : ""}`} />}
+          {m.audioBitrate && <MetaItem label="Audio Bitrate" value={formatBitrate(m.audioBitrate)} />}
+          {m.subtitleTracks && <MetaItem label="Subtitles" value={`${m.subtitleTracks} track${m.subtitleTracks > 1 ? "s" : ""}`} />}
+          {m.chapterCount && <MetaItem label="Chapters" value={String(m.chapterCount)} />}
+        </MetadataSection>
+      )}
+
+      {/* Audio */}
+      {(m.duration && mimeType?.startsWith("audio/")) && (
+        <MetadataSection title="🎵 Audio">
+          <MetaItem label="Duration" value={formatDuration(m.duration)} />
+          {m.title && <MetaItem label="Title" value={m.title} />}
+          {m.albumArtist && <MetaItem label="Artist" value={m.albumArtist} />}
+          {m.album && <MetaItem label="Album" value={m.album} />}
+          {m.year && <MetaItem label="Year" value={String(m.year)} />}
+          {m.genre && <MetaItem label="Genre" value={m.genre} />}
+          {m.trackNumber && <MetaItem label="Track" value={m.trackNumber} />}
+          {m.discNumber && <MetaItem label="Disc" value={m.discNumber} />}
+          {m.composer && <MetaItem label="Composer" value={m.composer} />}
+          {m.bpm && <MetaItem label="BPM" value={String(m.bpm)} />}
+          {m.audioCodec && <MetaItem label="Codec" value={m.audioCodec.toUpperCase()} />}
+          {m.audioBitrate && <MetaItem label="Bitrate" value={formatBitrate(m.audioBitrate)} />}
+          {m.audioSampleRate && <MetaItem label="Sample Rate" value={`${m.audioSampleRate / 1000} kHz`} />}
+          {m.audioChannels && <MetaItem label="Channels" value={m.audioChannels === 2 ? "Stereo" : m.audioChannels === 1 ? "Mono" : `${m.audioChannels} channels`} />}
+          {m.encoder && <MetaItem label="Encoder" value={m.encoder} />}
+          {m.hasAlbumArt && <MetaItem label="Album Art" value="Embedded" />}
+        </MetadataSection>
+      )}
+
+      {/* Document */}
+      {(m.pageCount || m.pdfVersion) && (
+        <MetadataSection title="📄 Document">
+          {m.pageCount && <MetaItem label="Pages" value={String(m.pageCount)} />}
+          {m.author && <MetaItem label="Author" value={m.author} />}
+          {m.documentTitle && <MetaItem label="Title" value={m.documentTitle} />}
+          {m.subject && <MetaItem label="Subject" value={m.subject} />}
+          {m.keywords && <MetaItem label="Keywords" value={m.keywords.join(", ")} />}
+          {m.creatorApp && <MetaItem label="Created By" value={m.creatorApp} />}
+          {m.pdfVersion && <MetaItem label="PDF Version" value={m.pdfVersion} />}
+          {m.encrypted && <MetaItem label="Encrypted" value="Yes" />}
+        </MetadataSection>
+      )}
+
+      {/* Creator/Software */}
+      {(m.software || m.artist || m.copyright || m.creationTool) && (
+        <MetadataSection title="ℹ️ Creator">
+          {m.artist && <MetaItem label="Artist" value={m.artist} />}
+          {m.copyright && <MetaItem label="Copyright" value={m.copyright} />}
+          {m.software && <MetaItem label="Software" value={m.software} />}
+          {m.creationTool && <MetaItem label="Tool" value={m.creationTool} />}
+        </MetadataSection>
+      )}
+
+      {/* Integrity */}
+      {(m.hash || m.md5) && (
+        <MetadataSection title="🔒 Integrity">
+          {m.hash && <MetaItem label="SHA-256" value={m.hash.slice(0, 16) + "..."} copyValue={m.hash} onCopy={() => copyFn(m.hash!, "Hash")} />}
+          {m.md5 && <MetaItem label="MD5" value={m.md5.slice(0, 16) + "..."} copyValue={m.md5} onCopy={() => copyFn(m.md5!, "Hash")} />}
+        </MetadataSection>
+      )}
+    </div>
+  );
+}
+
 function MetaItem({ label, value, copyValue, onCopy }: { label: string; value: string; copyValue?: string; onCopy?: () => void }) {
   return (
     <div className="flex items-center justify-between text-xs">
@@ -3296,58 +3421,12 @@ const handleDelete = async (fileId: string) => {
                 )}
               </div>
 
-              {/* Metadata in Preview Sidebar */}
-              {selectedFile.metadata && (() => {
-                const m = selectedFile.metadata;
-                return (
-                  <div className="mt-3 space-y-3">
-                    {(m.width || m.height) && (
-                      <MetadataSection title="📐 Dimensions">
-                        <MetaItem label="Resolution" value={`${m.width} × ${m.height} px`} />
-                        {m.dpi && <MetaItem label="DPI" value={String(m.dpi)} />}
-                        {m.colorSpace && <MetaItem label="Color Space" value={m.colorSpace} />}
-                      </MetadataSection>
-                    )}
-                    {(m.camera || m.lens || m.iso) && (
-                      <MetadataSection title="📷 Camera">
-                        {m.camera && <MetaItem label="Device" value={m.camera} />}
-                        {m.lens && <MetaItem label="Lens" value={m.lens} />}
-                        {m.iso && <MetaItem label="ISO" value={String(m.iso)} />}
-                        {m.shutterSpeed && <MetaItem label="Shutter" value={m.shutterSpeed} />}
-                        {m.aperture && <MetaItem label="Aperture" value={m.aperture} />}
-                        {m.focalLength && <MetaItem label="Focal" value={m.focalLength} />}
-                      </MetadataSection>
-                    )}
-                    {m.gps && (
-                      <MetadataSection title="📍 Location">
-                        <MetaItem label="GPS" value={`${m.gps.lat.toFixed(4)}°, ${m.gps.lng.toFixed(4)}°`} />
-                        <a href={`https://maps.google.com/?q=${m.gps.lat},${m.gps.lng}`} target="_blank" rel="noopener noreferrer" className="text-xs text-violet-400 hover:text-violet-300 block">Open Maps →</a>
-                      </MetadataSection>
-                    )}
-                    {(m.duration && selectedFile.mimeType?.startsWith("video/")) && (
-                      <MetadataSection title="🎬 Video">
-                        <MetaItem label="Duration" value={formatDuration(m.duration)} />
-                        {m.fps && <MetaItem label="FPS" value={`${m.fps}`} />}
-                        {m.videoCodec && <MetaItem label="Codec" value={m.videoCodec} />}
-                        {m.videoBitrate && <MetaItem label="Bitrate" value={formatBitrate(m.videoBitrate)} />}
-                      </MetadataSection>
-                    )}
-                    {(m.duration && selectedFile.mimeType?.startsWith("audio/")) && (
-                      <MetadataSection title="🎵 Audio">
-                        <MetaItem label="Duration" value={formatDuration(m.duration)} />
-                        {m.title && <MetaItem label="Title" value={m.title} />}
-                        {m.albumArtist && <MetaItem label="Artist" value={m.albumArtist} />}
-                        {m.album && <MetaItem label="Album" value={m.album} />}
-                      </MetadataSection>
-                    )}
-                    {(m.hash) && (
-                      <MetadataSection title="🔐 Integrity">
-                        <MetaItem label="SHA-256" value={m.hash.slice(0, 12) + "..."} copyValue={m.hash} onCopy={() => showToastMessage("Hash copied!")} />
-                      </MetadataSection>
-                    )}
-                  </div>
-                );
-              })()}
+              {/* Metadata — unified component */}
+              {selectedFile.metadata && (
+                <div className="mt-3">
+                  <FileMetadataDisplay metadata={selectedFile.metadata} mimeType={selectedFile.mimeType} onCopy={showToastMessage} />
+                </div>
+              )}
 
               <div className="mt-6 pt-4 border-t border-gray-800 space-y-2">
                 <button
@@ -3424,59 +3503,12 @@ const handleDelete = async (fileId: string) => {
               )}
             </div>
 
-            {/* Metadata in Mobile Details */}
-            {selectedFile.metadata && (() => {
-              const m = selectedFile.metadata;
-              return (
-                <div className="mt-4 space-y-4">
-                  {(m.width || m.height) && (
-                    <MetadataSection title="📐 Dimensions">
-                      <MetaItem label="Resolution" value={`${m.width} × ${m.height} px`} />
-                      {m.dpi && <MetaItem label="DPI" value={String(m.dpi)} />}
-                      {m.colorSpace && <MetaItem label="Color Space" value={m.colorSpace} />}
-                      {m.colorProfile && <MetaItem label="Profile" value={m.colorProfile} />}
-                    </MetadataSection>
-                  )}
-                  {(m.camera || m.lens || m.iso) && (
-                    <MetadataSection title="📷 Camera">
-                      {m.camera && <MetaItem label="Device" value={m.camera} />}
-                      {m.lens && <MetaItem label="Lens" value={m.lens} />}
-                      {m.iso && <MetaItem label="ISO" value={String(m.iso)} />}
-                      {m.shutterSpeed && <MetaItem label="Shutter" value={m.shutterSpeed} />}
-                      {m.aperture && <MetaItem label="Aperture" value={m.aperture} />}
-                      {m.focalLength && <MetaItem label="Focal" value={m.focalLength} />}
-                      {m.dateTaken && <MetaItem label="Date" value={m.dateTaken} />}
-                    </MetadataSection>
-                  )}
-                  {m.gps && (
-                    <MetadataSection title="📍 Location">
-                      <MetaItem label="GPS" value={`${m.gps.lat.toFixed(4)}°, ${m.gps.lng.toFixed(4)}°`} />
-                      <a href={`https://maps.google.com/?q=${m.gps.lat},${m.gps.lng}`} target="_blank" rel="noopener noreferrer" className="text-xs text-violet-400">Open Maps →</a>
-                    </MetadataSection>
-                  )}
-                  {(m.duration && selectedFile.mimeType?.startsWith("video/")) && (
-                    <MetadataSection title="🎬 Video">
-                      <MetaItem label="Duration" value={formatDuration(m.duration)} />
-                      {m.fps && <MetaItem label="FPS" value={`${m.fps}`} />}
-                      {m.videoCodec && <MetaItem label="Codec" value={m.videoCodec} />}
-                      {m.videoBitrate && <MetaItem label="Bitrate" value={formatBitrate(m.videoBitrate)} />}
-                    </MetadataSection>
-                  )}
-                  {(m.duration && selectedFile.mimeType?.startsWith("audio/")) && (
-                    <MetadataSection title="🎵 Audio">
-                      <MetaItem label="Duration" value={formatDuration(m.duration)} />
-                      {m.title && <MetaItem label="Title" value={m.title} />}
-                      {m.albumArtist && <MetaItem label="Artist" value={m.albumArtist} />}
-                    </MetadataSection>
-                  )}
-                  {(m.hash) && (
-                    <MetadataSection title="🔐 File">
-                      <MetaItem label="SHA-256" value={m.hash.slice(0, 12) + "..."} copyValue={m.hash} onCopy={() => showToastMessage("Copied!")} />
-                    </MetadataSection>
-                  )}
-                </div>
-              );
-            })()}
+            {/* Metadata — unified component */}
+            {selectedFile.metadata && (
+              <div className="mt-4">
+                <FileMetadataDisplay metadata={selectedFile.metadata} mimeType={selectedFile.mimeType} onCopy={showToastMessage} />
+              </div>
+            )}
 
             {/* Actions */}
             <div className="mt-8 pt-6 border-t border-gray-800 space-y-3">
@@ -3546,124 +3578,12 @@ const handleDelete = async (fileId: string) => {
               )}
             </div>
 
-            {/* Metadata Sections */}
-            {selectedFile.metadata && (() => {
-              const m = selectedFile.metadata;
-              return (
-                <div className="mt-4 space-y-4">
-                  {/* Image/Video Dimensions */}
-                  {(m.width || m.height) && (
-                    <MetadataSection title="📐 Dimensions">
-                      <MetaItem label="Resolution" value={`${m.width} × ${m.height} px`} />
-                      {m.aspectRatio && <MetaItem label="Aspect Ratio" value={m.aspectRatio} />}
-                      {m.dpi && <MetaItem label="DPI" value={String(m.dpi)} />}
-                      {m.bitDepth && <MetaItem label="Bit Depth" value={`${m.bitDepth}-bit`} />}
-                      {m.colorSpace && <MetaItem label="Color Space" value={m.colorSpace} />}
-                      {m.colorProfile && <MetaItem label="Color Profile" value={m.colorProfile} />}
-                      {m.orientation && <MetaItem label="Orientation" value={m.orientation} />}
-                      {m.hdr && <MetaItem label="HDR" value={m.hdrFormat || "Yes"} />}
-                    </MetadataSection>
-                  )}
-
-                  {/* Camera Info */}
-                  {(m.camera || m.lens || m.iso) && (
-                    <MetadataSection title="📷 Camera">
-                      {m.camera && <MetaItem label="Device" value={m.camera} />}
-                      {m.lens && <MetaItem label="Lens" value={m.lens} />}
-                      {m.focalLength && <MetaItem label="Focal Length" value={m.focalLength35mm ? `${m.focalLength} (${m.focalLength35mm} eq.)` : m.focalLength} />}
-                      {m.iso && <MetaItem label="ISO" value={String(m.iso)} />}
-                      {m.shutterSpeed && <MetaItem label="Shutter" value={m.shutterSpeed} />}
-                      {m.aperture && <MetaItem label="Aperture" value={m.aperture} />}
-                      {m.exposureMode && <MetaItem label="Exposure" value={m.exposureMode} />}
-                      {m.meteringMode && <MetaItem label="Metering" value={m.meteringMode} />}
-                      {m.whiteBalance && <MetaItem label="White Balance" value={m.whiteBalance} />}
-                      {m.flash && <MetaItem label="Flash" value={m.flash} />}
-                      {m.focusMode && <MetaItem label="Focus" value={m.focusMode} />}
-                      {m.dateTaken && <MetaItem label="Date Taken" value={new Date(m.dateTaken).toLocaleString()} />}
-                    </MetadataSection>
-                  )}
-
-                  {/* GPS */}
-                  {m.gps && (
-                    <MetadataSection title="📍 Location">
-                      <MetaItem label="Coordinates" value={`${m.gps.lat.toFixed(6)}°, ${m.gps.lng.toFixed(6)}°`} />
-                      {m.gps.altitude && <MetaItem label="Altitude" value={`${m.gps.altitude.toFixed(1)}m`} />}
-                      <a href={`https://maps.google.com/?q=${m.gps.lat},${m.gps.lng}`} target="_blank" rel="noopener noreferrer" className="text-xs text-violet-400 hover:text-violet-300 mt-1 block">Open in Maps →</a>
-                    </MetadataSection>
-                  )}
-
-                  {/* Video Info */}
-                  {(m.duration && (selectedFile.mimeType?.startsWith("video/") || m.videoCodec)) && (
-                    <MetadataSection title="🎬 Video">
-                      <MetaItem label="Duration" value={formatDuration(m.duration)} />
-                      {m.fps && <MetaItem label="Frame Rate" value={`${m.fps} fps`} />}
-                      {m.videoCodec && <MetaItem label="Codec" value={`${m.videoCodec}${m.videoProfile ? ` (${m.videoProfile})` : ""}`} />}
-                      {m.videoBitrate && <MetaItem label="Bitrate" value={formatBitrate(m.videoBitrate)} />}
-                      {m.containerFormat && <MetaItem label="Container" value={m.containerFormat} />}
-                      {m.rotation && <MetaItem label="Rotation" value={`${m.rotation}°`} />}
-                      {m.audioCodec && <MetaItem label="Audio" value={`${m.audioCodec.toUpperCase()}${m.audioChannels ? ` ${m.audioChannels === 2 ? "Stereo" : m.audioChannels === 1 ? "Mono" : `${m.audioChannels}ch`}` : ""}${m.audioSampleRate ? ` ${m.audioSampleRate / 1000}kHz` : ""}`} />}
-                      {m.audioBitrate && <MetaItem label="Audio Bitrate" value={formatBitrate(m.audioBitrate)} />}
-                      {m.subtitleTracks && <MetaItem label="Subtitles" value={`${m.subtitleTracks} track${m.subtitleTracks > 1 ? "s" : ""}`} />}
-                      {m.chapterCount && <MetaItem label="Chapters" value={String(m.chapterCount)} />}
-                    </MetadataSection>
-                  )}
-
-                  {/* Audio/Music Info */}
-                  {(m.duration && selectedFile.mimeType?.startsWith("audio/")) && (
-                    <MetadataSection title="🎵 Audio">
-                      <MetaItem label="Duration" value={formatDuration(m.duration)} />
-                      {m.title && <MetaItem label="Title" value={m.title} />}
-                      {m.albumArtist && <MetaItem label="Artist" value={m.albumArtist} />}
-                      {m.album && <MetaItem label="Album" value={m.album} />}
-                      {m.year && <MetaItem label="Year" value={String(m.year)} />}
-                      {m.genre && <MetaItem label="Genre" value={m.genre} />}
-                      {m.trackNumber && <MetaItem label="Track" value={m.trackNumber} />}
-                      {m.discNumber && <MetaItem label="Disc" value={m.discNumber} />}
-                      {m.composer && <MetaItem label="Composer" value={m.composer} />}
-                      {m.bpm && <MetaItem label="BPM" value={String(m.bpm)} />}
-                      {m.audioCodec && <MetaItem label="Codec" value={m.audioCodec.toUpperCase()} />}
-                      {m.audioBitrate && <MetaItem label="Bitrate" value={formatBitrate(m.audioBitrate)} />}
-                      {m.audioSampleRate && <MetaItem label="Sample Rate" value={`${m.audioSampleRate / 1000} kHz`} />}
-                      {m.audioChannels && <MetaItem label="Channels" value={m.audioChannels === 2 ? "Stereo" : m.audioChannels === 1 ? "Mono" : `${m.audioChannels} channels`} />}
-                      {m.encoder && <MetaItem label="Encoder" value={m.encoder} />}
-                      {m.hasAlbumArt && <MetaItem label="Album Art" value="Embedded" />}
-                    </MetadataSection>
-                  )}
-
-                  {/* Document Info */}
-                  {(m.pageCount || m.pdfVersion) && (
-                    <MetadataSection title="📄 Document">
-                      {m.pageCount && <MetaItem label="Pages" value={String(m.pageCount)} />}
-                      {m.author && <MetaItem label="Author" value={m.author} />}
-                      {m.documentTitle && <MetaItem label="Title" value={m.documentTitle} />}
-                      {m.subject && <MetaItem label="Subject" value={m.subject} />}
-                      {m.keywords && <MetaItem label="Keywords" value={m.keywords.join(", ")} />}
-                      {m.creatorApp && <MetaItem label="Created By" value={m.creatorApp} />}
-                      {m.pdfVersion && <MetaItem label="PDF Version" value={m.pdfVersion} />}
-                      {m.encrypted && <MetaItem label="Encrypted" value="Yes" />}
-                    </MetadataSection>
-                  )}
-
-                  {/* Software/Creator */}
-                  {(m.software || m.artist || m.copyright || m.creationTool) && (
-                    <MetadataSection title="ℹ️ Creator">
-                      {m.artist && <MetaItem label="Artist" value={m.artist} />}
-                      {m.copyright && <MetaItem label="Copyright" value={m.copyright} />}
-                      {m.software && <MetaItem label="Software" value={m.software} />}
-                      {m.creationTool && <MetaItem label="Tool" value={m.creationTool} />}
-                    </MetadataSection>
-                  )}
-
-                  {/* File Hash */}
-                  {(m.hash || m.md5) && (
-                    <MetadataSection title="🔒 Integrity">
-                      {m.hash && <MetaItem label="SHA-256" value={m.hash.slice(0, 16) + "..."} copyValue={m.hash} onCopy={() => showToastMessage("Hash copied!")} />}
-                      {m.md5 && <MetaItem label="MD5" value={m.md5.slice(0, 16) + "..."} copyValue={m.md5} onCopy={() => showToastMessage("Hash copied!")} />}
-                    </MetadataSection>
-                  )}
-                </div>
-              );
-            })()}
+            {/* Metadata — unified component */}
+            {selectedFile.metadata && (
+              <div className="mt-4">
+                <FileMetadataDisplay metadata={selectedFile.metadata} mimeType={selectedFile.mimeType} onCopy={showToastMessage} />
+              </div>
+            )}
 
             {/* Actions */}
             <div className="mt-6 pt-4 border-t border-gray-800 space-y-2">
