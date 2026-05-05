@@ -2438,6 +2438,7 @@ const handleDelete = async (fileId: string) => {
 
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && searchQuery.trim()) {
+                    (e.target as HTMLInputElement).blur(); // hide keyboard on mobile
                     if (aiSearchMode) {
                       performAiSearch(searchQuery);
                     } else {
