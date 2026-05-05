@@ -142,14 +142,33 @@ export function buildFileText(file: {
   mimeType?: string | null;
   metadata?: any;
   tags?: string[];
+  aiDescription?: string | null;
 }): string {
   const parts: string[] = [];
   
-  // File name (most important)
+  // File name (most important — expand readable name)
+  const readableName = file.name
+    .replace(/[-_]/g, " ")
+    .replace(/\.[^.]+$/, "") // remove extension
+    .replace(/([a-z])([A-Z])/g, "$1 $2"); // camelCase split
   parts.push(`File: ${file.name}`);
+  parts.push(`Description: ${readableName}`);
   
-  // Type
-  if (file.mimeType) parts.push(`Type: ${file.mimeType}`);
+  // AI-generated description (most valuable for search)
+  if (file.aiDescription) {
+    parts.push(`Content: ${file.aiDescription}`);
+  }
+  
+  // Type category
+  if (file.mimeType) {
+    parts.push(`Type: ${file.mimeType}`);
+    if (file.mimeType.startsWith("image/")) parts.push("Category: photo image picture");
+    if (file.mimeType.startsWith("video/")) parts.push("Category: video recording clip");
+    if (file.mimeType.startsWith("audio/")) parts.push("Category: audio music sound recording");
+    if (file.mimeType.includes("pdf")) parts.push("Category: document PDF report");
+    if (file.mimeType.includes("word") || file.mimeType.includes("docx")) parts.push("Category: document Word report writing");
+    if (file.mimeType.includes("sheet") || file.mimeType.includes("xlsx")) parts.push("Category: spreadsheet Excel data table");
+  }
   
   // Tags
   if (file.tags?.length) parts.push(`Tags: ${file.tags.join(", ")}`);
@@ -158,29 +177,42 @@ export function buildFileText(file: {
   if (file.metadata) {
     const m = file.metadata;
     
+    // Dimensions
+    if (m.width && m.height) parts.push(`Size: ${m.width}x${m.height} pixels`);
+    
     // Camera/photo info
     if (m.camera) parts.push(`Camera: ${m.camera}`);
     if (m.lens) parts.push(`Lens: ${m.lens}`);
     if (m.dateTaken) parts.push(`Date taken: ${m.dateTaken}`);
+    if (m.iso) parts.push(`ISO: ${m.iso}`);
+    if (m.aperture) parts.push(`Aperture: ${m.aperture}`);
+    if (m.shutterSpeed) parts.push(`Shutter: ${m.shutterSpeed}`);
     
     // Location
-    if (m.gps) parts.push(`Location: lat ${m.gps.lat}, lng ${m.gps.lng}`);
+    if (m.gps) parts.push(`Location: latitude ${m.gps.lat}, longitude ${m.gps.lng}`);
     
     // Audio/Music
     if (m.title) parts.push(`Title: ${m.title}`);
     if (m.albumArtist) parts.push(`Artist: ${m.albumArtist}`);
     if (m.album) parts.push(`Album: ${m.album}`);
     if (m.genre) parts.push(`Genre: ${m.genre}`);
+    if (m.duration) parts.push(`Duration: ${Math.round(m.duration)}s`);
+    
+    // Video
+    if (m.videoCodec) parts.push(`Video codec: ${m.videoCodec}`);
+    if (m.fps) parts.push(`FPS: ${m.fps}`);
     
     // Document
     if (m.documentTitle) parts.push(`Document title: ${m.documentTitle}`);
     if (m.author) parts.push(`Author: ${m.author}`);
     if (m.subject) parts.push(`Subject: ${m.subject}`);
     if (m.keywords?.length) parts.push(`Keywords: ${m.keywords.join(", ")}`);
+    if (m.pageCount) parts.push(`Pages: ${m.pageCount}`);
     
-    // Software
+    // Software/creator
     if (m.software) parts.push(`Software: ${m.software}`);
-    if (m.artist) parts.push(`Artist: ${m.artist}`);
+    if (m.artist) parts.push(`Creator: ${m.artist}`);
+    if (m.copyright) parts.push(`Copyright: ${m.copyright}`);
   }
   
   return parts.join("\n");
@@ -207,4 +239,48 @@ export function cosineSimilarity(a: number[], b: number[]): number {
     magB += b[i] * b[i];
   }
   return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+}
+
+/**
+ * Use AI vision to describe an image for better semantic search.
+ * Calls OpenRouter with a vision model to generate a text description.
+ */
+export async function describeImage(
+  imageUrl: string,
+  apiKey: string
+): Promise<string | null> {
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://fii.one",
+        "X-Title": "fii.one Vision",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.0-flash-001",
+        max_tokens: 200,
+        messages: [{
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Describe this image in 2-3 sentences. Include: what objects/people are in it, the setting/location, colors, mood, and any text visible. Be specific and concise. Answer in English."
+            },
+            {
+              type: "image_url",
+              image_url: { url: imageUrl }
+            }
+          ]
+        }]
+      }),
+    });
+
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || null;
+  } catch {
+    return null;
+  }
 }

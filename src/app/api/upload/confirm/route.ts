@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
 import { getPresignedUrl, uploadToR2 } from "@/lib/r2";
 import { extractMetadata } from "@/lib/metadata";
-import { generateEmbedding, buildFileText } from "@/lib/embeddings";
+import { generateEmbedding, buildFileText, describeImage } from "@/lib/embeddings";
 import { exec } from "child_process";
 import { promisify } from "util";
 import * as fs from "fs";
@@ -281,17 +281,25 @@ async function autoEmbedFile(fileId: string, clerkUserId: string) {
   if (!apiKey) return; // No API key, skip
   if (settings && !settings.is_enabled) return; // Disabled
 
-  // Get file with metadata
+  // Get file with metadata + storagePath for vision
   const file = await prisma.file.findUnique({
     where: { id: fileId },
-    select: { id: true, name: true, mimeType: true, metadata: true },
+    select: { id: true, name: true, mimeType: true, metadata: true, storagePath: true },
   });
   if (!file) return;
+
+  // AI Vision: describe image content for better search
+  let aiDescription: string | null = null;
+  if (file.mimeType?.startsWith("image/") && file.storagePath) {
+    const cdnUrl = `${process.env.R2_PUBLIC_URL || "https://cdn.fii.one"}/${file.storagePath}`;
+    aiDescription = await describeImage(cdnUrl, apiKey);
+  }
 
   const text = buildFileText({
     name: file.name,
     mimeType: file.mimeType,
     metadata: file.metadata as any,
+    aiDescription,
   });
 
   const result = await generateEmbedding(text, {
