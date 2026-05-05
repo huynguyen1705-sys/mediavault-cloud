@@ -2389,7 +2389,15 @@ const handleDelete = async (fileId: string) => {
               />
               {/* AI Toggle Button — no separate X needed */}
               <button
-                onClick={() => { setAiSearchMode(!aiSearchMode); setAiSearchResults(null); }}
+                onClick={() => {
+                  const newMode = !aiSearchMode;
+                  setAiSearchMode(newMode);
+                  setAiSearchResults(null);
+                  // Auto-search if toggling AI on with existing query
+                  if (newMode && searchQuery.trim().length >= 2) {
+                    performAiSearch(searchQuery);
+                  }
+                }}
                 className={`absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${aiSearchMode ? 'bg-violet-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
                 title={aiSearchMode ? 'AI Search ON (semantic)' : 'Click for AI Search'}
               >
