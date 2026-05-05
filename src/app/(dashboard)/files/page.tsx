@@ -696,6 +696,71 @@ export default function FilesPage() {
   const [aiSearchLoading, setAiSearchLoading] = useState(false);
   const [aiSearchTiming, setAiSearchTiming] = useState(0);
   const [aiSearchVisible, setAiSearchVisible] = useState(7);
+  const [aiSearchTag, setAiSearchTag] = useState<string>('All');
+
+  // Smart tags extracted from AI search results
+  const aiSearchTagCounts = useMemo(() => {
+    if (!aiSearchResults || aiSearchResults.length === 0) return [];
+    const tagMap: Record<string, number> = {};
+    
+    // Keyword dictionary: snippet word → tag
+    const kwToTag: Record<string, string> = {
+      dog: '🐕 Dog', puppy: '🐕 Dog', pomeranian: '🐕 Dog', canine: '🐕 Dog',
+      cat: '🐱 Cat', kitten: '🐱 Cat', feline: '🐱 Cat',
+      woman: '👤 People', man: '👤 People', person: '👤 People', girl: '👤 People', boy: '👤 People', portrait: '👤 People', face: '👤 People', people: '👤 People',
+      landscape: '🌄 Landscape', mountain: '🌄 Landscape', ocean: '🌄 Landscape', beach: '🌄 Landscape', sky: '🌄 Landscape', sunset: '🌄 Landscape', nature: '🌄 Landscape', tree: '🌄 Landscape', forest: '🌄 Landscape', river: '🌄 Landscape', field: '🌄 Landscape', terrace: '🌄 Landscape',
+      food: '🍽️ Food', drink: '🍽️ Food', coffee: '🍽️ Food', meal: '🍽️ Food', restaurant: '🍽️ Food',
+      car: '🚗 Vehicle', vehicle: '🚗 Vehicle', bike: '🚗 Vehicle', scooter: '🚗 Vehicle', motorcycle: '🚗 Vehicle',
+      building: '🏢 Architecture', house: '🏢 Architecture', room: '🏢 Architecture', interior: '🏢 Architecture', office: '🏢 Architecture', studio: '🏢 Architecture',
+      logo: '🎨 Design', design: '🎨 Design', illustration: '🎨 Design', graphic: '🎨 Design', icon: '🎨 Design', ui: '🎨 Design',
+      screenshot: '📱 Screenshot', screen: '📱 Screenshot', interface: '📱 Screenshot', app: '📱 Screenshot', website: '📱 Screenshot', dashboard: '📱 Screenshot',
+      camera: '📷 Camera', sony: '📷 Camera', canon: '📷 Camera', nikon: '📷 Camera', lens: '📷 Camera',
+    };
+    
+    // Type tags from mimeType
+    const typeTagMap: Record<string, string> = {
+      image: '🖼️ Image', video: '🎬 Video', audio: '🎵 Audio',
+    };
+    
+    aiSearchResults.forEach((r: any) => {
+      const tags: string[] = [];
+      // Type-based tag
+      const mainType = r.mimeType?.split('/')[0];
+      if (mainType && typeTagMap[mainType]) {
+        tags.push(typeTagMap[mainType]);
+      }
+      // Extension-based for docs
+      const ext = r.name?.split('.').pop()?.toLowerCase() || '';
+      if (['pdf'].includes(ext)) tags.push('📄 PDF');
+      if (['doc', 'docx'].includes(ext)) tags.push('📃 Document');
+      if (['xls', 'xlsx'].includes(ext)) tags.push('📊 Spreadsheet');
+      if (['dmg', 'exe', 'msi', 'pkg'].includes(ext)) tags.push('📦 Software');
+      if (['zip', 'rar', '7z', 'tar'].includes(ext)) tags.push('🗃️ Archive');
+      
+      // Keyword tags from snippet
+      if (r.snippet) {
+        const words = r.snippet.toLowerCase().split(/[\s,.:;!?()]+/);
+        const seen = new Set<string>();
+        words.forEach((w: string) => {
+          const tag = kwToTag[w];
+          if (tag && !seen.has(tag)) {
+            seen.add(tag);
+            tags.push(tag);
+          }
+        });
+      }
+      
+      r._tags = tags;
+      tags.forEach(t => { tagMap[t] = (tagMap[t] || 0) + 1; });
+    });
+    
+    // Sort by count, take top 6
+    const sorted = Object.entries(tagMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([tag, count]) => ({ tag, count }));
+    return [{ tag: 'All', count: aiSearchResults.length }, ...sorted];
+  }, [aiSearchResults]);
   const aiSearchObserverRef = useRef<IntersectionObserver | null>(null);
   const aiSearchSentinelRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -1015,7 +1080,8 @@ export default function FilesPage() {
         const data = await res.json();
         const results = data.results || [];
         setAiSearchTiming(data.timing || 0);
-        // Results include thumbnailUrl from CDN — render immediately
+        // Reset tag filter on new search
+        setAiSearchTag('All');
         setAiSearchResults(results);
         setAiSearchVisible(7);
         setAiSearchLoading(false);
@@ -2621,9 +2687,26 @@ const handleDelete = async (fileId: string) => {
                 <span className="text-sm text-gray-400 truncate">✨ <span className="text-white font-medium">{aiSearchResults.length}</span> results &middot; <span className="text-gray-600">{aiSearchTiming}ms</span></span>
                 <button onClick={() => { setAiSearchResults(null); setSearchQuery(''); }} className="ml-auto text-xs text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-gray-800 transition-colors shrink-0">✕ Clear</button>
               </div>
+              {/* Tag filter tabs */}
+              {aiSearchResults && aiSearchResults.length > 0 && (
+                <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+                  {aiSearchTagCounts.map(t => (
+                    <button
+                      key={t.tag}
+                      onClick={() => setAiSearchTag(t.tag)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${aiSearchTag === t.tag
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+                      }`}
+                    >
+                      {t.tag} · {t.count}
+                    </button>
+                  ))}
+                </div>
+              )}
               {/* Results list */}
               <div className="space-y-1">
-                {aiSearchResults.slice(0, aiSearchVisible).map((result: any, idx: number) => {
+                {aiSearchResults.slice(0, aiSearchVisible).filter(r => aiSearchTag === 'All' || r._tags?.includes(aiSearchTag)).map((result: any, idx: number) => {
                   const matchedFile = files.find(f => f.id === result.id);
                   const thumbUrl = result.thumbnailUrl || matchedFile?.thumbnailUrl;
                   const ext = result.name?.split('.').pop()?.toLowerCase() || '';

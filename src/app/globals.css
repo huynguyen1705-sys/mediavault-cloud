@@ -261,6 +261,10 @@ html {
   animation: float 3s ease-in-out infinite;
 }
 
+/* ===== Scrollbar Hide ===== */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* ===== Theme-aware Screenshots ===== */
 .dark-screenshot { display: block; }
 .light-screenshot { display: none; }
