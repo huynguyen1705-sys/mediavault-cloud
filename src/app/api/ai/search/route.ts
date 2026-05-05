@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     const startTime = Date.now();
     const body = await request.json();
-    const { query, limit = 20, threshold = 0.05 } = body;
+    const { query, limit = 30, threshold = 0.03 } = body;
 
     if (!query || typeof query !== "string" || query.trim().length === 0) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });

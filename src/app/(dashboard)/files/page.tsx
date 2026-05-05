@@ -695,6 +695,9 @@ export default function FilesPage() {
   const [aiSearchResults, setAiSearchResults] = useState<any[] | null>(null);
   const [aiSearchLoading, setAiSearchLoading] = useState(false);
   const [aiSearchTiming, setAiSearchTiming] = useState(0);
+  const [aiSearchVisible, setAiSearchVisible] = useState(7);
+  const aiSearchObserverRef = useRef<IntersectionObserver | null>(null);
+  const aiSearchSentinelRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -1014,6 +1017,7 @@ export default function FilesPage() {
         setAiSearchTiming(data.timing || 0);
         // Results include thumbnailUrl from CDN — render immediately
         setAiSearchResults(results);
+        setAiSearchVisible(7);
         setAiSearchLoading(false);
       } else {
         const err = await res.json();
@@ -2373,16 +2377,7 @@ const handleDelete = async (fileId: string) => {
                 }}
                 className={`w-full pl-10 pr-24 py-2.5 bg-[#111111] border rounded-xl text-[16px] md:text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition-all ${aiSearchMode ? 'border-violet-500/50 focus:border-violet-400' : 'border-gray-700 focus:border-violet-500'}`}
               />
-              {/* Clear button */}
-              {searchQuery && (
-                <button
-                  onClick={() => { setSearchQuery(""); setAiSearchResults(null); fetchFiles(); }}
-                  className="absolute right-12 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white p-1"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-              {/* AI Toggle Button */}
+              {/* AI Toggle Button — no separate X needed */}
               <button
                 onClick={() => { setAiSearchMode(!aiSearchMode); setAiSearchResults(null); }}
                 className={`absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${aiSearchMode ? 'bg-violet-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}
@@ -2606,11 +2601,11 @@ const handleDelete = async (fileId: string) => {
               {/* Search header */}
               <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-800">
                 <span className="text-sm text-gray-400 truncate">✨ <span className="text-white font-medium">{aiSearchResults.length}</span> results &middot; <span className="text-gray-600">{aiSearchTiming}ms</span></span>
-                <button onClick={() => { setAiSearchResults(null); setSearchQuery(''); }} className="ml-auto text-xs text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-gray-800 transition-colors shrink-0">✕</button>
+                <button onClick={() => { setAiSearchResults(null); setSearchQuery(''); }} className="ml-auto text-xs text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-gray-800 transition-colors shrink-0">✕ Clear</button>
               </div>
               {/* Results list */}
               <div className="space-y-1">
-                {aiSearchResults.map((result: any, idx: number) => {
+                {aiSearchResults.slice(0, aiSearchVisible).map((result: any, idx: number) => {
                   const matchedFile = files.find(f => f.id === result.id);
                   const thumbUrl = result.thumbnailUrl || matchedFile?.thumbnailUrl;
                   const ext = result.name?.split('.').pop()?.toLowerCase() || '';
@@ -2619,7 +2614,26 @@ const handleDelete = async (fileId: string) => {
                     <div
                       key={result.id + '-ai-' + idx}
                       onClick={() => {
-                        if (matchedFile) { setSelectedFile(matchedFile); setShowPreview(true); }
+                        // Open file preview/details
+                        if (matchedFile) {
+                          setSelectedFile(matchedFile);
+                          setShowPreview(true);
+                        } else {
+                          // File not in current page — fetch it and open details
+                          setSelectedFile({
+                            id: result.id,
+                            name: result.name,
+                            mimeType: result.mimeType,
+                            fileSize: result.fileSize,
+                            createdAt: result.createdAt,
+                            updatedAt: result.createdAt,
+                            thumbnailUrl: thumbUrl,
+                            url: null,
+                            shareUrl: null,
+                            metadata: null,
+                          } as any);
+                          setShowPreview(true);
+                        }
                       }}
                       className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#1a1a1a] cursor-pointer transition-all group"
                     >
@@ -2656,6 +2670,27 @@ const handleDelete = async (fileId: string) => {
                   );
                 })}
               </div>
+              {/* Infinite scroll sentinel */}
+              {aiSearchVisible < aiSearchResults.length && (
+                <div
+                  ref={(el) => {
+                    if (aiSearchObserverRef.current) aiSearchObserverRef.current.disconnect();
+                    if (!el) return;
+                    aiSearchObserverRef.current = new IntersectionObserver((entries) => {
+                      if (entries[0]?.isIntersecting) {
+                        setAiSearchVisible(prev => Math.min(prev + 7, aiSearchResults?.length || 0));
+                      }
+                    }, { threshold: 0.1 });
+                    aiSearchObserverRef.current.observe(el);
+                  }}
+                  className="flex justify-center py-4"
+                >
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <div className="w-4 h-4 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+                    Loading more...
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
