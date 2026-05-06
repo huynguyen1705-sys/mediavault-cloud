@@ -2715,16 +2715,10 @@ const handleDelete = async (fileId: string) => {
                   return (
                     <div
                       key={result.id + '-ai-' + idx}
-                      onClick={() => {
-                        // Show sheet INSTANTLY with search data
+                      onClick={(e) => {
+                        // Build file object from search result
                         const existing = files.find(f => f.id === result.id);
-                        if (existing) {
-                          setSelectedFile(existing);
-                          setShowMobileSheet(true);
-                          return;
-                        }
-                        // Use data from search result — no wait
-                        setSelectedFile({
+                        const fileObj = existing || {
                           id: result.id,
                           name: result.name,
                           mimeType: result.mimeType,
@@ -2735,12 +2729,21 @@ const handleDelete = async (fileId: string) => {
                           url: thumbUrl,
                           shareUrl: null,
                           metadata: null,
-                        } as any);
-                        setShowMobileSheet(true);
-                        // Enrich in background (non-blocking)
-                        fetch(`/api/files/${result.id}`).then(r => r.ok ? r.json() : null).then(fd => {
-                          if (fd) setSelectedFile(prev => prev?.id === result.id ? { ...prev, ...fd } : prev);
-                        }).catch(() => {});
+                        } as any;
+                        setSelectedFile(fileObj);
+                        // Desktop: show context menu at click position
+                        const isDesktop = window.innerWidth >= 768;
+                        if (isDesktop) {
+                          setContextMenu({ x: e.clientX, y: e.clientY, file: fileObj });
+                        } else {
+                          setShowMobileSheet(true);
+                        }
+                        // Enrich in background if from search data
+                        if (!existing) {
+                          fetch(`/api/files/${result.id}`).then(r => r.ok ? r.json() : null).then(fd => {
+                            if (fd) setSelectedFile(prev => prev?.id === result.id ? { ...prev, ...fd } : prev);
+                          }).catch(() => {});
+                        }
                       }}
                       className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#1a1a1a] cursor-pointer transition-all group"
                     >
