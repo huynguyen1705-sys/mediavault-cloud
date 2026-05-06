@@ -3422,10 +3422,20 @@ const handleDelete = async (fileId: string) => {
                 <PdfPreview proxyUrl={`/api/files/${selectedFile.id}/proxy`} filename={selectedFile.name} />
               )}
 
-              {/* DOCX/PPTX via DocViewer */}
-              {(selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.presentationml.presentation") && selectedFile.url && (
+              {/* DOCX/PPTX/XLS via Office Online Viewer */}
+              {(selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+                selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+                selectedFile.mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+                selectedFile.mimeType === "application/msword" ||
+                selectedFile.mimeType === "application/vnd.ms-powerpoint" ||
+                selectedFile.mimeType === "application/vnd.ms-excel") && (
                 <div className="bg-[#111111] rounded-2xl shadow-2xl w-[90vw] max-w-5xl overflow-hidden">
-                  <DocViewer documents={[{ uri: `/api/files/${selectedFile.id}/proxy`, fileName: selectedFile.name }]} />
+                  <iframe
+                    src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/api/files/${selectedFile.id}/proxy`)}`}
+                    className="w-full border-0"
+                    style={{ height: "80vh" }}
+                    title={selectedFile.name}
+                  />
                 </div>
               )}
 
