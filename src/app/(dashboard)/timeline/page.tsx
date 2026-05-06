@@ -196,7 +196,7 @@ export default function TimelinePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] light:bg-gray-50">
       {/* Header */}
-      <div className="sticky top-16 z-30 bg-[#0a0a0a]/90 light:bg-white/90 backdrop-blur-md border-b border-gray-800 light:border-gray-200">
+      <div className="sticky top-16 z-30 bg-[#0a0a0a]/70 light:bg-white/70 backdrop-blur-xl border-b border-violet-500/30 light:border-gray-200">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex items-center justify-between">
             <div>
@@ -207,22 +207,22 @@ export default function TimelinePage() {
             <div className="relative" ref={filterRef}>
               <button
                 onClick={() => setFilterOpen(!filterOpen)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] light:bg-white border border-gray-700 light:border-gray-300 rounded-xl text-sm text-gray-300 light:text-gray-700 hover:border-violet-500/50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a]/60 light:bg-white/60 border border-gray-700/50 light:border-gray-300/50 rounded-xl text-sm text-gray-300 light:text-gray-700 hover:border-violet-500/70 transition-colors backdrop-blur-sm"
               >
                 <Calendar className="w-4 h-4 text-violet-400" />
                 {FILTER_LABELS[filter]}
                 <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? "rotate-180" : ""}`} />
               </button>
               {filterOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-[#1a1a1a] light:bg-white border border-gray-700 light:border-gray-200 rounded-xl shadow-2xl overflow-hidden z-50">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-[#1a1a1a]/90 light:bg-white/90 border border-gray-700/50 light:border-gray-200/50 rounded-xl shadow-2xl shadow-violet-500/20 light:shadow-gray-400/20 overflow-hidden z-50 backdrop-blur-md">
                   {(Object.entries(FILTER_LABELS) as [TimeFilter, string][]).map(([key, label]) => (
                     <button
                       key={key}
                       onClick={() => { setFilter(key); setFilterOpen(false); }}
                       className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
                         filter === key
-                          ? "bg-violet-600/20 text-violet-300 light:text-violet-600"
-                          : "text-gray-300 light:text-gray-700 hover:bg-gray-800 light:hover:bg-gray-100"
+                          ? "bg-violet-600/30 text-violet-300 light:text-violet-600"
+                          : "text-gray-300 light:text-gray-700 hover:bg-gray-800/50 light:hover:bg-gray-100/50"
                       }`}
                     >
                       {label}
@@ -251,7 +251,7 @@ export default function TimelinePage() {
             <div className="hidden lg:block w-[20%] shrink-0">
               <div className="sticky top-36 space-y-4">
                 {/* Nav Card */}
-                <div className="bg-[#141414] light:bg-white border border-gray-800 light:border-gray-200 rounded-2xl p-4">
+                <div className="bg-[#141414]/60 light:bg-white/60 backdrop-blur-md border border-violet-500/30 light:border-gray-200 rounded-2xl p-4 glass-card-hover">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Navigation</h3>
                   <div className="space-y-1">
                     {["Overview", "Timeline", "Memory", "Events"].map((item) => (
@@ -259,8 +259,8 @@ export default function TimelinePage() {
                         key={item}
                         className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                           item === "Timeline"
-                            ? "bg-violet-600/20 text-violet-300 light:text-violet-600 font-medium"
-                            : "text-gray-400 light:text-gray-600 hover:bg-gray-800 light:hover:bg-gray-100"
+                            ? "bg-violet-600/30 text-violet-300 light:text-violet-600 font-medium"
+                            : "text-gray-400 light:text-gray-600 hover:bg-violet-600/10 light:hover:bg-violet-50/50"
                         }`}
                       >
                         {item}
@@ -269,7 +269,7 @@ export default function TimelinePage() {
                   </div>
                 </div>
                 {/* Stats Card */}
-                <div className="bg-[#141414] light:bg-white border border-gray-800 light:border-gray-200 rounded-2xl p-4">
+                <div className="bg-[#141414]/60 light:bg-white/60 backdrop-blur-md border border-pink-500/30 light:border-gray-200 rounded-2xl p-4 glass-card-hover">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Stats</h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
@@ -296,7 +296,7 @@ export default function TimelinePage() {
             {/* ===== SIDEBAR 2 (20%) - Timeline Line ===== */}
             <div className="hidden md:block w-[20%] shrink-0">
               <div className="sticky top-36">
-                <div className="bg-[#141414] light:bg-white border border-gray-800 light:border-gray-200 rounded-2xl p-4">
+                <div className="bg-[#141414]/60 light:bg-white/60 backdrop-blur-md border border-purple-500/30 light:border-gray-200 rounded-2xl p-4 glass-card-hover">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Timeline</h3>
                   <div className="relative">
                     {/* Vertical line */}
@@ -352,11 +352,10 @@ export default function TimelinePage() {
                         return (
                           <div
                             key={file.id}
-                            className="break-inside-avoid group cursor-pointer card-hover"
+                            className="break-inside-avoid group cursor-pointer card-hover transition-all duration-300 ease-in-out transform hover:scale-[1.02] hover:shadow-xl hover:shadow-violet-500/10 light:hover:shadow-gray-300/20 bg-[#171717]/50 light:bg-[#f5f5f5]/50 backdrop-blur-sm rounded-2xl border border-gray-800/50 light:border-gray-200/50 hover:border-violet-500/50 light:hover:border-violet-400/50"
                             onClick={() => handleFileClick(file)}
                           >
-                            <div className="bg-[#171717] light:bg-[#f5f5f5] rounded-2xl overflow-hidden border border-gray-800/50 light:border-gray-200 hover:border-violet-500/40 light:hover:border-violet-400/40 transition-all hover:shadow-xl hover:shadow-black/20 light:hover:shadow-gray-400/20">
-                              {file.thumbnailUrl ? (
+                            <div className="rounded-2xl overflow-hidden">                              {file.thumbnailUrl ? (
                                 <div className="relative overflow-hidden">
                                   <img
                                     src={file.thumbnailUrl}
@@ -408,11 +407,11 @@ export default function TimelinePage() {
                 {selectedFile ? (
                   <>
                     {/* Selected File Card */}
-                    <div className="bg-[#141414] light:bg-white border border-gray-800 light:border-gray-200 rounded-2xl overflow-hidden">
+                    <div className="bg-[#141414]/60 light:bg-white/60 backdrop-blur-md border border-emerald-500/30 light:border-gray-200 rounded-2xl overflow-hidden glass-card-hover">
                       {selectedFile.thumbnailUrl ? (
                         <img src={selectedFile.thumbnailUrl} alt={selectedFile.name} className="w-full h-40 object-cover" />
                       ) : (
-                        <div className="w-full h-40 bg-[#1a1a1a] light:bg-gray-100 flex items-center justify-center">
+                        <div className="w-full h-40 bg-[#1a1a1a]/50 light:bg-gray-100/50 flex items-center justify-center backdrop-blur-sm">
                           {getFileIcon(selectedFile.mimeType, "lg")}
                         </div>
                       )}
@@ -433,14 +432,14 @@ export default function TimelinePage() {
                         <div className="mt-4 space-y-2">
                           <button
                             onClick={() => setShowPreview(true)}
-                            className="w-full flex items-center gap-2 px-3 py-2 bg-violet-600 hover:bg-violet-500 rounded-lg text-xs text-white font-medium transition-colors"
+                            className="w-full flex items-center gap-2 px-3 py-2 bg-violet-600/70 hover:bg-violet-500/80 rounded-lg text-xs text-white font-medium transition-colors backdrop-blur-sm"
                           >
                             <Eye className="w-3.5 h-3.5" /> Preview
                           </button>
                           <a
                             href={`/api/files/${selectedFile.id}/proxy?download=1`}
                             download={selectedFile.name}
-                            className="w-full flex items-center gap-2 px-3 py-2 bg-gray-800 light:bg-gray-100 hover:bg-gray-700 light:hover:bg-gray-200 rounded-lg text-xs text-gray-300 light:text-gray-700 font-medium transition-colors"
+                            className="w-full flex items-center gap-2 px-3 py-2 bg-gray-800/70 light:bg-gray-100/70 hover:bg-gray-700/80 light:hover:bg-gray-200/80 rounded-lg text-xs text-gray-300 light:text-gray-700 font-medium transition-colors backdrop-blur-sm"
                           >
                             <Download className="w-3.5 h-3.5" /> Download
                           </a>
@@ -450,7 +449,7 @@ export default function TimelinePage() {
                                 navigator.clipboard.writeText(`${window.location.origin}${selectedFile.shareUrl}`);
                                 showToast("Link copied!");
                               }}
-                              className="w-full flex items-center gap-2 px-3 py-2 bg-gray-800 light:bg-gray-100 hover:bg-gray-700 light:hover:bg-gray-200 rounded-lg text-xs text-gray-300 light:text-gray-700 font-medium transition-colors"
+                              className="w-full flex items-center gap-2 px-3 py-2 bg-gray-800/70 light:bg-gray-100/70 hover:bg-gray-700/80 light:hover:bg-gray-200/80 rounded-lg text-xs text-gray-300 light:text-gray-700 font-medium transition-colors backdrop-blur-sm"
                             >
                               <Copy className="w-3.5 h-3.5" /> Copy Link
                             </button>
@@ -460,8 +459,8 @@ export default function TimelinePage() {
                     </div>
                   </>
                 ) : (
-                  <div className="bg-[#141414] light:bg-white border border-gray-800 light:border-gray-200 rounded-2xl p-6 text-center">
-                    <div className="w-12 h-12 bg-gray-800 light:bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <div className="bg-[#141414]/60 light:bg-white/60 backdrop-blur-md border border-gray-800/50 light:border-gray-200/50 rounded-2xl p-6 text-center glass-card-hover">
+                    <div className="w-12 h-12 bg-gray-800/50 light:bg-gray-100/50 rounded-xl flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
                       <Eye className="w-5 h-5 text-gray-500" />
                     </div>
                     <p className="text-xs text-gray-500">Click a file to see details</p>
@@ -469,7 +468,7 @@ export default function TimelinePage() {
                 )}
 
                 {/* Data Insights Card */}
-                <div className="bg-[#141414] light:bg-white border border-gray-800 light:border-gray-200 rounded-2xl p-4">
+                <div className="bg-[#141414]/60 light:bg-white/60 backdrop-blur-md border border-amber-500/30 light:border-gray-200 rounded-2xl p-4 glass-card-hover">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Insights</h3>
                   <div className="space-y-3">
                     <div>
@@ -477,7 +476,7 @@ export default function TimelinePage() {
                         <span>Storage used</span>
                         <span className="text-gray-300 light:text-gray-700">{formatBytes(groups.reduce((a, g) => a + g.files.reduce((b, f) => b + parseInt(f.fileSize || "0"), 0), 0))}</span>
                       </div>
-                      <div className="h-1.5 bg-gray-800 light:bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-gray-800/50 light:bg-gray-200/50 rounded-full overflow-hidden backdrop-blur-sm">
                         <div className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full" style={{ width: "45%" }} />
                       </div>
                     </div>

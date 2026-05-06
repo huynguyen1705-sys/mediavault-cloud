@@ -184,6 +184,32 @@ html.light body {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 
+/* Glassmorphism Card Hover (subtler) */
+.glass-card-hover {
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+.glass-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border-color: rgba(124, 58, 237, 0.6); /* Violet border on hover */
+  background-color: rgba(20, 20, 20, 0.7); /* Slightly less transparent */
+}
+html.light .glass-card-hover:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  border-color: rgba(124, 58, 237, 0.4); /* Violet border on hover */
+  background-color: rgba(255, 255, 255, 0.7); /* Slightly less transparent */
+}
+
+/* Border Glow Animation (for initial load) */
+@keyframes shimmer-border-glow {
+  0% { border-color: rgba(124, 58, 237, 0.1); }
+  50% { border-color: rgba(124, 58, 237, 0.4); }
+  100% { border-color: rgba(124, 58, 237, 0.1); }
+}
+.animate-shimmer-border-glow {
+  animation: shimmer-border-glow 1.8s ease-in-out infinite alternate;
+}
+
 /* Link underline animation */
 .link-hover {
   position: relative;
