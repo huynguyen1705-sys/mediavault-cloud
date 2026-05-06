@@ -227,7 +227,7 @@ export default function TimelinePage() {
         {groups.length === 0 ? (
           <div className="text-center py-24">
             <div className="w-20 h-20 bg-[#1a1a1a] light:bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
-              <Calendar className="w-10 h-10 text-gray-600 light:text-gray-400" />
+              <Calendar className="w-10 h-10 text-white light:text-gray-500" />
             </div>
             <p className="text-white light:text-gray-900 font-semibold text-lg">No media yet</p>
             <p className="text-gray-500 text-sm mt-2">Upload files to see your timeline</p>
@@ -279,7 +279,7 @@ export default function TimelinePage() {
                             className="break-inside-avoid group cursor-pointer"
                             onClick={() => handleFileClick(file)}
                           >
-                            <div className="bg-[#161616] light:bg-white rounded-xl overflow-hidden border border-gray-800/50 light:border-gray-200 hover:border-violet-500/40 light:hover:border-violet-400/40 transition-all hover:shadow-lg hover:shadow-violet-500/5 light:hover:shadow-gray-300/30">
+                            <div className="bg-[#171717] light:bg-[#f5f5f5] rounded-2xl overflow-hidden border border-gray-800/50 light:border-gray-200 hover:border-violet-500/40 light:hover:border-violet-400/40 transition-all hover:shadow-xl hover:shadow-black/20 light:hover:shadow-gray-400/20">
                               {/* Thumbnail */}
                               {file.thumbnailUrl ? (
                                 <div className="relative overflow-hidden">
@@ -308,7 +308,7 @@ export default function TimelinePage() {
                                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                 </div>
                               ) : (
-                                <div className="flex items-center justify-center py-10 bg-[#111] light:bg-gray-50">
+                                <div className="flex items-center justify-center py-10 bg-[#171717] light:bg-[#f0f0f0]">
                                   {getFileIcon(file.mimeType, "lg")}
                                 </div>
                               )}
@@ -421,7 +421,7 @@ export default function TimelinePage() {
       {showPreview && selectedFile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85" onClick={() => setShowPreview(false)}>
           <div
-            className="relative max-w-5xl w-full bg-[#111] light:bg-white rounded-2xl border border-gray-800 light:border-gray-200 overflow-hidden shadow-2xl"
+            className="relative max-w-5xl w-full bg-[#171717] light:bg-[#f5f5f5] rounded-2xl border border-gray-800 light:border-gray-200 overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
@@ -443,13 +443,13 @@ export default function TimelinePage() {
                 <audio src={selectedFile.url} controls className="w-80" />
               </div>
             ) : (
-              <div className="flex items-center justify-center h-64 bg-[#0a0a0a] light:bg-gray-50">
+              <div className="flex items-center justify-center h-72 bg-[#171717] light:bg-[#f0f0f0]">
                 {getFileIcon(selectedFile.mimeType, "lg")}
               </div>
             )}
 
             {/* Bottom bar */}
-            <div className="px-5 py-4 border-t border-gray-800 light:border-gray-200 flex items-center justify-between bg-[#111] light:bg-white">
+            <div className="px-5 py-4 border-t border-gray-800 light:border-gray-200 flex items-center justify-between bg-[#171717] light:bg-[#f5f5f5]">
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-white light:text-gray-900 truncate">{selectedFile.name}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
