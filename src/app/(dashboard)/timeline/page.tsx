@@ -184,7 +184,7 @@ export default function TimelinePage() {
     <div className="min-h-screen bg-[#0a0a0a] light:bg-gray-50">
       {/* Header */}
       <div className="sticky top-16 z-30 bg-[#0a0a0a]/90 light:bg-white/90 backdrop-blur-md border-b border-gray-800 light:border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-white light:text-gray-900">Timeline</h1>
@@ -223,7 +223,7 @@ export default function TimelinePage() {
       </div>
 
       {/* Timeline Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         {groups.length === 0 ? (
           <div className="text-center py-24">
             <div className="w-20 h-20 bg-[#1a1a1a] light:bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
