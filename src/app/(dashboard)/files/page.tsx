@@ -439,6 +439,9 @@ const GridFileCard = memo(function GridFileCard({
     );
     if (isAudio) return <div className="aspect-square rounded-lg bg-gradient-to-br from-pink-500 to-pink-700 flex flex-col items-center justify-center"><Headphones className="w-10 h-10 text-white/90" /></div>;
     if (file.mimeType?.includes('pdf')) return <div className="aspect-square rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex flex-col items-center justify-center"><FileText className="w-10 h-10 text-white/90" /><span className="text-[10px] text-white/70 mt-1">PDF</span></div>;
+    if (file.mimeType?.includes('wordprocessingml') || file.mimeType === 'application/msword') return <div className="aspect-square rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex flex-col items-center justify-center"><FileText className="w-10 h-10 text-white/90" /><span className="text-[10px] text-white/70 mt-1 font-medium">DOCX</span></div>;
+    if (file.mimeType?.includes('presentationml') || file.mimeType === 'application/vnd.ms-powerpoint') return <div className="aspect-square rounded-lg bg-gradient-to-br from-orange-500 to-orange-700 flex flex-col items-center justify-center"><FileText className="w-10 h-10 text-white/90" /><span className="text-[10px] text-white/70 mt-1 font-medium">PPTX</span></div>;
+    if (file.mimeType?.includes('spreadsheetml') || file.mimeType === 'application/vnd.ms-excel') return <div className="aspect-square rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-700 flex flex-col items-center justify-center"><FileText className="w-10 h-10 text-white/90" /><span className="text-[10px] text-white/70 mt-1 font-medium">XLSX</span></div>;
     return <div className="aspect-square rounded-lg bg-gray-800 flex items-center justify-center"><File className="w-10 h-10 text-gray-500" /></div>;
   };
 
