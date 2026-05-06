@@ -222,8 +222,8 @@ export default function TimelinePage() {
         </div>
       </div>
 
-      {/* Timeline Content */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+      {/* 4-Column Layout */}
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
         {groups.length === 0 ? (
           <div className="text-center py-24">
             <div className="w-20 h-20 bg-[#1a1a1a] light:bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
@@ -233,32 +233,103 @@ export default function TimelinePage() {
             <p className="text-gray-500 text-sm mt-2">Upload files to see your timeline</p>
           </div>
         ) : (
-          <div className="relative">
-            {/* Vertical dotted timeline line */}
-            <div className="absolute left-4 md:left-6 top-0 bottom-0 w-px border-l-2 border-dashed border-gray-700 light:border-gray-300" />
-
-            {/* Date Groups */}
-            <div className="space-y-10">
-              {groups.map((group, groupIdx) => (
-                <div key={group.label} className="relative">
-                  {/* Timeline dot */}
-                  <div className="absolute left-4 md:left-6 -translate-x-1/2 top-1 z-10">
-                    <div className="w-3 h-3 rounded-full bg-violet-500 ring-4 ring-[#0a0a0a] light:ring-gray-50" />
+          <div className="flex gap-4">
+            {/* ===== SIDEBAR 1 (20%) - Navigation & Stats ===== */}
+            <div className="hidden lg:block w-[20%] shrink-0">
+              <div className="sticky top-36 space-y-4">
+                {/* Nav Card */}
+                <div className="bg-[#141414] light:bg-white border border-gray-800 light:border-gray-200 rounded-2xl p-4">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Navigation</h3>
+                  <div className="space-y-1">
+                    {["Overview", "Timeline", "Memory", "Events"].map((item) => (
+                      <button
+                        key={item}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                          item === "Timeline"
+                            ? "bg-violet-600/20 text-violet-300 light:text-violet-600 font-medium"
+                            : "text-gray-400 light:text-gray-600 hover:bg-gray-800 light:hover:bg-gray-100"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    ))}
                   </div>
+                </div>
+                {/* Stats Card */}
+                <div className="bg-[#141414] light:bg-white border border-gray-800 light:border-gray-200 rounded-2xl p-4">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Stats</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">Total Files</span>
+                      <span className="text-sm font-semibold text-white light:text-gray-900">{groups.reduce((a, g) => a + g.files.length, 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">Time Groups</span>
+                      <span className="text-sm font-semibold text-white light:text-gray-900">{groups.length}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">Images</span>
+                      <span className="text-sm font-semibold text-pink-400">{groups.reduce((a, g) => a + g.files.filter(f => f.mimeType?.startsWith("image/")).length, 0)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-400">Videos</span>
+                      <span className="text-sm font-semibold text-purple-400">{groups.reduce((a, g) => a + g.files.filter(f => f.mimeType?.startsWith("video/")).length, 0)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                  {/* Date header + content */}
-                  <div className="pl-10 md:pl-16">
-                    {/* Date Label */}
+            {/* ===== SIDEBAR 2 (20%) - Timeline Line ===== */}
+            <div className="hidden md:block w-[20%] shrink-0">
+              <div className="sticky top-36">
+                <div className="bg-[#141414] light:bg-white border border-gray-800 light:border-gray-200 rounded-2xl p-4">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Timeline</h3>
+                  <div className="relative">
+                    {/* Vertical line */}
+                    <div className="absolute left-3 top-0 bottom-0 w-px border-l-2 border-dashed border-gray-700 light:border-gray-300" />
+                    <div className="space-y-4">
+                      {groups.map((group) => (
+                        <div key={group.label} className="relative pl-8">
+                          {/* Dot */}
+                          <div className="absolute left-3 top-1.5 -translate-x-1/2">
+                            <div className="w-2.5 h-2.5 rounded-full bg-violet-500 ring-3 ring-[#141414] light:ring-white" />
+                          </div>
+                          <p className="text-xs font-semibold text-white light:text-gray-900">{group.label}</p>
+                          <p className="text-[10px] text-gray-500 mt-0.5">{group.files.length} items</p>
+                        </div>
+                      ))}
+                      {/* End dot */}
+                      <div className="relative pl-8">
+                        <div className="absolute left-3 top-1 -translate-x-1/2">
+                          <div className="w-2 h-2 rounded-full bg-gray-600 ring-3 ring-[#141414] light:ring-white" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ===== MAIN CONTENT (60%) - Media Grid ===== */}
+            <div className="w-full md:w-[60%] min-w-0">
+              <div className="space-y-8">
+                {groups.map((group) => (
+                  <div key={group.label}>
+                    {/* Date Header */}
                     <div className="flex items-center justify-between mb-4">
-                      <div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-violet-500 md:hidden" />
                         <h2 className="text-base font-bold tracking-wide text-white light:text-gray-900">
                           {group.label}
                         </h2>
-                        <p className="text-xs text-gray-500 light:text-gray-400 mt-0.5">{group.sublabel}</p>
+                        <span className="text-xs text-gray-500 bg-gray-800 light:bg-gray-200 px-2 py-0.5 rounded-full">
+                          {group.files.length}
+                        </span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-gray-600 light:text-gray-400">{group.files.length} items</span>
-                        {group.files.length > 6 && (
+                        <span className="text-[10px] text-gray-600 light:text-gray-400 hidden sm:block">{group.sublabel}</span>
+                        {group.files.length > 8 && (
                           <button className="text-xs text-violet-400 hover:text-violet-300 flex items-center gap-0.5 font-medium transition-colors">
                             See all <ChevronRight className="w-3.5 h-3.5" />
                           </button>
@@ -266,13 +337,10 @@ export default function TimelinePage() {
                       </div>
                     </div>
 
-                    {/* Masonry-style Grid */}
-                    <div className="columns-2 sm:columns-3 md:columns-3 lg:columns-4 gap-3 space-y-3">
+                    {/* Masonry Grid */}
+                    <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 space-y-3">
                       {group.files.slice(0, 12).map((file) => {
-                        const isImage = file.mimeType?.startsWith("image/");
                         const isVideo = file.mimeType?.startsWith("video/");
-                        const isAudio = file.mimeType?.startsWith("audio/");
-
                         return (
                           <div
                             key={file.id}
@@ -280,7 +348,6 @@ export default function TimelinePage() {
                             onClick={() => handleFileClick(file)}
                           >
                             <div className="bg-[#171717] light:bg-[#f5f5f5] rounded-2xl overflow-hidden border border-gray-800/50 light:border-gray-200 hover:border-violet-500/40 light:hover:border-violet-400/40 transition-all hover:shadow-xl hover:shadow-black/20 light:hover:shadow-gray-400/20">
-                              {/* Thumbnail */}
                               {file.thumbnailUrl ? (
                                 <div className="relative overflow-hidden">
                                   <img
@@ -290,7 +357,6 @@ export default function TimelinePage() {
                                     loading="lazy"
                                     style={{ minHeight: "120px", maxHeight: "280px" }}
                                   />
-                                  {/* Video play overlay */}
                                   {isVideo && (
                                     <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                       <div className="w-10 h-10 bg-black/60 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/20">
@@ -298,13 +364,11 @@ export default function TimelinePage() {
                                       </div>
                                     </div>
                                   )}
-                                  {/* Type badge */}
                                   {isVideo && (
                                     <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-black/60 rounded text-[9px] font-medium text-white/80 backdrop-blur-sm">
                                       VIDEO
                                     </div>
                                   )}
-                                  {/* Hover overlay */}
                                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                 </div>
                               ) : (
@@ -312,8 +376,6 @@ export default function TimelinePage() {
                                   {getFileIcon(file.mimeType, "lg")}
                                 </div>
                               )}
-
-                              {/* Caption */}
                               <div className="px-3 py-2.5">
                                 <p className="text-xs font-medium text-gray-200 light:text-gray-800 truncate leading-tight">
                                   {file.name}
@@ -328,13 +390,96 @@ export default function TimelinePage() {
                       })}
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
 
-              {/* End dot */}
-              <div className="relative">
-                <div className="absolute left-4 md:left-6 -translate-x-1/2 top-0 z-10">
-                  <div className="w-2 h-2 rounded-full bg-gray-600 light:bg-gray-400 ring-4 ring-[#0a0a0a] light:ring-gray-50" />
+            {/* ===== SIDEBAR 3 (20%) - Selected File Details ===== */}
+            <div className="hidden lg:block w-[20%] shrink-0">
+              <div className="sticky top-36 space-y-4">
+                {selectedFile ? (
+                  <>
+                    {/* Selected File Card */}
+                    <div className="bg-[#141414] light:bg-white border border-gray-800 light:border-gray-200 rounded-2xl overflow-hidden">
+                      {selectedFile.thumbnailUrl ? (
+                        <img src={selectedFile.thumbnailUrl} alt={selectedFile.name} className="w-full h-40 object-cover" />
+                      ) : (
+                        <div className="w-full h-40 bg-[#1a1a1a] light:bg-gray-100 flex items-center justify-center">
+                          {getFileIcon(selectedFile.mimeType, "lg")}
+                        </div>
+                      )}
+                      <div className="p-4">
+                        <p className="text-sm font-semibold text-white light:text-gray-900 truncate">{selectedFile.name}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatBytes(selectedFile.fileSize)} · {new Date(selectedFile.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        </p>
+                        <div className="mt-3 flex items-center gap-1.5">
+                          <span className="text-[10px] px-2 py-0.5 bg-violet-600/20 text-violet-300 light:text-violet-600 rounded-full font-medium">
+                            {selectedFile.mimeType?.split("/")[0]?.toUpperCase()}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 bg-gray-800 light:bg-gray-200 text-gray-400 light:text-gray-600 rounded-full">
+                            {selectedFile.name.split(".").pop()?.toUpperCase()}
+                          </span>
+                        </div>
+                        {/* Actions */}
+                        <div className="mt-4 space-y-2">
+                          <button
+                            onClick={() => setShowPreview(true)}
+                            className="w-full flex items-center gap-2 px-3 py-2 bg-violet-600 hover:bg-violet-500 rounded-lg text-xs text-white font-medium transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> Preview
+                          </button>
+                          <a
+                            href={`/api/files/${selectedFile.id}/proxy?download=1`}
+                            download={selectedFile.name}
+                            className="w-full flex items-center gap-2 px-3 py-2 bg-gray-800 light:bg-gray-100 hover:bg-gray-700 light:hover:bg-gray-200 rounded-lg text-xs text-gray-300 light:text-gray-700 font-medium transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5" /> Download
+                          </a>
+                          {selectedFile.shareUrl && (
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(`${window.location.origin}${selectedFile.shareUrl}`);
+                                showToast("Link copied!");
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 bg-gray-800 light:bg-gray-100 hover:bg-gray-700 light:hover:bg-gray-200 rounded-lg text-xs text-gray-300 light:text-gray-700 font-medium transition-colors"
+                            >
+                              <Copy className="w-3.5 h-3.5" /> Copy Link
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="bg-[#141414] light:bg-white border border-gray-800 light:border-gray-200 rounded-2xl p-6 text-center">
+                    <div className="w-12 h-12 bg-gray-800 light:bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Eye className="w-5 h-5 text-gray-500" />
+                    </div>
+                    <p className="text-xs text-gray-500">Click a file to see details</p>
+                  </div>
+                )}
+
+                {/* Data Insights Card */}
+                <div className="bg-[#141414] light:bg-white border border-gray-800 light:border-gray-200 rounded-2xl p-4">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Insights</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+                        <span>Storage used</span>
+                        <span className="text-gray-300 light:text-gray-700">{formatBytes(groups.reduce((a, g) => a + g.files.reduce((b, f) => b + parseInt(f.fileSize || "0"), 0), 0))}</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-800 light:bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full" style={{ width: "45%" }} />
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-gray-500">Last Upload</span>
+                      <span className="text-[10px] text-gray-300 light:text-gray-700">
+                        {groups[0]?.files[0] ? new Date(groups[0].files[0].createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "N/A"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
