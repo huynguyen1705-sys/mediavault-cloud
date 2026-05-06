@@ -53,11 +53,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Calculate expiration for free user files
-    const expiringFiles = await prisma.file.count({
+    // Count active shares
+    const totalShares = await prisma.share.count({
       where: {
         userId: userProfile.id,
-        expiresAt: { not: null },
       },
     });
 
@@ -73,13 +72,14 @@ export async function GET(request: NextRequest) {
           displayName: userProfile.plan.displayName,
           storageGb: userProfile.plan.storageGb,
           storageUsedGb: Number(userProfile.storageUsedBytes) / (1024 * 1024 * 1024),
+          bandwidthGb: userProfile.plan.bandwidthGb,
           fileRetentionDays: userProfile.plan.fileRetentionDays,
         },
         filesCount: userProfile.filesCount,
         isAdmin: userProfile.isAdmin,
         isSuspended: userProfile.isSuspended,
       },
-      expiringFiles,
+      totalShares,
     });
   } catch (error) {
     console.error("Get user error:", error);

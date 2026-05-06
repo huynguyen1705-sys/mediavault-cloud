@@ -10,7 +10,6 @@ import {
   Music, 
   FolderOpen,
   ArrowUp,
-  Clock,
   Loader2,
   CheckCircle,
   Upload,
@@ -30,7 +29,6 @@ interface DashboardStats {
   totalFiles: number;
   totalFolders: number;
   totalShares: number;
-  expiringFiles: number;
   recentFiles: any[];
   plan: {
     name: string;
@@ -64,8 +62,7 @@ export default function DashboardPage() {
           bandwidthLimitBytes: (userData.user?.plan?.bandwidthGb || 10) * 1024 * 1024 * 1024,
           totalFiles: userData.user?.filesCount || 0,
           totalFolders: 0,
-          totalShares: 0,
-          expiringFiles: userData.expiringFiles || 0,
+          totalShares: userData.totalShares || 0,
           recentFiles: analyticsData?.fileTypeBreakdown || [],
           plan: userData.user?.plan || { name: "free", displayName: "Free", storageGb: 1, bandwidthGb: 10 },
         });
@@ -269,7 +266,8 @@ export default function DashboardPage() {
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
     if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+    if (bytes < 1024 * 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+    return (bytes / (1024 * 1024 * 1024 * 1024)).toFixed(2) + " TB";
   };
 
   const storagePercent = stats ? Math.round((stats.storageUsedBytes / stats.storageLimitBytes) * 100) : 0;
@@ -445,16 +443,16 @@ export default function DashboardPage() {
           <div className="text-xs text-gray-500">files stored</div>
         </div>
 
-        {/* Expiring Soon */}
+        {/* Shared Links */}
         <div className="p-4 bg-[#111111] border border-gray-800 rounded-xl">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-gray-400 text-sm">Expiring</span>
-            <Clock className="w-5 h-5 text-orange-400" />
+            <span className="text-gray-400 text-sm">Shared Links</span>
+            <Link className="w-5 h-5 text-blue-400" />
           </div>
-          <div className={`text-2xl font-bold mb-2 ${(stats?.expiringFiles || 0) > 0 ? "text-orange-400" : "text-white"}`}>
-            {stats?.expiringFiles || 0}
+          <div className="text-2xl font-bold text-white mb-2">
+            {stats?.totalShares || 0}
           </div>
-          <div className="text-xs text-gray-500">files expiring soon</div>
+          <div className="text-xs text-gray-500">active share links</div>
         </div>
       </div>
 
