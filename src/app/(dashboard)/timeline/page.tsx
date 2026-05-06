@@ -24,6 +24,7 @@ import {
   Link,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import TimelineDot from "@/components/TimelineDot";
 
 interface TimelineFile {
   id: string;
@@ -63,6 +64,7 @@ export default function TimelinePage() {
   const [showMobileSheet, setShowMobileSheet] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const filterRef = useRef<HTMLDivElement>(null);
+  const [isLight, setIsLight] = useState(false);
 
   // Close filter dropdown on outside click
   useEffect(() => {
@@ -73,6 +75,17 @@ export default function TimelinePage() {
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Listen for theme changes
+  useEffect(() => {
+    const updateTheme = () => {
+      setIsLight(document.documentElement.classList.contains('light'));
+    };
+    updateTheme();
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
   }, []);
 
   const showToast = (msg: string) => {
@@ -291,19 +304,14 @@ export default function TimelinePage() {
                     <div className="space-y-4">
                       {groups.map((group) => (
                         <div key={group.label} className="relative pl-8">
-                          {/* Dot */}
-                          <div className="absolute left-3 top-1.5 -translate-x-1/2">
-                            <div className="w-2.5 h-2.5 rounded-full bg-violet-500 ring-3 ring-[#141414] light:ring-white" />
-                          </div>
+                          <TimelineDot type="group" isLight={isLight} />
                           <p className="text-xs font-semibold text-white light:text-gray-900">{group.label}</p>
                           <p className="text-[10px] text-gray-500 mt-0.5">{group.files.length} items</p>
                         </div>
                       ))}
                       {/* End dot */}
                       <div className="relative pl-8">
-                        <div className="absolute left-3 top-1 -translate-x-1/2">
-                          <div className="w-2 h-2 rounded-full bg-gray-600 ring-3 ring-[#141414] light:ring-white" />
-                        </div>
+                        <TimelineDot type="end" isLight={isLight} />
                       </div>
                     </div>
                   </div>
@@ -338,13 +346,13 @@ export default function TimelinePage() {
                     </div>
 
                     {/* Masonry Grid */}
-                    <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 space-y-3">
+                    <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 space-y-3 stagger-children">
                       {group.files.slice(0, 12).map((file) => {
                         const isVideo = file.mimeType?.startsWith("video/");
                         return (
                           <div
                             key={file.id}
-                            className="break-inside-avoid group cursor-pointer"
+                            className="break-inside-avoid group cursor-pointer card-hover"
                             onClick={() => handleFileClick(file)}
                           >
                             <div className="bg-[#171717] light:bg-[#f5f5f5] rounded-2xl overflow-hidden border border-gray-800/50 light:border-gray-200 hover:border-violet-500/40 light:hover:border-violet-400/40 transition-all hover:shadow-xl hover:shadow-black/20 light:hover:shadow-gray-400/20">
