@@ -2840,11 +2840,6 @@ const handleDelete = async (fileId: string) => {
           {/* AI Search Results — Google-style */}
           {aiSearchResults && aiSearchResults.length > 0 && (
             <div className="mb-4 overflow-hidden">
-              {/* Search header */}
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-800">
-                <span className="text-sm text-gray-400 truncate">✨ <span className="text-white font-medium">{aiSearchResults.length}</span> results &middot; <span className="text-gray-600">{aiSearchTiming}ms</span></span>
-                <button onClick={() => { setAiSearchResults(null); setSearchQuery(''); }} className="ml-auto text-xs text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-gray-800 transition-colors shrink-0">✕ Clear</button>
-              </div>
               {/* Tag filter tabs */}
               {aiSearchResults && aiSearchResults.length > 0 && (
                 <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
