@@ -319,7 +319,7 @@ export default function TimelinePage() {
           <>
             {/* ═══════════ YEAR VIEW ═══════════ */}
             {zoom === "year" && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {months.map((m) => {
                   const isCurrentMonth = year === currentYear && m.month === currentMonth;
                   const hasFiles = m.count > 0;
@@ -403,16 +403,16 @@ export default function TimelinePage() {
             {zoom === "month" && (
               <div>
                 {/* Day-of-week headers */}
-                <div className="grid grid-cols-7 gap-2 mb-2">
+                <div className="grid grid-cols-7 gap-1.5 mb-1 max-w-4xl mx-auto">
                   {DAY_NAMES.map(d => (
-                    <div key={d} className="text-center text-[11px] font-semibold text-gray-400 dark:text-white/20 uppercase tracking-wider py-1">
+                    <div key={d} className="text-center text-[10px] font-semibold text-gray-400 dark:text-white/20 uppercase tracking-wider py-1">
                       {d}
                     </div>
                   ))}
                 </div>
 
                 {/* Calendar cells */}
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-1.5 max-w-4xl mx-auto">
                   {/* Empty cells for offset */}
                   {days.length > 0 && Array.from({ length: days[0].dayOfWeek }).map((_, i) => (
                     <div key={`empty-${i}`} />
@@ -502,7 +502,7 @@ export default function TimelinePage() {
                     <p className="text-gray-500 dark:text-white/30 font-medium">No files on this day</p>
                   </div>
                 ) : (
-                  <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-2 space-y-2">
+                  <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-6 xl:columns-8 gap-2 space-y-2">
                     {files.map(file => (
                       <div
                         key={file.id}
