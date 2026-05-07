@@ -58,6 +58,7 @@ model User {
   auditLogs  AuditLog[]
   apiKeys    ApiKey[]
   collections Collection[]
+  aiConversations AiConversation[]
 
   @@map("users_profile")
 }
@@ -267,4 +268,31 @@ model CollectionFile {
 
   @@unique([collectionId, fileId])
   @@map("collection_files")
+}
+
+model AiConversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String?  @db.VarChar(255)
+  createdAt DateTime @map("created_at") @default(now())
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AiMessage[]
+
+  @@index([userId])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  role           String   @db.VarChar(20)  // user | assistant
+  content        String   @db.Text
+  fileRefs       Json?    @map("file_refs")
+  createdAt      DateTime @map("created_at") @default(now())
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("ai_messages")
 }

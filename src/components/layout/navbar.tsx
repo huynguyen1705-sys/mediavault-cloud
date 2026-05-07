@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
-import { Cloud, Menu, X, Sun, Moon, LayoutDashboard, FolderOpen, BarChart3, Settings, ScrollText, Home, Sparkles, CreditCard, Shield, Calendar } from "lucide-react";
+import { Cloud, Menu, X, Sun, Moon, LayoutDashboard, FolderOpen, BarChart3, Settings, ScrollText, Home, Sparkles, CreditCard, Shield, Calendar, MessageCircle } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useState, useEffect } from "react";
 
@@ -42,6 +42,7 @@ export default function Navbar() {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, color: "text-blue-400" },
     { href: "/files", label: "Files", icon: FolderOpen, color: "text-amber-400" },
     { href: "/collections", label: "Collections", icon: Sparkles, color: "text-violet-400" },
+    { href: "/chat", label: "AI Chat", icon: MessageCircle, color: "text-cyan-400" },
     { href: "/analytics", label: "Analytics", icon: BarChart3, color: "text-emerald-400" },
     { href: "/settings", label: "Settings", icon: Settings, color: "text-gray-400" },
     { href: "/logs", label: "Logs", icon: ScrollText, color: "text-violet-400" },
