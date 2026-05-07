@@ -2143,7 +2143,7 @@ const handleDelete = async (fileId: string) => {
             animate={{ opacity: 1, y: 0, x: "-50%" }}
             exit={{ opacity: 0, y: -20, x: "-50%" }}
             transition={{ type: "spring", damping: 20, stiffness: 300 }}
-            className="fixed top-20 left-1/2 z-50 px-4 py-2.5 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 backdrop-blur-sm font-medium text-sm"
+            className="fixed top-20 left-1/2 z-[10000] px-4 py-2.5 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 backdrop-blur-sm font-medium text-sm"
           >
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4" />
