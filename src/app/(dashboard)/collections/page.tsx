@@ -76,10 +76,12 @@ export default function CollectionsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "generate" }),
       });
+      const data = await res.json();
+      console.log('Generate result:', data);
       if (res.ok) {
         await fetchCollections();
       }
-    } catch { /* */ }
+    } catch (e) { console.error('Generate error:', e); }
     setGenerating(false);
   };
 
