@@ -89,27 +89,55 @@ export default function TimelinePage() {
   const [filter, setFilter] = useState<FileFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<TimelineFile | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<{ file: TimelineFile; x: number; y: number } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
-  const fetchTimeline = useCallback(async () => {
-    setLoading(true);
+  const fetchTimeline = useCallback(async (cursor?: string) => {
+    if (cursor) setLoadingMore(true); else setLoading(true);
     try {
-      const res = await fetch(`/api/timeline?view=${view}&limit=300`);
+      const params = new URLSearchParams({ view, limit: "50" });
+      if (cursor) params.set("cursor", cursor);
+      if (filter !== "all") params.set("filter", filter);
+      if (searchQuery) params.set("search", searchQuery);
+      
+      const res = await fetch(`/api/timeline?${params}`);
       if (res.ok) {
         const data = await res.json();
-        setTimeline(data.timeline || []);
+        if (cursor) {
+          setTimeline(prev => [...prev, ...(data.timeline || [])]);
+        } else {
+          setTimeline(data.timeline || []);
+        }
+        setNextCursor(data.nextCursor || null);
       }
     } catch { /* */ }
     setLoading(false);
-  }, [view]);
+    setLoadingMore(false);
+  }, [view, filter, searchQuery]);
 
   useEffect(() => { fetchTimeline(); }, [fetchTimeline]);
+
+  // Infinite scroll: load more when reaching end
+  useEffect(() => {
+    if (!scrollRef.current || !nextCursor) return;
+    const container = scrollRef.current;
+    const handleScroll = () => {
+      const nearEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 500;
+      if (nearEnd && !loadingMore && nextCursor) {
+        fetchTimeline(nextCursor);
+      }
+    };
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [nextCursor, loadingMore, fetchTimeline]);
 
   // Close context menu on click elsewhere
   useEffect(() => {
@@ -123,15 +151,8 @@ export default function TimelinePage() {
     scrollRef.current.scrollBy({ left: direction === "left" ? -420 : 420, behavior: "smooth" });
   };
 
-  // Filter + search
-  const filteredTimeline = timeline.map(group => {
-    const filtered = group.files.filter(f => {
-      if (!matchesFilter(f.mimeType, filter)) return false;
-      if (searchQuery && !f.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-      return true;
-    });
-    return { ...group, files: filtered, count: filtered.length };
-  }).filter(g => g.count > 0);
+  // Filter is now server-side, client just uses timeline directly
+  const filteredTimeline = timeline;
 
   // Toggle file selection
   const toggleSelect = (id: string) => {
@@ -495,6 +516,23 @@ export default function TimelinePage() {
                   </div>
                 </div>
               ))}
+
+              {/* Load More Indicator */}
+              {loadingMore && (
+                <div className="flex-shrink-0 flex items-center justify-center w-20">
+                  <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+                </div>
+              )}
+              {nextCursor && !loadingMore && (
+                <div className="flex-shrink-0 flex items-center justify-center w-20">
+                  <button
+                    onClick={() => fetchTimeline(nextCursor)}
+                    className="text-xs text-violet-600 dark:text-violet-400 hover:underline"
+                  >
+                    Load more →
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
