@@ -2398,6 +2398,22 @@ const handleDelete = async (fileId: string) => {
         {/* Header - Sticky */}
         <div className="p-4 border-b border-gray-800 bg-[#141414] sticky top-0 z-10">
           <div className="flex items-center justify-between gap-4">
+            {/* AI Search mode header */}
+            {aiSearchResults && aiSearchResults.length > 0 ? (
+              <div className="flex items-center gap-3 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-violet-400 font-medium">✨ AI Search</span>
+                  <span className="text-xs text-gray-500">{aiSearchResults.length} results · {aiSearchTiming}ms</span>
+                </div>
+                <button
+                  onClick={() => { setAiSearchResults(null); setSearchQuery(''); }}
+                  className="ml-auto px-3 py-1.5 text-xs text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors flex items-center gap-1.5"
+                >
+                  <X className="w-3.5 h-3.5" /> Clear Search
+                </button>
+              </div>
+            ) : (
+              <>
             {/* Breadcrumbs */}
             <div className="flex items-center gap-2 overflow-x-auto">
               {breadcrumbs.map((crumb, index) => (
@@ -2464,6 +2480,8 @@ const handleDelete = async (fileId: string) => {
                   </button>
                 </div>
               </div>
+            )}
+              </>
             )}
 
             {/* Bulk Action Bar - Sticky when files selected */}
@@ -2607,7 +2625,8 @@ const handleDelete = async (fileId: string) => {
               </button>
             </div>
 
-            {/* Filter button - toggle on mobile */}
+            {/* Filter button - toggle on mobile (hidden during AI search) */}
+            {!(aiSearchResults && aiSearchResults.length > 0) && (
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`md:hidden p-2 bg-[#111111] border border-gray-800 rounded-lg transition-colors ${
@@ -2619,8 +2638,10 @@ const handleDelete = async (fileId: string) => {
             >
               <SlidersHorizontal className="w-4 h-4" />
             </button>
+            )}
 
-            {/* Filters row - collapsible on mobile */}
+            {/* Filters row - collapsible on mobile, hidden during AI search */}
+            {!(aiSearchResults && aiSearchResults.length > 0) && (
             <div className={`flex flex-wrap md:flex-nowrap items-center gap-2 ${showFilters ? 'flex' : 'hidden md:flex'}`}>
               <select
                 value={filterType}
@@ -2689,6 +2710,7 @@ const handleDelete = async (fileId: string) => {
                 {sortOrder === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
               </button>
             </div>
+            )}
           </div>
           {/* Trash Banner */}
           {trashMode && trashFiles.length > 0 && (
@@ -2935,12 +2957,28 @@ const handleDelete = async (fileId: string) => {
                         {result.snippet && (
                           <p className="text-xs text-gray-500 mt-0.5 truncate">{result.snippet}</p>
                         )}
-                        <div className="flex items-center gap-2 mt-0.5">
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           {result.fileSize && <span className="text-[10px] text-gray-600">{formatBytes(Number(result.fileSize))}</span>}
                           {result.createdAt && <span className="text-[10px] text-gray-600">{new Date(result.createdAt).toLocaleDateString()}</span>}
                           <span className="text-[9px] font-medium shrink-0" style={{ color: result.score >= 25 ? '#a78bfa' : result.score >= 15 ? '#94a3b8' : '#6b7280' }}>
                             {result.score >= 25 ? '● High match' : result.score >= 15 ? '◐ Related' : '○ Similar'}
                           </span>
+                          {/* Folder badge - clickable */}
+                          {result.folderName && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigateToFolder(result.folderId, result.folderName);
+                                setAiSearchResults(null);
+                                setSearchQuery('');
+                              }}
+                              className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors shrink-0"
+                              title={`Open folder: ${result.folderName}`}
+                            >
+                              <Folder className="w-2.5 h-2.5" />
+                              <span className="max-w-[80px] truncate">{result.folderName}</span>
+                            </button>
+                          )}
                         </div>
                       </div>
                       {/* Score indicator - desktop only */}
