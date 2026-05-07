@@ -253,7 +253,7 @@ export default function TimelinePage() {
 
       {/* Navigation Bar */}
       <div className="sticky top-0 z-20 bg-white/80 dark:bg-[#060608]/80 backdrop-blur-2xl border-b border-gray-200/60 dark:border-white/[0.04]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+        <div className="w-[98%] mx-auto py-4">
           <div className="flex items-center justify-between">
             {/* Left: Breadcrumb */}
             <div className="flex items-center gap-2">
@@ -307,7 +307,7 @@ export default function TimelinePage() {
       </div>
 
       {/* Content */}
-      <div className={`max-w-7xl mx-auto px-4 sm:px-6 py-6 transition-all duration-300 ${transitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}>
+      <div className={`w-[98%] mx-auto py-6 transition-all duration-300 ${transitioning ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}>
         {loading ? (
           <div className="flex items-center justify-center py-32">
             <div className="flex flex-col items-center gap-3">
@@ -403,20 +403,10 @@ export default function TimelinePage() {
             {zoom === "month" && (
               <div>
                 {/* Day-of-week headers */}
-                <div className="grid grid-cols-7 gap-1.5 mb-1 max-w-4xl mx-auto">
-                  {DAY_NAMES.map(d => (
-                    <div key={d} className="text-center text-[10px] font-semibold text-gray-400 dark:text-white/20 uppercase tracking-wider py-1">
-                      {d}
-                    </div>
-                  ))}
-                </div>
+                {/* Calendar cells — 15 columns wide */}
+                <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 lg:grid-cols-15 gap-1.5 w-[98%] mx-auto"
+                  style={{ gridTemplateColumns: 'repeat(15, minmax(0, 1fr))' }}>
 
-                {/* Calendar cells */}
-                <div className="grid grid-cols-7 gap-1.5 max-w-4xl mx-auto">
-                  {/* Empty cells for offset */}
-                  {days.length > 0 && Array.from({ length: days[0].dayOfWeek }).map((_, i) => (
-                    <div key={`empty-${i}`} />
-                  ))}
 
                   {days.map((day) => {
                     const isToday = day.date === todayStr;
