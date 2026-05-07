@@ -38,140 +38,199 @@ function FileIcon({ mimeType, className }: { mimeType?: string | null; className
   return <File className={`${cls} text-gray-500`} />;
 }
 
-/* ─── Image Viewer with Zoom/Pan/Touch ─── */
+/* ─── Image Viewer with Zoom/Pan/Touch (RAF-based, no re-renders during drag) ─── */
 function ImageViewer({ url, name }: { url: string; name: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [posStart, setPosStart] = useState({ x: 0, y: 0 });
+  const imgRef = useRef<HTMLImageElement>(null);
+  const zoomLabelRef = useRef<HTMLSpanElement>(null);
+
+  // All mutable state in refs for 60fps drag/zoom
+  const state = useRef({ scale: 1, x: 0, y: 0 });
+  const drag = useRef({ active: false, startX: 0, startY: 0, originX: 0, originY: 0 });
+  const pinch = useRef({ dist: 0, cx: 0, cy: 0 });
+  const rafId = useRef(0);
+  const lastTap = useRef(0);
+
+  // Only for UI buttons (controls bar)
+  const [displayScale, setDisplayScale] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
-  const [lastDist, setLastDist] = useState(0);
-  const [lastCenter, setLastCenter] = useState({ x: 0, y: 0 });
+  const [hintVisible, setHintVisible] = useState(true);
 
   const MIN_SCALE = 0.5;
   const MAX_SCALE = 8;
 
-  const reset = useCallback(() => { setScale(1); setPos({ x: 0, y: 0 }); }, []);
-
-  const zoomIn = useCallback(() => setScale(s => Math.min(s * 1.3, MAX_SCALE)), []);
-  const zoomOut = useCallback(() => {
-    setScale(s => {
-      const ns = Math.max(s / 1.3, MIN_SCALE);
-      if (ns <= 1) setPos({ x: 0, y: 0 });
-      return ns;
-    });
+  const applyTransform = useCallback(() => {
+    const { scale, x, y } = state.current;
+    if (imgRef.current) {
+      imgRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
+    }
   }, []);
 
-  // Mouse wheel zoom
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setScale(s => {
-      const ns = Math.max(MIN_SCALE, Math.min(s * delta, MAX_SCALE));
-      if (ns <= 1) setPos({ x: 0, y: 0 });
-      return ns;
-    });
+  const syncDisplayScale = useCallback(() => {
+    setDisplayScale(state.current.scale);
   }, []);
 
-  // Mouse drag
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (scale <= 1) return;
-    e.preventDefault();
-    setDragging(true);
-    setDragStart({ x: e.clientX, y: e.clientY });
-    setPosStart({ ...pos });
-  }, [scale, pos]);
+  const updateLabel = useCallback(() => {
+    if (zoomLabelRef.current) {
+      zoomLabelRef.current.textContent = `${Math.round(state.current.scale * 100)}%`;
+    }
+  }, []);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragging) return;
-    setPos({
-      x: posStart.x + (e.clientX - dragStart.x),
-      y: posStart.y + (e.clientY - dragStart.y),
-    });
-  }, [dragging, dragStart, posStart]);
+  const reset = useCallback(() => {
+    state.current = { scale: 1, x: 0, y: 0 };
+    applyTransform();
+    syncDisplayScale();
+    updateLabel();
+  }, [applyTransform, syncDisplayScale, updateLabel]);
 
-  const handleMouseUp = useCallback(() => setDragging(false), []);
+  const zoomTo = useCallback((newScale: number) => {
+    state.current.scale = Math.max(MIN_SCALE, Math.min(newScale, MAX_SCALE));
+    if (state.current.scale <= 1) { state.current.x = 0; state.current.y = 0; }
+    applyTransform();
+    syncDisplayScale();
+    updateLabel();
+  }, [applyTransform, syncDisplayScale, updateLabel]);
 
-  // Touch: pinch zoom + drag
-  const getTouchDist = (touches: React.TouchList) => {
-    if (touches.length < 2) return 0;
-    const dx = touches[0].clientX - touches[1].clientX;
-    const dy = touches[0].clientY - touches[1].clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  };
-  const getTouchCenter = (touches: React.TouchList) => {
-    if (touches.length < 2) return { x: touches[0].clientX, y: touches[0].clientY };
-    return {
-      x: (touches[0].clientX + touches[1].clientX) / 2,
-      y: (touches[0].clientY + touches[1].clientY) / 2,
+  const zoomIn = useCallback(() => zoomTo(state.current.scale * 1.3), [zoomTo]);
+  const zoomOut = useCallback(() => zoomTo(state.current.scale / 1.3), [zoomTo]);
+
+  // ── Mouse wheel zoom ──
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 0.92 : 1.08;
+      zoomTo(state.current.scale * factor);
     };
-  };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, [zoomTo]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      setLastDist(getTouchDist(e.touches));
-      setLastCenter(getTouchCenter(e.touches));
-      setPosStart({ ...pos });
-    } else if (e.touches.length === 1 && scale > 1) {
-      setDragging(true);
-      setDragStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
-      setPosStart({ ...pos });
-    }
-  }, [scale, pos]);
+  // ── Mouse drag (pointer events for smooth capture) ──
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
+    const onDown = (e: PointerEvent) => {
+      if (state.current.scale <= 1 || e.pointerType === "touch") return;
       e.preventDefault();
-      const dist = getTouchDist(e.touches);
-      const center = getTouchCenter(e.touches);
-      if (lastDist > 0) {
-        const ratio = dist / lastDist;
-        setScale(s => Math.max(MIN_SCALE, Math.min(s * ratio, MAX_SCALE)));
-        setPos(p => ({
-          x: p.x + (center.x - lastCenter.x),
-          y: p.y + (center.y - lastCenter.y),
-        }));
-      }
-      setLastDist(dist);
-      setLastCenter(center);
-    } else if (e.touches.length === 1 && dragging) {
-      setPos({
-        x: posStart.x + (e.touches[0].clientX - dragStart.x),
-        y: posStart.y + (e.touches[0].clientY - dragStart.y),
+      el.setPointerCapture(e.pointerId);
+      drag.current = { active: true, startX: e.clientX, startY: e.clientY, originX: state.current.x, originY: state.current.y };
+      el.style.cursor = "grabbing";
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!drag.current.active || e.pointerType === "touch") return;
+      cancelAnimationFrame(rafId.current);
+      rafId.current = requestAnimationFrame(() => {
+        state.current.x = drag.current.originX + (e.clientX - drag.current.startX);
+        state.current.y = drag.current.originY + (e.clientY - drag.current.startY);
+        applyTransform();
       });
-    }
-  }, [dragging, dragStart, posStart, lastDist, lastCenter]);
+    };
+    const onUp = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
+      drag.current.active = false;
+      el.style.cursor = state.current.scale > 1 ? "grab" : "default";
+    };
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    setDragging(false);
-    if (e.touches.length < 2) setLastDist(0);
-    if (scale <= 1) setPos({ x: 0, y: 0 });
-  }, [scale]);
+    el.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onUp);
+    };
+  }, [applyTransform]);
 
-  // Double-tap to zoom
-  const lastTap = useRef(0);
-  const handleDoubleTap = useCallback((e: React.TouchEvent) => {
-    const now = Date.now();
-    if (now - lastTap.current < 300) {
-      e.preventDefault();
-      if (scale > 1.5) { reset(); } else { setScale(3); }
-    }
-    lastTap.current = now;
-  }, [scale, reset]);
+  // ── Touch: pinch zoom + single-finger drag ──
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const dist = (a: Touch, b: Touch) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        pinch.current.dist = dist(e.touches[0], e.touches[1]);
+        pinch.current.cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        pinch.current.cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        drag.current.originX = state.current.x;
+        drag.current.originY = state.current.y;
+      } else if (e.touches.length === 1) {
+        // Double-tap detection
+        const now = Date.now();
+        if (now - lastTap.current < 300) {
+          e.preventDefault();
+          if (state.current.scale > 1.5) reset(); else zoomTo(3);
+        }
+        lastTap.current = now;
+
+        if (state.current.scale > 1) {
+          drag.current = { active: true, startX: e.touches[0].clientX, startY: e.touches[0].clientY, originX: state.current.x, originY: state.current.y };
+        }
+        setHintVisible(false);
+      }
+    };
+
+    const onMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const d = dist(e.touches[0], e.touches[1]);
+        const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        if (pinch.current.dist > 0) {
+          cancelAnimationFrame(rafId.current);
+          rafId.current = requestAnimationFrame(() => {
+            const ratio = d / pinch.current.dist;
+            state.current.scale = Math.max(MIN_SCALE, Math.min(state.current.scale * ratio, MAX_SCALE));
+            state.current.x += cx - pinch.current.cx;
+            state.current.y += cy - pinch.current.cy;
+            applyTransform();
+            updateLabel();
+          });
+        }
+        pinch.current = { dist: d, cx, cy };
+      } else if (e.touches.length === 1 && drag.current.active) {
+        cancelAnimationFrame(rafId.current);
+        rafId.current = requestAnimationFrame(() => {
+          state.current.x = drag.current.originX + (e.touches[0].clientX - drag.current.startX);
+          state.current.y = drag.current.originY + (e.touches[0].clientY - drag.current.startY);
+          applyTransform();
+        });
+      }
+    };
+
+    const onEnd = (e: TouchEvent) => {
+      drag.current.active = false;
+      if (e.touches.length < 2) pinch.current.dist = 0;
+      if (state.current.scale <= 1) { state.current.x = 0; state.current.y = 0; applyTransform(); }
+      syncDisplayScale();
+      updateLabel();
+    };
+
+    el.addEventListener("touchstart", onStart, { passive: false });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd);
+    el.addEventListener("touchcancel", onEnd);
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("touchcancel", onEnd);
+    };
+  }, [applyTransform, syncDisplayScale, updateLabel, reset, zoomTo]);
 
   const toggleFullscreen = useCallback(() => {
-    if (!fullscreen) {
-      containerRef.current?.requestFullscreen?.();
-    } else {
-      document.exitFullscreen?.();
-    }
+    if (!fullscreen) containerRef.current?.requestFullscreen?.();
+    else document.exitFullscreen?.();
     setFullscreen(!fullscreen);
   }, [fullscreen]);
 
-  // Listen for fullscreen changes
   useEffect(() => {
     const handler = () => setFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handler);
@@ -183,25 +242,14 @@ function ImageViewer({ url, name }: { url: string; name: string }) {
       {/* Image Container */}
       <div
         className={`w-full overflow-hidden ${fullscreen ? "h-screen" : "min-h-[300px] max-h-[80vh]"} flex items-center justify-center touch-none select-none`}
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onTouchStart={(e) => { handleTouchStart(e); handleDoubleTap(e); }}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{ cursor: scale > 1 ? (dragging ? "grabbing" : "grab") : "default" }}
+        style={{ cursor: displayScale > 1 ? "grab" : "default" }}
       >
         <img
+          ref={imgRef}
           src={url}
           alt={name}
-          className="max-w-full max-h-full object-contain transition-transform duration-100"
-          style={{
-            transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
-            transformOrigin: "center center",
-            width: "100%",
-          }}
+          className="max-w-full max-h-full object-contain will-change-transform"
+          style={{ transform: "translate3d(0,0,0) scale(1)", transformOrigin: "center center", width: "100%" }}
           draggable={false}
         />
       </div>
@@ -211,7 +259,7 @@ function ImageViewer({ url, name }: { url: string; name: string }) {
         <button onClick={zoomOut} className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors" title="Zoom Out">
           <ZoomOut className="w-4 h-4" />
         </button>
-        <span className="text-xs text-white/70 w-12 text-center font-mono">{Math.round(scale * 100)}%</span>
+        <span ref={zoomLabelRef} className="text-xs text-white/70 w-12 text-center font-mono">100%</span>
         <button onClick={zoomIn} className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors" title="Zoom In">
           <ZoomIn className="w-4 h-4" />
         </button>
@@ -224,7 +272,7 @@ function ImageViewer({ url, name }: { url: string; name: string }) {
       </div>
 
       {/* Zoom hint on mobile */}
-      {scale === 1 && (
+      {hintVisible && displayScale === 1 && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 text-[10px] text-white/40 bg-black/40 px-2 py-1 rounded-full sm:hidden pointer-events-none">
           Pinch to zoom · Double-tap to enlarge
         </div>
