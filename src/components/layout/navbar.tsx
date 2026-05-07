@@ -41,7 +41,6 @@ export default function Navbar() {
   const dashboardLinks = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, color: "text-blue-400" },
     { href: "/files", label: "Files", icon: FolderOpen, color: "text-amber-400" },
-    { href: "/timeline", label: "Timeline", icon: Calendar, color: "text-pink-400" },
     { href: "/analytics", label: "Analytics", icon: BarChart3, color: "text-emerald-400" },
     { href: "/settings", label: "Settings", icon: Settings, color: "text-gray-400" },
     { href: "/logs", label: "Logs", icon: ScrollText, color: "text-violet-400" },
