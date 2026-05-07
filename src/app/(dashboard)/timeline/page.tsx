@@ -423,7 +423,7 @@ export default function TimelinePage() {
                           className={`group relative flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all ${
                             isSelected
                               ? "bg-violet-50 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/30 border ring-1 ring-violet-200 dark:ring-violet-500/20"
-                              : "bg-gray-100/80 dark:bg-white/[0.03] hover:bg-gray-200/60 dark:hover:bg-white/[0.06] border border-gray-200/50 dark:border-white/5"
+                              : "bg-[#f3f4f6] dark:bg-white/[0.03] hover:bg-[#e5e7eb] dark:hover:bg-white/[0.06] border border-[#d1d5db] dark:border-white/5 shadow-sm dark:shadow-none"
                           }`}
                           onClick={() => setPreviewFile(file)}
                           onContextMenu={(e) => { e.preventDefault(); setContextMenu({ file, x: e.clientX, y: e.clientY }); }}
