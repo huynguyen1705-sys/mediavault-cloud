@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
       conversationId: convoId,
       reply: result.reply,
       files: result.files,
+      action: result.action || null,
     });
   } catch (error) {
     console.error("AI Chat error:", error);
