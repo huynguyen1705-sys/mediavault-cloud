@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import prisma from "@/lib/db";
+import { getOrCreateUser } from "@/lib/get-user";
 import { getUploadPresignedUrl, generateFileKey } from "@/lib/r2";
 
 /**
@@ -10,8 +9,8 @@ import { getUploadPresignedUrl, generateFileKey } from "@/lib/r2";
  */
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const userProfile = await getOrCreateUser();
+    if (!userProfile) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -25,16 +24,6 @@ export async function GET(request: NextRequest) {
         { error: "Missing required: fileName, fileSize" },
         { status: 400 }
       );
-    }
-
-    // Get user profile with plan
-    const userProfile = await prisma.user.findUnique({
-      where: { clerkUserId: userId },
-      include: { plan: true },
-    });
-
-    if (!userProfile) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     if (userProfile.isSuspended) {
@@ -64,7 +53,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate unique file key
-    const fileKey = generateFileKey(userId, fileName);
+    const fileKey = generateFileKey(userProfile.clerkUserId, fileName);
 
     // Generate presigned upload URL (1 hour expiry)
     const uploadUrl = await getUploadPresignedUrl(fileKey, contentType, 3600);

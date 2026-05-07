@@ -192,11 +192,21 @@ async function generateThumbnailAsync(fileId: string, fileKey: string, mimeType:
 
     // Generate thumbnail
     const isVideo = mimeType.startsWith("video/");
-    const cmd = isVideo
-      ? `ffmpeg -i "${tempFile}" -ss 00:00:01 -vframes 1 -vf "scale=400:-1:flags=lanczos" -q:v 2 "${tempThumb}" -y 2>/dev/null`
-      : `ffmpeg -i "${tempFile}" -vf "scale=400:-1:flags=lanczos" -q:v 2 "${tempThumb}" -y 2>/dev/null`;
+    const isImage = mimeType.startsWith("image/");
 
-    await execAsync(cmd, { timeout: 30000 });
+    if (isVideo) {
+      const cmd = `ffmpeg -i "${tempFile}" -ss 00:00:01 -vframes 1 -vf "scale=400:-1:flags=lanczos" -q:v 2 "${tempThumb}" -y 2>/dev/null`;
+      await execAsync(cmd, { timeout: 30000 });
+    } else if (isImage) {
+      // Use sharp for all images (supports HEIC, AVIF, WebP, etc.)
+      const sharp = (await import("sharp")).default;
+      await sharp(tempFile)
+        .resize(400, null, { withoutEnlargement: true })
+        .jpeg({ quality: 80 })
+        .toFile(tempThumb);
+    } else {
+      throw new Error(`Unsupported mime type for thumbnail: ${mimeType}`);
+    }
 
     if (!fs.existsSync(tempThumb)) {
       throw new Error("Thumbnail file not created");

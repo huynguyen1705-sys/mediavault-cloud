@@ -1,64 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
+import { getOrCreateUser } from "@/lib/get-user";
 
 // GET - Get or create user profile
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = await currentUser();
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Find or create user profile
-    let userProfile = await prisma.user.findUnique({
-      where: { clerkUserId: userId },
-      include: { plan: true },
-    });
-
+    const userProfile = await getOrCreateUser();
     if (!userProfile) {
-      // Create new user profile with free plan
-      const freePlan = await prisma.plan.findUnique({
-        where: { name: "free" },
-      });
-
-      if (!freePlan) {
-        return NextResponse.json({ error: "Free plan not found" }, { status: 500 });
-      }
-
-      userProfile = await prisma.user.create({
-        data: {
-          clerkUserId: userId,
-          email: user.emailAddresses[0]?.emailAddress || null,
-          displayName: user.fullName || user.firstName || "User",
-          avatarUrl: user.imageUrl || null,
-          planId: freePlan.id,
-        },
-        include: { plan: true },
-      });
-
-      // Log new user
-      await prisma.auditLog.create({
-        data: {
-          userId: userProfile.id,
-          action: "USER_CREATED",
-          resourceType: "user",
-          resourceId: userProfile.id,
-        },
-      });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Count active shares
     const totalShares = await prisma.share.count({
-      where: {
-        userId: userProfile.id,
-      },
-    });
+      where: { userId: userProfile.id },
+    }).catch(() => 0);
 
     return NextResponse.json({
       user: {
