@@ -57,6 +57,7 @@ model User {
   bandwidthLogs BandwidthLog[]
   auditLogs  AuditLog[]
   apiKeys    ApiKey[]
+  collections Collection[]
 
   @@map("users_profile")
 }
@@ -118,6 +119,7 @@ model File {
   folder    Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
   shares    Share[]
   downloads Download[]
+  collectionFiles CollectionFile[]
 
   @@map("files")
 }
@@ -232,4 +234,37 @@ model AuditLog {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("audit_logs")
+}
+
+model Collection {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  name            String   @db.VarChar(255)
+  type            String   @default("auto") @db.VarChar(20)  // auto | manual
+  rules           Json?
+  thumbnailMosaic String[] @map("thumbnail_mosaic")
+  fileCount       Int      @default(0) @map("file_count")
+  isPinned        Boolean  @default(false) @map("is_pinned")
+  createdAt       DateTime @map("created_at") @default(now())
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files CollectionFile[]
+
+  @@index([userId])
+  @@map("collections")
+}
+
+model CollectionFile {
+  id           String   @id @default(uuid()) @db.Uuid
+  collectionId String   @map("collection_id") @db.Uuid
+  fileId       String   @map("file_id") @db.Uuid
+  score        Float    @default(1.0)
+  addedAt      DateTime @map("added_at") @default(now())
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  file       File       @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([collectionId, fileId])
+  @@map("collection_files")
 }
