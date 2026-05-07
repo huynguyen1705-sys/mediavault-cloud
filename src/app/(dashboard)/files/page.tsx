@@ -1420,12 +1420,14 @@ export default function FilesPage() {
     }
 
     // Clear AI search and show files after upload
-    if (aiSearchResults && aiSearchResults.length > 0) {
-      setAiSearchResults(null);
-      setSearchQuery('');
-    }
-    fetchFiles();
-    setTimeout(() => setUploadQueue((prev) => prev.filter((f) => f.status !== "completed")), 3000);
+    setTimeout(async () => {
+      if (aiSearchResults && aiSearchResults.length > 0) {
+        setAiSearchResults(null);
+        setSearchQuery('');
+      }
+      await fetchFiles();
+      setUploadQueue((prev) => prev.filter((f) => f.status !== "completed"));
+    }, 1500);
   };
 
   // Handle drag and drop
