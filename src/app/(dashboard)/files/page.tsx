@@ -1823,7 +1823,6 @@ const handleDelete = async (fileId: string) => {
   // Smart menu position - prevents menu from going off-screen
   const getSmartMenuPosition = (x: number, y: number) => {
     const menuWidth = 200;
-    const menuHeight = 400;
     const padding = 10;
     let left = x;
     let top = y;
@@ -1832,16 +1831,19 @@ const handleDelete = async (fileId: string) => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
 
+      // Measure actual menu height if rendered, else estimate conservatively
+      const menuEl = document.getElementById('ctx-menu-portal');
+      const menuHeight = menuEl ? menuEl.offsetHeight : 260;
+
       // Prefer left side - flip to left if too close to right edge
       if (x + menuWidth + padding > vw) {
         left = x - menuWidth - 10;
-        // If still off screen, clamp to left
         if (left < padding) left = padding;
       }
 
-      // For bottom edge - flip menu ABOVE the click point
+      // For bottom edge - flip menu ABOVE the click point only if needed
       if (y + menuHeight + padding > vh) {
-        top = y - menuHeight - 10;
+        top = vh - menuHeight - padding;
         if (top < padding) top = padding;
       }
 
