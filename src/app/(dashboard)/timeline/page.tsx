@@ -92,6 +92,21 @@ export default function TimelinePage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<TimelineFile | null>(null);
+
+  // Fetch presigned URL on demand when opening preview
+  const openPreview = async (file: TimelineFile) => {
+    setPreviewFile(file);
+    if (!file.url) {
+      try {
+        const res = await fetch(`/api/files/${file.id}/proxy`);
+        if (res.ok) {
+          const blob = await res.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          setPreviewFile(prev => prev?.id === file.id ? { ...prev, url: blobUrl } : prev);
+        }
+      } catch { /* */ }
+    }
+  };
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<{ file: TimelineFile; x: number; y: number } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -450,7 +465,7 @@ export default function TimelinePage() {
                               ? "bg-violet-50 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/30 border ring-1 ring-violet-200 dark:ring-violet-500/20"
                               : "bg-[#f3f4f6] dark:bg-white/[0.03] hover:bg-[#e5e7eb] dark:hover:bg-white/[0.06] border-2 border-[#9ca3af] dark:border-white/5 shadow-md dark:shadow-none"
                           }`}
-                          onClick={() => setPreviewFile(file)}
+                          onClick={() => openPreview(file)}
                           onContextMenu={(e) => { e.preventDefault(); setContextMenu({ file, x: e.clientX, y: e.clientY }); }}
                         >
                           {/* Tree branch connector */}
@@ -545,7 +560,7 @@ export default function TimelinePage() {
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={e => e.stopPropagation()}
         >
-          <button onClick={() => { setPreviewFile(contextMenu.file); setContextMenu(null); }}
+          <button onClick={() => { openPreview(contextMenu.file); setContextMenu(null); }}
             className="w-full flex items-center gap-2.5 px-3 py-2 text-[12px] text-gray-700 dark:text-white/80 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
             <Eye className="w-3.5 h-3.5" /> Preview
           </button>
@@ -578,13 +593,13 @@ export default function TimelinePage() {
             return (
               <>
                 {idx > 0 && (
-                  <button onClick={(e) => { e.stopPropagation(); setPreviewFile(allFiles[idx - 1]); }}
+                  <button onClick={(e) => { e.stopPropagation(); openPreview(allFiles[idx - 1]); }}
                     className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full z-10">
                     <ChevronLeft className="w-6 h-6 text-white" />
                   </button>
                 )}
                 {idx < allFiles.length - 1 && (
-                  <button onClick={(e) => { e.stopPropagation(); setPreviewFile(allFiles[idx + 1]); }}
+                  <button onClick={(e) => { e.stopPropagation(); openPreview(allFiles[idx + 1]); }}
                     className="absolute right-16 top-1/2 -translate-y-1/2 p-3 bg-white/10 hover:bg-white/20 rounded-full z-10">
                     <ChevronRight className="w-6 h-6 text-white" />
                   </button>

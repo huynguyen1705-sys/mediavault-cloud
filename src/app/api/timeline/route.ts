@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { getPresignedUrl } from "@/lib/r2";
+// Removed getPresignedUrl - URLs generated on demand for speed
 import { getOrCreateUser } from "@/lib/get-user";
 
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || "https://cdn.fii.one";
@@ -82,19 +82,18 @@ export async function GET(request: NextRequest) {
     const timeline = [];
     for (const [date, groupFiles] of groups) {
       const totalSize = groupFiles.reduce((s: number, f: any) => s + Number(f.fileSize), 0);
-      const filesWithUrls = await Promise.all(
-        groupFiles.slice(0, 12).map(async (f: any) => ({
-          id: f.id,
-          name: f.name,
-          mimeType: f.mimeType,
-          fileSize: f.fileSize.toString(),
-          url: f.storagePath ? await getPresignedUrl(f.storagePath, 3600) : null,
-          thumbnailUrl: f.thumbnailPath ? `${R2_PUBLIC_URL}/${f.thumbnailPath}` : null,
-          createdAt: f.createdAt,
-          folderName: f.folder?.name || "My Files",
-          metadata: f.metadata,
-        }))
-      );
+      // No presigned URLs here - much faster! Client gets URL on demand via /api/files/[id]/proxy
+      const filesWithUrls = groupFiles.slice(0, 12).map((f: any) => ({
+        id: f.id,
+        name: f.name,
+        mimeType: f.mimeType,
+        fileSize: f.fileSize.toString(),
+        url: null, // Generated on demand when user clicks preview
+        thumbnailUrl: f.thumbnailPath ? `${R2_PUBLIC_URL}/${f.thumbnailPath}` : null,
+        createdAt: f.createdAt,
+        folderName: f.folder?.name || "My Files",
+        metadata: f.metadata,
+      }));
       timeline.push({ date, files: filesWithUrls, count: groupFiles.length, totalSize });
     }
 
