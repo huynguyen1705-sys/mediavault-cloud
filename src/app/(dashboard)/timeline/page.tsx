@@ -492,17 +492,17 @@ export default function TimelinePage() {
                     <p className="text-gray-500 dark:text-white/30 font-medium">No files on this day</p>
                   </div>
                 ) : (
-                  <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-6 xl:columns-8 gap-2 space-y-2">
+                  <div className="grid gap-1.5 w-[98%] mx-auto" style={{ gridTemplateColumns: 'repeat(12, minmax(0, 1fr))' }}>
                     {files.map(file => (
                       <div
                         key={file.id}
-                        className="group relative break-inside-avoid rounded-xl overflow-hidden cursor-pointer hover:shadow-2xl hover:shadow-violet-500/10 transition-all duration-200"
+                        className="group relative aspect-square rounded-xl overflow-hidden cursor-pointer hover:shadow-2xl hover:shadow-violet-500/10 transition-all duration-200"
                         onClick={() => openPreview(file)}
                       >
                         {file.thumbnailUrl ? (
-                          <img src={file.thumbnailUrl} alt="" className="w-full rounded-xl" loading="lazy" />
+                          <img src={file.thumbnailUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
                         ) : (
-                          <div className="w-full aspect-square bg-gray-100 dark:bg-white/[0.03] border-2 border-gray-200 dark:border-white/5 rounded-xl flex flex-col items-center justify-center gap-2">
+                          <div className="w-full h-full bg-gray-100 dark:bg-white/[0.03] border-2 border-gray-200 dark:border-white/5 flex flex-col items-center justify-center gap-2">
                             {getTypeIcon(file.mimeType, "w-10 h-10")}
                             <span className="text-[10px] text-gray-400 dark:text-white/25 font-medium px-2 text-center truncate max-w-full">
                               {file.name}
