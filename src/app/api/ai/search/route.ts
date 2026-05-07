@@ -90,11 +90,14 @@ export async function POST(request: NextRequest) {
         f.id, f.name, f.mime_type as "mimeType", f.file_size as "fileSize", 
         f.created_at as "createdAt", f.storage_path as "storagePath",
         f.thumbnail_path as "thumbnailPath",
+        f.folder_id as "folderId",
+        fld.name as "folderName",
         s.content_text, s.sem_score,
         COALESCE(k.kw_score, 0) as kw_score,
         (s.sem_score * 0.7 + COALESCE(k.kw_score, 0) * 0.3) as final_score
       FROM semantic s
       JOIN files f ON f.id = s.file_id
+      LEFT JOIN folders fld ON fld.id = f.folder_id
       LEFT JOIN keyword k ON k.file_id = s.file_id
       WHERE s.sem_score > $3 OR COALESCE(k.kw_score, 0) > 0
       ORDER BY (s.sem_score * 0.7 + COALESCE(k.kw_score, 0) * 0.3) DESC
@@ -130,6 +133,8 @@ export async function POST(request: NextRequest) {
           snippet: extractSnippet(r.content_text),
           type: r.mimeType?.split('/')[0] || 'file',
           thumbnailUrl: r.thumbnailPath ? `${cdnBase}/${r.thumbnailPath}` : null,
+          folderId: r.folderId || null,
+          folderName: r.folderName || 'My Files',
         };
       }),
       count: searchResults.length,
