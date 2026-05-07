@@ -1419,8 +1419,13 @@ export default function FilesPage() {
       await Promise.all(sorted.slice(i, i + CONCURRENT_FILES).map(uploadOne));
     }
 
-    setTimeout(() => setUploadQueue((prev) => prev.filter((f) => f.status !== "completed")), 3000);
+    // Clear AI search and show files after upload
+    if (aiSearchResults && aiSearchResults.length > 0) {
+      setAiSearchResults(null);
+      setSearchQuery('');
+    }
     fetchFiles();
+    setTimeout(() => setUploadQueue((prev) => prev.filter((f) => f.status !== "completed")), 3000);
   };
 
   // Handle drag and drop
@@ -2186,6 +2191,51 @@ const handleDelete = async (fileId: string) => {
                 </div>
               </div>
             </div>
+
+            {/* Upload Progress in Sidebar */}
+            {uploadQueue.length > 0 && (
+              <div className="mb-4 px-1">
+                <div className="bg-gray-800/50 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-300">
+                      {uploadQueue.some(f => f.status === 'uploading')
+                        ? `Uploading ${uploadQueue.filter(f => f.status === 'uploading').length}/${uploadQueue.length}`
+                        : uploadQueue.every(f => f.status === 'completed')
+                          ? '✓ All done!'
+                          : `${uploadQueue.length} queued`
+                      }
+                    </span>
+                    <span className="text-[10px] text-gray-500">
+                      {Math.round(uploadQueue.reduce((s, f) => s + f.progress, 0) / uploadQueue.length)}%
+                    </span>
+                  </div>
+                  {/* Overall progress bar */}
+                  <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        uploadQueue.every(f => f.status === 'completed') ? 'bg-emerald-500' :
+                        uploadQueue.some(f => f.status === 'error') ? 'bg-red-500' : 'bg-violet-500'
+                      }`}
+                      style={{ width: `${Math.round(uploadQueue.reduce((s, f) => s + f.progress, 0) / uploadQueue.length)}%` }}
+                    />
+                  </div>
+                  {/* Individual files */}
+                  <div className={`space-y-1 ${uploadQueue.length > 4 ? 'max-h-32 overflow-y-auto' : ''}`}>
+                    {uploadQueue.map(f => (
+                      <div key={f.id} className="flex items-center gap-2">
+                        {f.status === 'uploading' && <Loader2 className="w-3 h-3 text-violet-400 animate-spin shrink-0" />}
+                        {f.status === 'completed' && <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0" />}
+                        {f.status === 'error' && <XCircle className="w-3 h-3 text-red-400 shrink-0" />}
+                        {f.status === 'pending' && <Clock className="w-3 h-3 text-gray-500 shrink-0" />}
+                        <span className="text-[10px] text-gray-400 truncate flex-1">{f.name}</span>
+                        <span className="text-[10px] text-gray-500 shrink-0">{f.progress}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Folders containing results */}
             {(() => {
               const folderMap = new Map<string, { id: string | null; name: string; count: number }>();
