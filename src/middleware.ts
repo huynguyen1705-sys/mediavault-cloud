@@ -32,7 +32,6 @@ const isPublicRoute = createRouteMatcher([
   "/api/plans",
   "/api/v1/upload",
   "/api/v1/files/:path*",
-  "/api/auth/callback", // New callback route for Clerk after sign-in/up
   // /api/share/[token] GET is now in public routes
   // Do NOT add /api/share here - POST needs Clerk session
   "/api/settings/theme",
