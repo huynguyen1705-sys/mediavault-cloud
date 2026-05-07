@@ -339,27 +339,77 @@ export default function TimelinePage() {
         <div ref={scrollRef} className="overflow-x-auto overflow-y-hidden" style={{ scrollbarWidth: "thin" }}>
           {/* Timeline rail */}
           <div className="relative px-6 py-6">
-            {/* Horizontal line */}
-            <div className="absolute top-[52px] left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-white/10 to-transparent" />
+            {/* Horizontal line — animated gradient */}
+            <div className="absolute top-[52px] left-0 right-0 h-[2px] bg-gradient-to-r from-violet-500/0 via-violet-500/30 dark:via-violet-400/20 to-violet-500/0" />
+            <div className="absolute top-[51px] left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-white/10 to-transparent" />
 
             <div className="inline-flex gap-5">
               {filteredTimeline.map((group) => (
                 <div key={group.date} className="flex-shrink-0 w-80">
                   {/* Date Marker */}
                   <div className="relative flex items-center gap-3 mb-4">
-                    {/* Dot on rail */}
-                    <div className={`w-3 h-3 rounded-full shrink-0 ring-4 ring-gray-50 dark:ring-[#0a0a0a] ${
-                      isToday(group.date) ? "bg-violet-500" : "bg-gray-300 dark:bg-white/20"
-                    }`} />
+                    {/* Dot on rail — size based on file count */}
+                    <div className="relative">
+                      <div className={`rounded-full shrink-0 ring-4 ring-gray-50 dark:ring-[#0a0a0a] transition-all ${
+                        isToday(group.date)
+                          ? "w-4 h-4 bg-violet-500 shadow-lg shadow-violet-500/40"
+                          : group.count >= 10 ? "w-3.5 h-3.5 bg-violet-400 dark:bg-violet-500/60"
+                          : group.count >= 5 ? "w-3 h-3 bg-cyan-400 dark:bg-cyan-500/50"
+                          : "w-2.5 h-2.5 bg-gray-300 dark:bg-white/20"
+                      }`} />
+                      {isToday(group.date) && (
+                        <div className="absolute inset-0 rounded-full bg-violet-500 animate-ping opacity-30" />
+                      )}
+                    </div>
                     <div className="flex-1">
-                      <h3 className={`text-sm font-bold ${
-                        isToday(group.date) ? "text-violet-600 dark:text-violet-400" : "text-gray-900 dark:text-white"
-                      }`}>
-                        {isToday(group.date) ? "Today" : formatDate(group.date, view)}
-                      </h3>
-                      <p className="text-[11px] text-gray-500 dark:text-white/40">
-                        {group.count} files · {formatBytes(group.totalSize)}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <h3 className={`text-sm font-bold ${
+                          isToday(group.date) ? "text-violet-600 dark:text-violet-400" : "text-gray-900 dark:text-white"
+                        }`}>
+                          {isToday(group.date) ? "Today" : formatDate(group.date, view)}
+                        </h3>
+                        {/* File count badge */}
+                        <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded-full ${
+                          group.count >= 10 ? "bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-300"
+                          : group.count >= 5 ? "bg-cyan-100 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-300"
+                          : "bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-white/40"
+                        }`}>
+                          {group.count}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-[11px] text-gray-500 dark:text-white/40">
+                          {formatBytes(group.totalSize)}
+                        </p>
+                        {/* Mini type breakdown */}
+                        <div className="flex items-center gap-1">
+                          {(() => {
+                            const images = group.files.filter(f => f.mimeType?.startsWith("image/")).length;
+                            const videos = group.files.filter(f => f.mimeType?.startsWith("video/")).length;
+                            const audio = group.files.filter(f => f.mimeType?.startsWith("audio/")).length;
+                            const docs = group.files.filter(f => f.mimeType?.includes("pdf") || f.mimeType?.includes("document")).length;
+                            return (
+                              <>
+                                {images > 0 && <span className="text-[9px] text-emerald-500 dark:text-emerald-400/70">📷{images}</span>}
+                                {videos > 0 && <span className="text-[9px] text-blue-500 dark:text-blue-400/70">🎬{videos}</span>}
+                                {audio > 0 && <span className="text-[9px] text-pink-500 dark:text-pink-400/70">🎵{audio}</span>}
+                                {docs > 0 && <span className="text-[9px] text-red-500 dark:text-red-400/70">📄{docs}</span>}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      {/* Activity bar — visual weight indicator */}
+                      <div className="mt-1.5 w-full h-1 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            group.count >= 10 ? "bg-gradient-to-r from-violet-500 to-violet-400" 
+                            : group.count >= 5 ? "bg-gradient-to-r from-cyan-500 to-cyan-400"
+                            : "bg-gray-300 dark:bg-white/20"
+                          }`}
+                          style={{ width: `${Math.min(100, (group.count / 15) * 100)}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -373,7 +423,7 @@ export default function TimelinePage() {
                           className={`group relative flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all ${
                             isSelected
                               ? "bg-violet-50 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/30 border ring-1 ring-violet-200 dark:ring-violet-500/20"
-                              : "bg-white dark:bg-white/[0.03] hover:bg-gray-50 dark:hover:bg-white/[0.06] border border-gray-200 dark:border-white/5"
+                              : "bg-gray-100/80 dark:bg-white/[0.03] hover:bg-gray-200/60 dark:hover:bg-white/[0.06] border border-gray-200/50 dark:border-white/5"
                           }`}
                           onClick={() => setPreviewFile(file)}
                           onContextMenu={(e) => { e.preventDefault(); setContextMenu({ file, x: e.clientX, y: e.clientY }); }}
