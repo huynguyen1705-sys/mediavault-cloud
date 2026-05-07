@@ -2729,18 +2729,16 @@ const handleDelete = async (fileId: string) => {
                           createdAt: result.createdAt,
                           updatedAt: result.createdAt,
                           thumbnailUrl: thumbUrl,
-                          url: thumbUrl,
+                          url: null, // Will be fetched via proxy
                           shareUrl: null,
                           metadata: null,
                         } as any;
                         setSelectedFile(fileObj);
                         setShowPreview(true);
-                        // Enrich in background if from search data
-                        if (!existing) {
-                          fetch(`/api/files/${result.id}`).then(r => r.ok ? r.json() : null).then(fd => {
-                            if (fd) setSelectedFile(prev => prev?.id === result.id ? { ...prev, ...fd } : prev);
-                          }).catch(() => {});
-                        }
+                        // Fetch full file data in background (includes presigned URL)
+                        fetch(`/api/files/${result.id}`).then(r => r.ok ? r.json() : null).then(fd => {
+                          if (fd) setSelectedFile(prev => prev?.id === result.id ? { ...prev, ...fd } : prev);
+                        }).catch(() => {});
                       }}
                       onContextMenu={(e) => {
                         // Desktop right-click: show context menu
@@ -2754,12 +2752,15 @@ const handleDelete = async (fileId: string) => {
                           createdAt: result.createdAt,
                           updatedAt: result.createdAt,
                           thumbnailUrl: thumbUrl,
-                          url: thumbUrl,
+                          url: null,
                           shareUrl: null,
                           metadata: null,
                         } as any;
                         setSelectedFile(fileObj);
                         setContextMenu({ x: e.clientX, y: e.clientY, file: fileObj });
+                        fetch(`/api/files/${result.id}`).then(r => r.ok ? r.json() : null).then(fd => {
+                          if (fd) setSelectedFile(prev => prev?.id === result.id ? { ...prev, ...fd } : prev);
+                        }).catch(() => {});
                       }}
                       onTouchEnd={(e) => {
                         // Mobile touch: show mobile sheet (prevent onClick)
@@ -2773,18 +2774,15 @@ const handleDelete = async (fileId: string) => {
                           createdAt: result.createdAt,
                           updatedAt: result.createdAt,
                           thumbnailUrl: thumbUrl,
-                          url: thumbUrl,
+                          url: null,
                           shareUrl: null,
                           metadata: null,
                         } as any;
                         setSelectedFile(fileObj);
                         setShowMobileSheet(true);
-                        // Enrich in background
-                        if (!existing) {
-                          fetch(`/api/files/${result.id}`).then(r => r.ok ? r.json() : null).then(fd => {
-                            if (fd) setSelectedFile(prev => prev?.id === result.id ? { ...prev, ...fd } : prev);
-                          }).catch(() => {});
-                        }
+                        fetch(`/api/files/${result.id}`).then(r => r.ok ? r.json() : null).then(fd => {
+                          if (fd) setSelectedFile(prev => prev?.id === result.id ? { ...prev, ...fd } : prev);
+                        }).catch(() => {});
                       }}
                       className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#1a1a1a] cursor-pointer transition-all group"
                     >
@@ -3421,17 +3419,18 @@ const handleDelete = async (fileId: string) => {
 
           {/* Main Content - Comprehensive File Preview */}
           <div className="flex-1 flex items-center justify-center p-4 pb-24 md:pb-4 overflow-hidden">
+            {(() => { const previewUrl = selectedFile.url || `/api/files/${selectedFile.id}/proxy`; return (
             <div
               id="pan-container"
               className="relative select-none w-full h-full flex items-center justify-center"
               style={{ touchAction: 'none' }}
             >
               {/* IMAGE PREVIEW */}
-              {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
+              {selectedFile.mimeType?.startsWith("image/") && (
                 <div className="cursor-grab active:cursor-grabbing w-full h-full flex items-center justify-center">
                   <img
                     id="pan-image"
-                    src={selectedFile.url}
+                    src={previewUrl}
                     alt={selectedFile.name}
                     draggable={false}
                     className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
@@ -3444,9 +3443,9 @@ const handleDelete = async (fileId: string) => {
               )}
 
               {/* VIDEO PREVIEW */}
-              {selectedFile.mimeType?.startsWith("video/") && selectedFile.url && (
+              {selectedFile.mimeType?.startsWith("video/") && (
                 <video
-                  src={selectedFile.url}
+                  src={previewUrl}
                   controls
                   className="max-w-full max-h-[70vh] rounded-xl shadow-2xl"
                   autoPlay
@@ -3454,12 +3453,12 @@ const handleDelete = async (fileId: string) => {
               )}
 
               {/* AUDIO PREVIEW - Waveform Player */}
-              {selectedFile.mimeType?.startsWith("audio/") && selectedFile.url && (
-                <AudioPreview url={selectedFile.url} />
+              {selectedFile.mimeType?.startsWith("audio/") && (
+                <AudioPreview url={previewUrl} />
               )}
 
               {/* PDF PREVIEW */}
-              {(selectedFile.mimeType === "application/pdf" || selectedFile.mimeType?.includes("pdf")) && selectedFile.url && (
+              {(selectedFile.mimeType === "application/pdf" || selectedFile.mimeType?.includes("pdf")) && (
                 <PdfPreview proxyUrl={`/api/files/${selectedFile.id}/proxy`} filename={selectedFile.name} />
               )}
 
@@ -3481,31 +3480,32 @@ const handleDelete = async (fileId: string) => {
               )}
 
               {/* CODE FILE PREVIEW */}
-              {isCodeFile(selectedFile.name) && selectedFile.url && (
-                <CodePreview url={selectedFile.url} filename={selectedFile.name} />
+              {isCodeFile(selectedFile.name) && (
+                <CodePreview url={previewUrl} filename={selectedFile.name} />
               )}
 
               {/* TEXT FILE PREVIEW */}
-              {isTextFile(selectedFile.name) && selectedFile.url && (
-                <TextPreview url={selectedFile.url} />
+              {isTextFile(selectedFile.name) && (
+                <TextPreview url={previewUrl} />
               )}
 
               {/* XLSX/SPREADSHEET PREVIEW */}
-              {isSpreadsheetFile(selectedFile.name) && selectedFile.url && (
-                <XlsxPreview url={selectedFile.url} />
+              {isSpreadsheetFile(selectedFile.name) && (
+                <XlsxPreview url={previewUrl} />
               )}
 
-              {/* NO URL AVAILABLE */}
-              {!selectedFile.url && (
+              {/* NO PREVIEW - unsupported type */}
+              {!selectedFile.mimeType?.startsWith("image/") && !selectedFile.mimeType?.startsWith("video/") && !selectedFile.mimeType?.startsWith("audio/") && !(selectedFile.mimeType === "application/pdf" || selectedFile.mimeType?.includes("pdf")) && !isCodeFile(selectedFile.name) && !isTextFile(selectedFile.name) && !isSpreadsheetFile(selectedFile.name) && !(selectedFile.mimeType?.includes("wordprocessingml") || selectedFile.mimeType?.includes("presentationml") || selectedFile.mimeType?.includes("spreadsheetml") || selectedFile.mimeType === "application/msword" || selectedFile.mimeType?.includes("ms-powerpoint") || selectedFile.mimeType?.includes("ms-excel")) && (
                 <div className="bg-[#111111] rounded-2xl p-8 shadow-2xl text-center">
                   <File className="w-16 h-16 mx-auto mb-4 text-gray-600" />
                   <p className="text-gray-400">Preview not available</p>
                 </div>
               )}
             </div>
+            ); })()}
           </div>
 
-          {selectedFile.mimeType?.startsWith("image/") && selectedFile.url && (
+          {selectedFile.mimeType?.startsWith("image/") && (
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-[#141414]/95 backdrop-blur px-4 py-2 rounded-full shadow-xl border border-gray-800">
               <button onClick={() => { setZoom((z) => Math.max(0.5, z - 0.25)); setDragPos({ x: 0, y: 0 }); }} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
                 <ZoomOut className="w-5 h-5" />
