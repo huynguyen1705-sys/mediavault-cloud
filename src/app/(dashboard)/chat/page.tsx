@@ -58,43 +58,27 @@ function getTypeIcon(mime: string | null) {
   return <FileIcon className="w-4 h-4 text-gray-400" />;
 }
 
-/* ── Inline File Card ── */
+/* ── Compact Inline File Card ── */
 function FileCard({ file }: { file: FileRef }) {
   const [preview, setPreview] = useState(false);
   return (
     <>
       <div
-        className="flex items-center gap-3 px-3 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all cursor-pointer border border-white/5 hover:border-white/10 group"
+        className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-all cursor-pointer border border-white/5 hover:border-white/10 group"
         onClick={() => setPreview(true)}
       >
         {file.thumbnailUrl ? (
-          <img src={file.thumbnailUrl} alt="" className="w-11 h-11 rounded-lg object-cover shrink-0 ring-1 ring-white/10" />
+          <img src={file.thumbnailUrl} alt="" className="w-8 h-8 rounded object-cover shrink-0 ring-1 ring-white/10" />
         ) : (
-          <div className="w-11 h-11 rounded-lg bg-white/5 flex items-center justify-center shrink-0 ring-1 ring-white/10">
+          <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center shrink-0 ring-1 ring-white/10">
             {getTypeIcon(file.mimeType)}
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-medium text-white/90 truncate">{file.name}</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] text-white/40">{formatBytes(Number(file.fileSize))}</span>
-            <span className="text-[10px] text-white/30 flex items-center gap-1">
-              <Folder className="w-2.5 h-2.5" /> {file.folderName}
-            </span>
-          </div>
+          <p className="text-[11px] font-medium text-white/90 truncate max-w-[180px]">{file.name}</p>
+          <p className="text-[9px] text-white/40">{formatBytes(Number(file.fileSize))}</p>
         </div>
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={(e) => { e.stopPropagation(); setPreview(true); }}
-            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" title="Preview">
-            <Eye className="w-3.5 h-3.5 text-white/50" />
-          </button>
-          {file.url && (
-            <a href={file.url} download={file.name} onClick={e => e.stopPropagation()}
-              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors" title="Download">
-              <Download className="w-3.5 h-3.5 text-white/50" />
-            </a>
-          )}
-        </div>
+        <Eye className="w-3 h-3 text-white/30 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
       </div>
 
       {/* Preview Modal */}
@@ -423,7 +407,7 @@ export default function ChatPage() {
 
                       {/* File Cards */}
                       {msg.fileRefs && msg.fileRefs.length > 0 && (
-                        <div className="mt-2 space-y-1.5">
+                        <div className="mt-2 flex flex-wrap gap-1.5">
                           {msg.fileRefs.map(file => (
                             <FileCard key={file.id} file={file} />
                           ))}
