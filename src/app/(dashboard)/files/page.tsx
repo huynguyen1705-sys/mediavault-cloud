@@ -2718,8 +2718,8 @@ const handleDelete = async (fileId: string) => {
                   return (
                     <div
                       key={result.id + '-ai-' + idx}
-                      onClick={(e) => {
-                        // Build file object from search result
+                      onClick={() => {
+                        // Desktop left-click: View file directly
                         const existing = files.find(f => f.id === result.id);
                         const fileObj = existing || {
                           id: result.id,
@@ -2734,14 +2734,52 @@ const handleDelete = async (fileId: string) => {
                           metadata: null,
                         } as any;
                         setSelectedFile(fileObj);
-                        // Desktop: show context menu at click position
-                        const isDesktop = window.innerWidth >= 768;
-                        if (isDesktop) {
-                          setContextMenu({ x: e.clientX, y: e.clientY, file: fileObj });
-                        } else {
-                          setShowMobileSheet(true);
-                        }
+                        setShowPreview(true);
                         // Enrich in background if from search data
+                        if (!existing) {
+                          fetch(`/api/files/${result.id}`).then(r => r.ok ? r.json() : null).then(fd => {
+                            if (fd) setSelectedFile(prev => prev?.id === result.id ? { ...prev, ...fd } : prev);
+                          }).catch(() => {});
+                        }
+                      }}
+                      onContextMenu={(e) => {
+                        // Desktop right-click: show context menu
+                        e.preventDefault();
+                        const existing = files.find(f => f.id === result.id);
+                        const fileObj = existing || {
+                          id: result.id,
+                          name: result.name,
+                          mimeType: result.mimeType,
+                          fileSize: result.fileSize,
+                          createdAt: result.createdAt,
+                          updatedAt: result.createdAt,
+                          thumbnailUrl: thumbUrl,
+                          url: thumbUrl,
+                          shareUrl: null,
+                          metadata: null,
+                        } as any;
+                        setSelectedFile(fileObj);
+                        setContextMenu({ x: e.clientX, y: e.clientY, file: fileObj });
+                      }}
+                      onTouchEnd={(e) => {
+                        // Mobile touch: show mobile sheet (prevent onClick)
+                        e.preventDefault();
+                        const existing = files.find(f => f.id === result.id);
+                        const fileObj = existing || {
+                          id: result.id,
+                          name: result.name,
+                          mimeType: result.mimeType,
+                          fileSize: result.fileSize,
+                          createdAt: result.createdAt,
+                          updatedAt: result.createdAt,
+                          thumbnailUrl: thumbUrl,
+                          url: thumbUrl,
+                          shareUrl: null,
+                          metadata: null,
+                        } as any;
+                        setSelectedFile(fileObj);
+                        setShowMobileSheet(true);
+                        // Enrich in background
                         if (!existing) {
                           fetch(`/api/files/${result.id}`).then(r => r.ok ? r.json() : null).then(fd => {
                             if (fd) setSelectedFile(prev => prev?.id === result.id ? { ...prev, ...fd } : prev);
