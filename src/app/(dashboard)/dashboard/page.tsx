@@ -248,7 +248,7 @@ export default function DashboardPage() {
       setUploadQueue((prev) => {
         const hasCompleted = prev.some(f => f.status === "completed");
         const hasUploading = prev.some(f => f.status === "uploading" || f.status === "pending");
-        if (hasCompleted && !hasUploading) router.push("/files");
+        if (hasCompleted && !hasUploading) window.location.href = "/files";
         return prev;
       });
     }, 1500);
