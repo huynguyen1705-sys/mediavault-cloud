@@ -413,14 +413,18 @@ export default function TimelinePage() {
                     </div>
                   </div>
 
-                  {/* File Cards */}
-                  <div className="space-y-1.5 pl-6">
+                  {/* File Cards — Tree style */}
+                  <div className="relative pl-6">
+                    {/* Vertical tree line from date dot down through files */}
+                    <div className="absolute left-[5px] top-0 bottom-2 w-px bg-gradient-to-b from-gray-300 dark:from-white/15 via-gray-200 dark:via-white/10 to-transparent" />
+
+                    <div className="space-y-1.5">
                     {group.files.map((file) => {
                       const isSelected = selectedFiles.has(file.id);
                       return (
                         <div
                           key={file.id}
-                          className={`group relative flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all ${
+                          className={`group relative flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all ml-3 ${
                             isSelected
                               ? "bg-violet-50 dark:bg-violet-500/10 border-violet-300 dark:border-violet-500/30 border ring-1 ring-violet-200 dark:ring-violet-500/20"
                               : "bg-[#f3f4f6] dark:bg-white/[0.03] hover:bg-[#e5e7eb] dark:hover:bg-white/[0.06] border border-[#d1d5db] dark:border-white/5 shadow-sm dark:shadow-none"
@@ -428,6 +432,9 @@ export default function TimelinePage() {
                           onClick={() => setPreviewFile(file)}
                           onContextMenu={(e) => { e.preventDefault(); setContextMenu({ file, x: e.clientX, y: e.clientY }); }}
                         >
+                          {/* Tree branch connector */}
+                          <div className="absolute -left-[15px] top-1/2 w-[12px] h-px bg-gray-300 dark:bg-white/15" />
+                          <div className="absolute -left-[15px] top-1/2 w-[5px] h-[5px] -translate-y-1/2 rounded-full bg-gray-300 dark:bg-white/20 ring-2 ring-gray-50 dark:ring-[#0a0a0a]" />
                           {/* Checkbox */}
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleSelect(file.id); }}
@@ -476,10 +483,15 @@ export default function TimelinePage() {
                     })}
 
                     {group.count > group.files.length && (
-                      <p className="text-[11px] text-gray-400 dark:text-white/25 pl-8 py-1">
-                        +{group.count - group.files.length} more
-                      </p>
+                      <div className="relative ml-3 py-1">
+                        <div className="absolute -left-[15px] top-1/2 w-[12px] h-px bg-gray-200 dark:bg-white/10" />
+                        <div className="absolute -left-[15px] top-1/2 w-[4px] h-[4px] -translate-y-1/2 rounded-full bg-gray-200 dark:bg-white/10" />
+                        <p className="text-[11px] text-gray-400 dark:text-white/25 pl-2">
+                          +{group.count - group.files.length} more
+                        </p>
+                      </div>
                     )}
+                    </div>
                   </div>
                 </div>
               ))}
