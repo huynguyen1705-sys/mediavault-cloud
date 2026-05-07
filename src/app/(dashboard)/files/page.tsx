@@ -2163,6 +2163,29 @@ const handleDelete = async (fileId: string) => {
         {aiSearchResults && aiSearchResults.length > 0 ? (
           /* SEARCH CONTEXT SIDEBAR */
           <div className="flex-1 overflow-y-auto py-2 px-2">
+            {/* Upload Zone */}
+            <div className="mb-4 px-2">
+              <div
+                onClick={() => document.getElementById('file-input')?.click()}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleUpload(e.dataTransfer.files);
+                }}
+                className="border-2 border-dashed border-gray-700 hover:border-violet-500 rounded-xl p-4 cursor-pointer transition-all hover:bg-gray-800/50 group"
+              >
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors">
+                    <Upload className="w-5 h-5 text-violet-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-300">Upload Files</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">Click or drag & drop</p>
+                  </div>
+                </div>
+              </div>
+            </div>
             {/* Folders containing results */}
             {(() => {
               const folderMap = new Map<string, { id: string | null; name: string; count: number }>();
