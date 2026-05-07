@@ -42,6 +42,7 @@ export default function Navbar() {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, color: "text-blue-400" },
     { href: "/files", label: "Files", icon: FolderOpen, color: "text-amber-400" },
     { href: "/collections", label: "Collections", icon: Sparkles, color: "text-violet-400" },
+    { href: "/timeline", label: "Timeline", icon: Calendar, color: "text-cyan-400" },
 
     { href: "/analytics", label: "Analytics", icon: BarChart3, color: "text-emerald-400" },
     { href: "/settings", label: "Settings", icon: Settings, color: "text-gray-400" },
