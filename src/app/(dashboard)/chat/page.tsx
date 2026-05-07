@@ -64,21 +64,21 @@ function FileCard({ file }: { file: FileRef }) {
   return (
     <>
       <div
-        className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-all cursor-pointer border border-white/5 hover:border-white/10 group"
+        className="inline-flex items-center gap-2 px-2.5 py-1.5 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg transition-all cursor-pointer border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 group"
         onClick={() => setPreview(true)}
       >
         {file.thumbnailUrl ? (
           <img src={file.thumbnailUrl} alt="" className="w-8 h-8 rounded object-cover shrink-0 ring-1 ring-white/10" />
         ) : (
-          <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center shrink-0 ring-1 ring-white/10">
+          <div className="w-8 h-8 rounded bg-gray-200 dark:bg-white/5 flex items-center justify-center shrink-0 ring-1 ring-gray-300 dark:ring-white/10">
             {getTypeIcon(file.mimeType)}
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-medium text-white/90 truncate max-w-[180px]">{file.name}</p>
-          <p className="text-[9px] text-white/40">{formatBytes(Number(file.fileSize))}</p>
+          <p className="text-[11px] font-medium text-gray-800 dark:text-white/90 truncate max-w-[180px]">{file.name}</p>
+          <p className="text-[9px] text-gray-500 dark:text-white/40">{formatBytes(Number(file.fileSize))}</p>
         </div>
-        <Eye className="w-3 h-3 text-white/30 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+        <Eye className="w-3 h-3 text-gray-400 dark:text-white/30 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
       </div>
 
       {/* Preview Modal */}
@@ -175,9 +175,9 @@ function ActionCard({ action }: { action: ActionResult }) {
 /* ── Format AI message with markdown ── */
 function formatMessage(content: string) {
   return content
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em class="text-white/80">$1</em>')
-    .replace(/`(.*?)`/g, '<code class="px-1.5 py-0.5 bg-white/10 rounded text-[11px] text-violet-300 font-mono">$1</code>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code class="px-1.5 py-0.5 bg-gray-100 dark:bg-white/10 rounded text-[11px] text-violet-600 dark:text-violet-300 font-mono">$1</code>')
     .replace(/\n/g, '<br/>');
 }
 
@@ -289,10 +289,10 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="h-[calc(100vh-64px)] flex overflow-hidden bg-[#0a0a0a]">
+    <div className="h-[calc(100vh-64px)] flex overflow-hidden bg-gray-50 dark:bg-[#0a0a0a]">
       {/* ── Sidebar ── */}
-      <div className={`${sidebarOpen ? "w-72" : "w-0 overflow-hidden"} border-r border-white/5 flex-col transition-all duration-300 hidden md:flex bg-[#080808]`}>
-        <div className="p-3 border-b border-white/5">
+      <div className={`${sidebarOpen ? "w-72" : "w-0 overflow-hidden"} border-r border-gray-200 dark:border-white/5 flex-col transition-all duration-300 hidden md:flex bg-white dark:bg-[#080808]`}>
+        <div className="p-3 border-b border-gray-200 dark:border-white/5">
           <button
             onClick={startNew}
             className="w-full px-3 py-2.5 bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white text-sm font-medium rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-violet-500/20"
@@ -303,28 +303,28 @@ export default function ChatPage() {
 
         <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
           {loadingConvos ? (
-            <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-white/20" /></div>
+            <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-300 dark:text-white/20" /></div>
           ) : conversations.length === 0 ? (
-            <p className="text-[11px] text-white/20 text-center py-8">No conversations yet</p>
+            <p className="text-[11px] text-gray-400 dark:text-white/20 text-center py-8">No conversations yet</p>
           ) : (
             conversations.map(c => (
               <div
                 key={c.id}
                 className={`group flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
                   currentConvoId === c.id
-                    ? "bg-violet-500/15 border border-violet-500/20"
-                    : "hover:bg-white/5 border border-transparent"
+                    ? "bg-violet-500/10 border border-violet-500/20"
+                    : "hover:bg-gray-100 dark:hover:bg-white/5 border border-transparent"
                 }`}
                 onClick={() => loadConversation(c.id)}
               >
-                <MessageCircle className={`w-4 h-4 shrink-0 ${currentConvoId === c.id ? "text-violet-400" : "text-white/20"}`} />
+                <MessageCircle className={`w-4 h-4 shrink-0 ${currentConvoId === c.id ? "text-violet-500" : "text-gray-400 dark:text-white/20"}`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-medium text-white/80 truncate">{c.title || "New Chat"}</p>
-                  <p className="text-[10px] text-white/25">{c.messageCount} messages</p>
+                  <p className="text-[12px] font-medium text-gray-800 dark:text-white/80 truncate">{c.title || "New Chat"}</p>
+                  <p className="text-[10px] text-gray-500 dark:text-white/25">{c.messageCount} messages</p>
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); deleteConversation(c.id); }}
-                  className="p-1 opacity-0 group-hover:opacity-100 hover:text-red-400 text-white/20 transition-all"
+                  className="p-1 opacity-0 group-hover:opacity-100 hover:text-red-500 text-gray-400 dark:text-white/20 transition-all"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -337,16 +337,16 @@ export default function ChatPage() {
       {/* ── Main Chat ── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="px-4 py-3 border-b border-white/5 flex items-center gap-3 bg-[#0a0a0a]/80 backdrop-blur-xl">
-          <button onClick={() => setSidebarOpen(prev => !prev)} className="p-1.5 hover:bg-white/5 rounded-lg transition-colors hidden md:block">
-            <ChevronLeft className={`w-4 h-4 text-white/40 transition-transform ${sidebarOpen ? "" : "rotate-180"}`} />
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-white/5 flex items-center gap-3 bg-white/90 dark:bg-[#0a0a0a]/80 backdrop-blur-xl">
+          <button onClick={() => setSidebarOpen(prev => !prev)} className="p-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors hidden md:block">
+            <ChevronLeft className={`w-4 h-4 text-gray-500 dark:text-white/40 transition-transform ${sidebarOpen ? "" : "rotate-180"}`} />
           </button>
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-white/90">AI Assistant</h1>
-            <p className="text-[10px] text-white/30">Search, organize, share — ask anything</p>
+            <h1 className="text-sm font-bold text-gray-900 dark:text-white/90">AI Assistant</h1>
+            <p className="text-[10px] text-gray-500 dark:text-white/30">Search, organize, share — ask anything</p>
           </div>
         </div>
 
@@ -358,8 +358,8 @@ export default function ChatPage() {
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/20 to-cyan-500/20 flex items-center justify-center mb-5 ring-1 ring-white/10">
                   <Sparkles className="w-7 h-7 text-violet-400" />
                 </div>
-                <h2 className="text-xl font-bold text-white/90 mb-2">Chat with your files</h2>
-                <p className="text-sm text-white/40 max-w-md mb-8">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white/90 mb-2">Chat with your files</h2>
+                <p className="text-sm text-gray-600 dark:text-white/40 max-w-md mb-8">
                   Search files, get storage insights, create collections, or generate share links — all through natural conversation.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-lg w-full">
@@ -367,10 +367,10 @@ export default function ChatPage() {
                     <button
                       key={i}
                       onClick={() => { setInput(s.text); inputRef.current?.focus(); }}
-                      className="flex items-center gap-3 text-left px-4 py-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 hover:border-white/10 rounded-xl transition-all group"
+                      className="flex items-center gap-3 text-left px-4 py-3 bg-white dark:bg-white/[0.03] hover:bg-gray-50 dark:hover:bg-white/[0.07] border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 rounded-xl transition-all group shadow-sm dark:shadow-none"
                     >
                       <div className={`${s.color} opacity-60 group-hover:opacity-100 transition-opacity`}>{s.icon}</div>
-                      <span className="text-[13px] text-white/50 group-hover:text-white/70 transition-colors">{s.text}</span>
+                      <span className="text-[13px] text-gray-600 dark:text-white/50 group-hover:text-gray-800 dark:group-hover:text-white/70 transition-colors">{s.text}</span>
                     </button>
                   ))}
                 </div>
@@ -392,7 +392,7 @@ export default function ChatPage() {
                       <div className={`px-4 py-3 rounded-2xl ${
                         msg.role === "user"
                           ? "bg-violet-600 text-white rounded-tr-md"
-                          : "bg-white/[0.06] text-white/85 rounded-tl-md border border-white/5"
+                          : "bg-white dark:bg-white/[0.06] text-gray-800 dark:text-white/85 rounded-tl-md border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none"
                       }`}>
                         <div
                           className="text-[13px] leading-relaxed"
@@ -415,7 +415,7 @@ export default function ChatPage() {
                       )}
 
                       {/* Timestamp */}
-                      <p className={`text-[10px] text-white/20 mt-1.5 ${msg.role === "user" ? "text-right" : ""}`}>
+                      <p className={`text-[10px] text-gray-400 dark:text-white/20 mt-1.5 ${msg.role === "user" ? "text-right" : ""}`}>
                         {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
@@ -430,7 +430,7 @@ export default function ChatPage() {
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shrink-0">
                   <Sparkles className="w-3.5 h-3.5 text-white" />
                 </div>
-                <div className="px-4 py-3 bg-white/[0.06] rounded-2xl rounded-tl-md border border-white/5">
+                <div className="px-4 py-3 bg-white dark:bg-white/[0.06] rounded-2xl rounded-tl-md border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                     <div className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -445,7 +445,7 @@ export default function ChatPage() {
         </div>
 
         {/* Input */}
-        <div className="border-t border-white/5 p-3 bg-[#0a0a0a]/80 backdrop-blur-xl">
+        <div className="border-t border-gray-200 dark:border-white/5 p-3 bg-white/90 dark:bg-[#0a0a0a]/80 backdrop-blur-xl">
           <div className="flex items-end gap-2.5 max-w-3xl mx-auto">
             <div className="flex-1 relative">
               <textarea
@@ -455,7 +455,7 @@ export default function ChatPage() {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about your files..."
                 rows={1}
-                className="w-full px-4 py-3 bg-white/[0.04] border border-white/10 rounded-2xl text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-violet-500/40 focus:bg-white/[0.06] resize-none max-h-32 transition-all"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-white/[0.04] border border-gray-300 dark:border-white/10 rounded-2xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/25 focus:outline-none focus:border-violet-500/50 focus:bg-white dark:focus:bg-white/[0.06] resize-none max-h-32 transition-all"
                 style={{ minHeight: "48px" }}
               />
             </div>
@@ -467,7 +467,7 @@ export default function ChatPage() {
               {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </button>
           </div>
-          <p className="text-[10px] text-white/15 text-center mt-2">
+          <p className="text-[10px] text-gray-400 dark:text-white/15 text-center mt-2">
             Search · Create Collections · Share Files · Storage Insights
           </p>
         </div>
