@@ -53,6 +53,22 @@ export async function GET(
       return NextResponse.json({ error: "File not available" }, { status: 404 });
     }
 
+    // Track download
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || request.headers.get("x-real-ip") || "unknown";
+    const ua = request.headers.get("user-agent") || "";
+    prisma.$transaction([
+      prisma.share.update({ where: { id: share.id }, data: { downloadsCount: { increment: 1 } } }),
+      prisma.shareView.create({
+        data: {
+          shareId: share.id,
+          ipAddress: ip !== "unknown" ? ip : null,
+          userAgent: ua.slice(0, 500),
+          action: "download",
+        },
+      }),
+    ]).catch(() => {});
+
     const presignedUrl = await getPresignedUrl(file.storagePath, 300);
     const fileRes = await fetch(presignedUrl);
 

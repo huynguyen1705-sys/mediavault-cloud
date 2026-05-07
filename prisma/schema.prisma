@@ -132,13 +132,38 @@ model Share {
   allowDownload  Boolean   @map("allow_download") @default(true)
   expiresAt      DateTime? @map("expires_at")
   viewsCount     Int       @map("views_count") @default(0)
+  downloadsCount Int       @map("downloads_count") @default(0)
   createdAt      DateTime  @map("created_at") @default(now())
 
   file   File?   @relation(fields: [fileId], references: [id], onDelete: Cascade)
   folder Folder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  views  ShareView[]
 
   @@map("shares")
+}
+
+model ShareView {
+  id          String   @id @default(uuid()) @db.Uuid
+  shareId     String   @map("share_id") @db.Uuid
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  country     String?  @db.VarChar(100)
+  city        String?  @db.VarChar(100)
+  region      String?  @db.VarChar(100)
+  isp         String?  @db.VarChar(200)
+  userAgent   String?  @map("user_agent") @db.Text
+  browser     String?  @db.VarChar(100)
+  os          String?  @db.VarChar(100)
+  device      String?  @db.VarChar(100)
+  referer     String?  @db.Text
+  action      String   @default("view") @db.VarChar(20) // view | download
+  createdAt   DateTime @map("created_at") @default(now())
+
+  share Share @relation(fields: [shareId], references: [id], onDelete: Cascade)
+
+  @@index([shareId])
+  @@index([createdAt])
+  @@map("share_views")
 }
 
 model EmbedDomain {

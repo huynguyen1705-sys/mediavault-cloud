@@ -2,9 +2,33 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Download, Lock, Image, Film, Music, FileText, File, Copy, Share2, Clock, HardDrive, FileType, User, ZoomIn, ZoomOut, RotateCcw, Maximize2, Minimize2 } from "lucide-react";
+import { Download, Lock, Image, Film, Music, FileText, File, Copy, Share2, Clock, HardDrive, FileType, User, ZoomIn, ZoomOut, RotateCcw, Maximize2, Minimize2, Eye, BarChart3, Globe, Monitor, Smartphone, Tablet, MapPin, Wifi, Camera, Aperture, Sun, Zap, Layers, Hash, ChevronDown, ChevronUp } from "lucide-react";
 
 /* ─── Types ─── */
+interface FileMetadata {
+  hash?: string; md5?: string;
+  width?: number; height?: number; aspectRatio?: string; dpi?: number; bitDepth?: number;
+  colorSpace?: string; colorProfile?: string; compression?: string; orientation?: string; hdr?: boolean;
+  camera?: string; cameraModel?: string; lens?: string; focalLength?: string; focalLength35mm?: string;
+  iso?: number; shutterSpeed?: string; aperture?: string; exposureMode?: string; meteringMode?: string;
+  whiteBalance?: string; flash?: string; focusMode?: string; dateTaken?: string;
+  software?: string; artist?: string; copyright?: string;
+  gps?: { lat: number; lng: number; altitude?: number };
+  duration?: number; fps?: number; videoBitrate?: number; videoCodec?: string; videoProfile?: string;
+  audioCodec?: string; audioBitrate?: number; audioChannels?: number; audioSampleRate?: number;
+  containerFormat?: string; rotation?: number; hdrFormat?: string;
+  title?: string; albumArtist?: string; album?: string; year?: number; genre?: string;
+  trackNumber?: string; composer?: string; bpm?: number; encoder?: string; hasAlbumArt?: boolean;
+  pageCount?: number; author?: string; documentTitle?: string; subject?: string;
+  keywords?: string[]; creatorApp?: string; pdfVersion?: string; encrypted?: boolean;
+}
+
+interface VisitorInfo {
+  ip?: string | null; country?: string | null; city?: string | null;
+  region?: string | null; isp?: string | null;
+  browser?: string | null; os?: string | null; device?: string | null;
+}
+
 interface FileData {
   type: "file" | "folder";
   name: string;
@@ -14,6 +38,10 @@ interface FileData {
   allowDownload: boolean;
   owner: string;
   createdAt: string;
+  viewsCount?: number;
+  downloadsCount?: number;
+  metadata?: FileMetadata | null;
+  visitor?: VisitorInfo | null;
   files?: Array<{ id: string; name: string; mimeType?: string | null; fileSize: bigint | string }>;
   folders?: Array<{ id: string; name: string }>;
 }
@@ -281,6 +309,192 @@ function ImageViewer({ url, name }: { url: string; name: string }) {
   );
 }
 
+/* ─── Collapsible Section ─── */
+function Section({ title, icon, defaultOpen = false, children }: { title: string; icon: React.ReactNode; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-3 px-5 sm:px-6 py-4 hover:bg-gray-800/50 transition-colors">
+        <span className="text-gray-400">{icon}</span>
+        <span className="text-sm font-semibold text-gray-200 flex-1 text-left">{title}</span>
+        {open ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+      </button>
+      {open && <div className="px-5 sm:px-6 pb-5 border-t border-gray-800 pt-4">{children}</div>}
+    </div>
+  );
+}
+
+function MetaRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-xs text-gray-500">{label}</span>
+      <span className={`text-xs text-gray-300 text-right max-w-[60%] truncate ${mono ? "font-mono" : ""}`}>{value}</span>
+    </div>
+  );
+}
+
+function formatDuration(s: number) {
+  const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); const sec = Math.floor(s % 60);
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`;
+}
+function formatBitrate(b: number) { return b > 1000000 ? `${(b / 1000000).toFixed(1)} Mbps` : `${Math.round(b / 1000)} kbps`; }
+
+/* ─── Analytics Stats Bar ─── */
+function AnalyticsBar({ views, downloads }: { views: number; downloads: number }) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="bg-gray-800/50 rounded-xl p-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center"><Eye className="w-5 h-5 text-blue-400" /></div>
+        <div><p className="text-2xl font-bold text-white">{views.toLocaleString()}</p><p className="text-xs text-gray-500">Total Views</p></div>
+      </div>
+      <div className="bg-gray-800/50 rounded-xl p-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center"><Download className="w-5 h-5 text-green-400" /></div>
+        <div><p className="text-2xl font-bold text-white">{downloads.toLocaleString()}</p><p className="text-xs text-gray-500">Downloads</p></div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Visitor Info Card ─── */
+function VisitorCard({ visitor }: { visitor: VisitorInfo }) {
+  const DeviceIcon = visitor.device === "Mobile" ? Smartphone : visitor.device === "Tablet" ? Tablet : Monitor;
+  return (
+    <Section title="Your Connection" icon={<Globe className="w-4 h-4" />} defaultOpen={true}>
+      <div className="space-y-0.5">
+        {visitor.ip && <MetaRow label="IP Address" value={visitor.ip} mono />}
+        {visitor.country && <MetaRow label="Location" value={[visitor.city, visitor.region, visitor.country].filter(Boolean).join(", ")} />}
+        {visitor.isp && <MetaRow label="ISP / Network" value={visitor.isp} />}
+        {visitor.browser && <MetaRow label="Browser" value={visitor.browser} />}
+        {visitor.os && <MetaRow label="Operating System" value={visitor.os} />}
+        {visitor.device && (
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-xs text-gray-500">Device</span>
+            <span className="text-xs text-gray-300 flex items-center gap-1.5"><DeviceIcon className="w-3.5 h-3.5" /> {visitor.device}</span>
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+/* ─── Metadata Display ─── */
+function MetadataPanel({ metadata: m, mimeType }: { metadata: FileMetadata; mimeType?: string }) {
+  const hasCamera = m.camera || m.lens || m.iso;
+  const hasGPS = m.gps;
+  const hasDimensions = m.width || m.height;
+  const hasVideo = m.duration && (mimeType?.startsWith("video/") || m.videoCodec);
+  const hasAudio = m.duration && mimeType?.startsWith("audio/");
+  const hasDoc = m.pageCount || m.pdfVersion;
+  const hasIntegrity = m.hash || m.md5;
+  const hasCreator = m.software || m.artist || m.copyright;
+
+  return (
+    <div className="space-y-3">
+      {hasDimensions && (
+        <Section title="Dimensions" icon={<Layers className="w-4 h-4" />} defaultOpen={true}>
+          <div className="space-y-0.5">
+            {m.width && m.height && <MetaRow label="Resolution" value={`${m.width} × ${m.height} px`} />}
+            {m.aspectRatio && <MetaRow label="Aspect Ratio" value={m.aspectRatio} />}
+            {m.dpi && <MetaRow label="DPI" value={String(m.dpi)} />}
+            {m.bitDepth && <MetaRow label="Bit Depth" value={`${m.bitDepth}-bit`} />}
+            {m.colorSpace && <MetaRow label="Color Space" value={m.colorSpace} />}
+            {m.colorProfile && <MetaRow label="Color Profile" value={m.colorProfile} />}
+            {m.orientation && <MetaRow label="Orientation" value={m.orientation} />}
+            {m.hdr && <MetaRow label="HDR" value={m.hdrFormat || "Yes"} />}
+          </div>
+        </Section>
+      )}
+      {hasCamera && (
+        <Section title="Camera & EXIF" icon={<Camera className="w-4 h-4" />} defaultOpen={true}>
+          <div className="space-y-0.5">
+            {m.camera && <MetaRow label="Camera" value={m.camera} />}
+            {m.lens && <MetaRow label="Lens" value={m.lens} />}
+            {m.focalLength && <MetaRow label="Focal Length" value={m.focalLength35mm ? `${m.focalLength} (${m.focalLength35mm} eq.)` : m.focalLength} />}
+            {m.iso && <MetaRow label="ISO" value={String(m.iso)} />}
+            {m.shutterSpeed && <MetaRow label="Shutter Speed" value={m.shutterSpeed} />}
+            {m.aperture && <MetaRow label="Aperture" value={m.aperture} />}
+            {m.exposureMode && <MetaRow label="Exposure" value={m.exposureMode} />}
+            {m.meteringMode && <MetaRow label="Metering" value={m.meteringMode} />}
+            {m.whiteBalance && <MetaRow label="White Balance" value={m.whiteBalance} />}
+            {m.flash && <MetaRow label="Flash" value={m.flash} />}
+            {m.focusMode && <MetaRow label="Focus" value={m.focusMode} />}
+            {m.dateTaken && <MetaRow label="Date Taken" value={new Date(m.dateTaken).toLocaleString()} />}
+          </div>
+        </Section>
+      )}
+      {hasGPS && m.gps && (
+        <Section title="Location" icon={<MapPin className="w-4 h-4" />} defaultOpen={true}>
+          <div className="space-y-0.5">
+            <MetaRow label="Coordinates" value={`${m.gps.lat.toFixed(6)}°, ${m.gps.lng.toFixed(6)}°`} mono />
+            {m.gps.altitude && <MetaRow label="Altitude" value={`${m.gps.altitude.toFixed(1)}m`} />}
+            <a href={`https://maps.google.com/?q=${m.gps.lat},${m.gps.lng}`} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-violet-400 hover:text-violet-300 mt-2">
+              <MapPin className="w-3 h-3" /> Open in Google Maps →
+            </a>
+          </div>
+        </Section>
+      )}
+      {hasVideo && m.duration && (
+        <Section title="Video Details" icon={<Film className="w-4 h-4" />} defaultOpen={true}>
+          <div className="space-y-0.5">
+            <MetaRow label="Duration" value={formatDuration(m.duration)} />
+            {m.fps && <MetaRow label="Frame Rate" value={`${m.fps} fps`} />}
+            {m.videoCodec && <MetaRow label="Codec" value={`${m.videoCodec}${m.videoProfile ? ` (${m.videoProfile})` : ""}`} />}
+            {m.videoBitrate && <MetaRow label="Bitrate" value={formatBitrate(m.videoBitrate)} />}
+            {m.containerFormat && <MetaRow label="Container" value={m.containerFormat} />}
+            {m.rotation && <MetaRow label="Rotation" value={`${m.rotation}°`} />}
+            {m.audioCodec && <MetaRow label="Audio" value={`${m.audioCodec.toUpperCase()}${m.audioChannels ? ` ${m.audioChannels === 2 ? "Stereo" : m.audioChannels === 1 ? "Mono" : `${m.audioChannels}ch`}` : ""}`} />}
+          </div>
+        </Section>
+      )}
+      {hasAudio && m.duration && (
+        <Section title="Audio Details" icon={<Music className="w-4 h-4" />} defaultOpen={true}>
+          <div className="space-y-0.5">
+            <MetaRow label="Duration" value={formatDuration(m.duration)} />
+            {m.title && <MetaRow label="Title" value={m.title} />}
+            {m.albumArtist && <MetaRow label="Artist" value={m.albumArtist} />}
+            {m.album && <MetaRow label="Album" value={m.album} />}
+            {m.year && <MetaRow label="Year" value={String(m.year)} />}
+            {m.genre && <MetaRow label="Genre" value={m.genre} />}
+            {m.audioCodec && <MetaRow label="Codec" value={m.audioCodec.toUpperCase()} />}
+            {m.audioBitrate && <MetaRow label="Bitrate" value={formatBitrate(m.audioBitrate)} />}
+            {m.audioSampleRate && <MetaRow label="Sample Rate" value={`${m.audioSampleRate / 1000} kHz`} />}
+            {m.bpm && <MetaRow label="BPM" value={String(m.bpm)} />}
+          </div>
+        </Section>
+      )}
+      {hasDoc && (
+        <Section title="Document Info" icon={<FileText className="w-4 h-4" />} defaultOpen={true}>
+          <div className="space-y-0.5">
+            {m.pageCount && <MetaRow label="Pages" value={String(m.pageCount)} />}
+            {m.author && <MetaRow label="Author" value={m.author} />}
+            {m.documentTitle && <MetaRow label="Title" value={m.documentTitle} />}
+            {m.pdfVersion && <MetaRow label="PDF Version" value={m.pdfVersion} />}
+            {m.encrypted && <MetaRow label="Encrypted" value="Yes" />}
+          </div>
+        </Section>
+      )}
+      {hasCreator && (
+        <Section title="Creator" icon={<User className="w-4 h-4" />} defaultOpen={false}>
+          <div className="space-y-0.5">
+            {m.artist && <MetaRow label="Artist" value={m.artist} />}
+            {m.copyright && <MetaRow label="Copyright" value={m.copyright} />}
+            {m.software && <MetaRow label="Software" value={m.software} />}
+          </div>
+        </Section>
+      )}
+      {hasIntegrity && (
+        <Section title="File Integrity" icon={<Hash className="w-4 h-4" />} defaultOpen={false}>
+          <div className="space-y-0.5">
+            {m.hash && <MetaRow label="SHA-256" value={m.hash.slice(0, 20) + "..."} mono />}
+            {m.md5 && <MetaRow label="MD5" value={m.md5.slice(0, 20) + "..."} mono />}
+          </div>
+        </Section>
+      )}
+    </div>
+  );
+}
+
 /* ─── Main Page ─── */
 export default function PublicGalleryPage() {
   const params = useParams();
@@ -384,6 +598,9 @@ export default function PublicGalleryPage() {
                   </div>
                 )}
 
+                {/* Analytics Stats */}
+                <AnalyticsBar views={data.viewsCount || 0} downloads={data.downloadsCount || 0} />
+
                 {/* File Info Card */}
                 <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
                   <div className="px-5 sm:px-6 py-5 border-b border-gray-800">
@@ -458,6 +675,17 @@ export default function PublicGalleryPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Visitor Connection Info */}
+                {data.visitor && <VisitorCard visitor={data.visitor} />}
+
+                {/* File Metadata / EXIF */}
+                {data.metadata && Object.keys(data.metadata).length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-purple-400" /> File Details & Metadata</h3>
+                    <MetadataPanel metadata={data.metadata} mimeType={data.mimeType} />
+                  </div>
+                )}
               </div>
             )}
 
