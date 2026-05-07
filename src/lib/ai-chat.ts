@@ -4,7 +4,7 @@ import { generateEmbedding } from "@/lib/embeddings";
 import { generateCollections } from "@/lib/collections";
 
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || "https://cdn.fii.one";
-const GEMINI_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || "";
+const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || "";
 
 interface FileRef {
   id: string;
@@ -56,7 +56,7 @@ export async function processChat(
   let searchResults: any[] = [];
   try {
     const embResult = await generateEmbedding(message, {
-      apiKey: process.env.NVIDIA_API_KEY || "",
+      apiKey: OPENROUTER_KEY,
     });
     const embedding = embResult?.embedding;
     if (embedding) {
@@ -87,7 +87,7 @@ export async function processChat(
       ).join("\n")}`
     : "";
 
-  // Call Gemini for conversational response
+  // Call LLM via OpenRouter for conversational response
   const systemPrompt = `You are a smart file assistant for a cloud storage service called fii.one.
 The user has ${totalFiles} files (${totalSizeGB.toFixed(2)} GB total).
 Folders: ${folderSummary || "No folders yet"}
@@ -104,29 +104,34 @@ Your job:
 
 IMPORTANT: If you reference files from the search results, mention them by their exact names so the UI can link them.`;
 
-  const messages = [
-    { role: "user", parts: [{ text: systemPrompt }] },
+  const chatMessages = [
+    { role: "system", content: systemPrompt },
     ...conversationHistory.slice(-10).map(m => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
+      role: m.role as string,
+      content: m.content,
     })),
-    { role: "user", parts: [{ text: message }] },
+    { role: "user", content: message },
   ];
 
   let reply = "";
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: messages }),
-      }
-    );
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENROUTER_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.0-flash-001",
+        messages: chatMessages,
+        max_tokens: 2000,
+        temperature: 0.7,
+      }),
+    });
     const data = await res.json();
-    reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't process that.";
+    reply = data?.choices?.[0]?.message?.content || "Sorry, I couldn't process that.";
   } catch (e) {
-    console.error("Gemini chat error:", e);
+    console.error("OpenRouter chat error:", e);
     reply = "Sorry, AI is temporarily unavailable. Please try again.";
   }
 
